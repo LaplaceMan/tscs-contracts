@@ -4,16 +4,14 @@ pragma solidity ^0.8.0;
 import "../common/Ownable.sol";
 import "./VideoManager.sol";
 
-contract PlatfromManage is Ownable {
-    uint256 public totalPlatfroms;
+contract PlatformManager is Ownable {
+    uint256 public totalPlatforms;
     mapping(address => Platform) platforms;
-
     struct Platform {
         string name;
         string symbol;
-        uint256 join;
-        address manager;
-        bool run;
+        uint16 rateCountsToProfit;
+        uint16 rateAuditorDivide;
     }
 
     function platfromJoin(
@@ -23,21 +21,30 @@ contract PlatfromManage is Ownable {
         uint16 rate1,
         uint16 rate2
     ) external auth {
-        require(platforms[platfrom].join == 0, "Have Joined");
-        VideoManager vm = new VideoManager(platfrom, rate1, rate2);
+        require(platforms[platfrom].rateCountsToProfit == 0, "Have Joined");
+        require(rate1 > 0 && rate2 > 0, "Invaild Rate");
+        totalPlatforms++;
         platforms[platfrom] = (
             Platform({
                 name: name,
                 symbol: symbol,
-                join: block.timestamp,
-                manager: address(vm),
-                run: true
+                rateCountsToProfit: rate1,
+                rateAuditorDivide: rate2
             })
         );
     }
 
-    function platfromStop(address platfrom) external auth {
-        require(platforms[platfrom].run == true, "Had Stop Or Not Join");
-        platforms[platfrom].run = false;
+    function platformRate(uint16 rate1, uint16 rate2) external {
+        require(rate1 != 0 || rate2 != 0, "Invaild Rate");
+        require(
+            platforms[msg.sender].rateCountsToProfit != 0,
+            "Platform Not Existence"
+        );
+        if (rate1 != 0) {
+            platforms[msg.sender].rateCountsToProfit = rate1;
+        }
+        if (rate2 != 0) {
+            platforms[msg.sender].rateAuditorDivide = rate2;
+        }
     }
 }
