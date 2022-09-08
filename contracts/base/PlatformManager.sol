@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../common/Ownable.sol";
+import "../common/utils/Ownable.sol";
 import "./VideoManager.sol";
 
 contract PlatformManager is Ownable {

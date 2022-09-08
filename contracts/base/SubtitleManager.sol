@@ -6,11 +6,12 @@ import "../common/token/ERC721/ERC721.sol";
 contract SubtitleManager is ERC721 {
     uint256 private _tokenIdTracker;
     mapping(uint256 => Subtitle) subtitleNFT;
+    mapping(address => mapping(uint256 => bool)) evaluated;
 
     struct Subtitle {
         uint256 applyId;
         uint16 languageId;
-        string fingerprint;
+        uint256 fingerprint;
         uint8 state;
         address[] supporters;
         address[] dissenter;
@@ -20,7 +21,7 @@ contract SubtitleManager is ERC721 {
         address maker,
         uint256 applyId,
         uint16 languageId,
-        string memory fingerprint
+        uint256 fingerprint
     ) internal returns (uint256) {
         _tokenIdTracker++;
         _mint(maker, _tokenIdTracker);
@@ -30,7 +31,23 @@ contract SubtitleManager is ERC721 {
         return _tokenIdTracker;
     }
 
-    function _changeState(uint256 id, uint8 state) internal {
+    // 0 无变化 1 确认 2 删除
+    function _changeST(uint256 id, uint8 state) internal {
         subtitleNFT[id].state = state;
+    }
+
+    function _evaluateST(
+        uint256 subtitleId,
+        uint8 attitude,
+        address evaluator
+    ) internal {
+        require(subtitleNFT[subtitleId].state == 0, "Treated");
+        require(evaluated[evaluator][subtitleId] == false, "Evaluated");
+        if (attitude == 0) {
+            subtitleNFT[subtitleId].supporters.push(evaluator);
+        } else {
+            subtitleNFT[subtitleId].dissenter.push(evaluator);
+        }
+        evaluated[evaluator][subtitleId] = true;
     }
 }

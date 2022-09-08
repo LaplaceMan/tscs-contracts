@@ -32,24 +32,13 @@ contract VideoManager {
         idReal2System[msg.sender][id] = totalVideoNumber;
     }
 
-    function _updateViewCounts(uint256[] memory id, uint256[] memory vs)
+    function updateViewCounts(uint256[] memory id, uint256[] memory vs)
         internal
     {
         assert(id.length == vs.length);
-
         for (uint256 i = 0; i < id.length; i++) {
-            videos[i].tatalViewCouts += vs[i];
+            require(msg.sender == videos[id[i]].platform, "No Permission");
+            videos[id[i]].tatalViewCouts += vs[i];
         }
     }
-
-    // function updateUsageCounts(uint256[] memory id, uint256[] memory ss)
-    //     external
-    // {
-    //     assert(id.length == ss.length);
-    //     for (uint256 i = 0; i < id.length; i++) {
-    //         if (totalApplys[i].adopted > 0) {
-    //             totalApplys[i].totalUsageCounts += ss[i];
-    //         }
-    //     }
-    // }
 }
