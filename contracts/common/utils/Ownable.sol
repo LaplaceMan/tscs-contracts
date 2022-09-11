@@ -14,10 +14,6 @@ abstract contract Ownable {
 
     event OpeatorsStateChange(address[] indexed opeators, bool indexed state);
 
-    constructor() {
-        _setOwner(msg.sender);
-    }
-
     modifier onlyOwner() {
         require(msg.sender == _owner, "Ownable: caller is not the owner");
         _;
@@ -50,7 +46,7 @@ abstract contract Ownable {
         emit OpeatorsStateChange(operators, state);
     }
 
-    function _setOwner(address newOwner) private {
+    function _setOwner(address newOwner) internal {
         address oldOwner = _owner;
         _owner = newOwner;
         emit OwnershipTransferred(oldOwner, newOwner);

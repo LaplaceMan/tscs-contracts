@@ -4,8 +4,9 @@ pragma solidity ^0.8.0;
 import "../interfaces/IZimu.sol";
 
 contract EntityManager {
-    uint256 public penalty;
-    address public zimuToken;
+    uint256 public penalty; //罚款总数
+    address public zimuToken; //平台币 ERC20
+    address public videoToken; //稳定币 ERC1155
     uint16 private _languageType;
     mapping(string => uint16) languages;
     mapping(address => User) users;
@@ -13,7 +14,7 @@ contract EntityManager {
     struct User {
         uint256 repution;
         uint256 deposit;
-        mapping(uint16 => mapping(uint256 => uint256)) lock;
+        mapping(address => mapping(uint256 => uint256)) lock;
     }
 
     function registerLanguage(string memory language)
@@ -42,14 +43,14 @@ contract EntityManager {
     }
 
     function _updateLockReward(
-        uint16 platformId,
+        address platform,
         uint256 day,
         int256 amount,
         address usr
     ) internal {
         require(users[usr].repution == 0, "User Initialized");
-        uint256 current = users[usr].lock[platformId][day];
-        users[usr].lock[platformId][day] = uint256(int256(current) + amount);
+        uint256 current = users[usr].lock[platform][day];
+        users[usr].lock[platform][day] = uint256(int256(current) + amount);
     }
 
     function _updateUser(
@@ -69,6 +70,28 @@ contract EntityManager {
         IZimu(zimuToken).mintReward(usr, uint256(tokenSpread));
         if (users[usr].repution == 0) {
             users[usr].repution = 1;
+        }
+    }
+
+    function _day() internal view returns (uint256) {
+        return block.timestamp / 86400;
+    }
+
+    function _preDivide(
+        address platform,
+        address to,
+        uint256 amount
+    ) internal {
+        _updateLockReward(platform, _day(), int256(amount), to);
+    }
+
+    function _preDivideBatch(
+        address platform,
+        address[] memory to,
+        uint256 amount
+    ) internal {
+        for (uint256 i = 0; i < to.length; i++) {
+            _updateLockReward(platform, _day(), int256(amount), to[i]);
         }
     }
 }

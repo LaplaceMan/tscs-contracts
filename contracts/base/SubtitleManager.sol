@@ -13,6 +13,7 @@ contract SubtitleManager is ERC721 {
         uint16 languageId;
         uint256 fingerprint;
         uint8 state;
+        uint256 stateChangeTime;
         address[] supporters;
         address[] dissenter;
     }
@@ -34,6 +35,7 @@ contract SubtitleManager is ERC721 {
     // 0 无变化 1 确认 2 删除
     function _changeST(uint256 id, uint8 state) internal {
         subtitleNFT[id].state = state;
+        subtitleNFT[id].stateChangeTime = block.timestamp;
     }
 
     function _evaluateST(

@@ -11,7 +11,8 @@ contract VideoManager {
         uint256 id;
         string symbol;
         address creator;
-        uint256 tatalViewCouts;
+        uint256 totalViewCouts;
+        uint256 unsettled;
         uint256[] applys;
     }
 
@@ -28,17 +29,18 @@ contract VideoManager {
         videos[totalVideoNumber].id = id;
         videos[totalVideoNumber].symbol = symbol;
         videos[totalVideoNumber].creator = creator;
-        videos[totalVideoNumber].tatalViewCouts = total;
+        videos[totalVideoNumber].totalViewCouts = total;
         idReal2System[msg.sender][id] = totalVideoNumber;
     }
 
     function updateViewCounts(uint256[] memory id, uint256[] memory vs)
-        internal
+        external
     {
         assert(id.length == vs.length);
         for (uint256 i = 0; i < id.length; i++) {
             require(msg.sender == videos[id[i]].platform, "No Permission");
-            videos[id[i]].tatalViewCouts += vs[i];
+            videos[id[i]].totalViewCouts += vs[i];
+            videos[id[i]].unsettled += vs[i];
         }
     }
 }
