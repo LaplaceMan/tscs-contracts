@@ -5,7 +5,7 @@ import "../../interfaces/IVT.sol";
 import "../../interfaces/ISubtitleSystem.sol";
 import "../../interfaces/ISettlementStrategy.sol";
 
-contract SettlementOneTime0 is ISettlementStrategy {
+contract SettlementOneTime2 is ISettlementStrategy {
     address public subtitleSystem;
     address public vt;
     mapping(uint256 => SubtitleSettlement) settlements;
@@ -25,28 +25,37 @@ contract SettlementOneTime0 is ISettlementStrategy {
         address platform,
         address maker,
         address,
-        uint256 amount,
+        uint256 amount, //此处表示为总剩余收益
         uint256,
         uint16 auditorDivide,
         address[] memory supporters
     ) external override auth returns (uint256) {
-        if (settlements[applyId].settled < amount) {
-            uint256 supporterGet = (amount * auditorDivide) / (10 ^ 6);
-            uint256 unit = supporterGet / supporters.length;
-
-            ISubtitleSystem(subtitleSystem).preDivide(
-                platform,
-                maker,
-                amount - unit * supporters.length
-            );
+        uint256 subtitleGet;
+        if (settlements[applyId].unsettled > 0) {
+            if (amount > settlements[applyId].unsettled) {
+                subtitleGet = settlements[applyId].unsettled;
+                settlements[applyId].unsettled = 0;
+                settlements[applyId].settled += settlements[applyId].unsettled;
+            } else {
+                subtitleGet = amount;
+                settlements[applyId].unsettled -= amount;
+                settlements[applyId].settled += amount;
+            }
+            uint256 divide = ((subtitleGet * auditorDivide) /
+                (10 ^ 6) /
+                supporters.length);
             ISubtitleSystem(subtitleSystem).preDivideBatch(
                 platform,
                 supporters,
-                unit
+                divide
             );
-            settlements[applyId].settled += amount;
+            ISubtitleSystem(subtitleSystem).preDivide(
+                platform,
+                maker,
+                subtitleGet - divide * supporters.length
+            );
         }
-        return settlements[applyId].settled;
+        return subtitleGet;
     }
 
     function updateDebtOrReward(uint256 applyId, uint256 amount) external auth {

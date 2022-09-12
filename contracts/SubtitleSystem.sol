@@ -133,11 +133,14 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
         assert(id.length == ss.length);
         for (uint256 i = 0; i < id.length; i++) {
             if (totalApplys[i].adopted > 0) {
-                require(
-                    msg.sender == videos[totalApplys[id[i]].videoId].platform,
-                    "No Permission"
-                );
-                totalApplys[id[i]].unsettled += ss[i];
+                address platform = videos[totalApplys[id[i]].videoId].platform;
+                require(msg.sender == platform, "No Permission");
+                require(totalApplys[id[i]].mode != 0, "Invaild Mode");
+                uint256 unpaidToken = (platforms[platform].rateCountsToProfit *
+                    ss[i]) / (10 ^ 6);
+                ISettlementStrategy(
+                    settlementStrategy[totalApplys[id[i]].mode].strategy
+                ).updateDebtOrReward(id[i], unpaidToken);
             }
         }
     }
@@ -255,6 +258,8 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
         );
     }
 
+    //仍需优化, 实现真正的模块化
+    //结算mode拥有优先度, 根据id(序号)划分
     function preExtract(uint256 videoId) external {
         require(videos[videoId].unsettled > 0, "Invalid Settlement");
         uint256 unsettled = (platforms[videos[videoId].platform]
@@ -263,51 +268,55 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
             uint256 applyId = videos[videoId].applys[i];
             if (
                 totalApplys[applyId].adopted > 0 &&
-                totalApplys[applyId].mode == 1
+                totalApplys[applyId].mode == 1 &&
+                unsettled > 0
             ) {
-                ISettlementStrategy(settlementStrategy[1].strategy).settlement(
-                    applyId,
-                    videos[videoId].platform,
-                    ownerOf(totalApplys[applyId].adopted),
-                    videos[videoId].creator,
-                    totalApplys[applyId].amount,
-                    platforms[videos[videoId].platform].rateCountsToProfit,
-                    platforms[videos[videoId].platform].rateAuditorDivide,
-                    subtitleNFT[totalApplys[applyId].adopted].supporters
-                );
-
-                // unsettled -= subtitleGet;
+                uint256 subtitleGet = ISettlementStrategy(
+                    settlementStrategy[1].strategy
+                ).settlement(
+                        applyId,
+                        videos[videoId].platform,
+                        ownerOf(totalApplys[applyId].adopted),
+                        videos[videoId].creator,
+                        totalApplys[applyId].amount,
+                        platforms[videos[videoId].platform].rateCountsToProfit,
+                        platforms[videos[videoId].platform].rateAuditorDivide,
+                        subtitleNFT[totalApplys[applyId].adopted].supporters
+                    );
+                unsettled -= subtitleGet;
             }
         }
 
         for (uint256 i = 0; i < videos[videoId].applys.length; i++) {
-            uint256 appyId = videos[videoId].applys[i];
+            uint256 applyId = videos[videoId].applys[i];
             if (
-                totalApplys[appyId].adopted > 0 &&
-                totalApplys[appyId].mode == 2 &&
-                totalApplys[appyId].unsettled > 0 &&
+                totalApplys[applyId].adopted > 0 &&
+                totalApplys[applyId].mode == 2 &&
                 unsettled > 0
             ) {
-                //     _preDivideBatch(
-                //         videos[videoId].platform,
-                //         subtitleNFT[totalApplys[appyId].adopted].supporters,
-                //         divide
-                //     );
-                //     _preDivide(
-                //         videos[videoId].platform,
-                //         ownerOf(totalApplys[appyId].adopted),
-                //         subtitleGet - divide * length
-                //     );
-                //     unsettled -= subtitleGet;
+                uint256 subtitleGet = ISettlementStrategy(
+                    settlementStrategy[2].strategy
+                ).settlement(
+                        applyId,
+                        videos[videoId].platform,
+                        ownerOf(totalApplys[applyId].adopted),
+                        videos[videoId].creator,
+                        totalApplys[applyId].amount,
+                        platforms[videos[videoId].platform].rateCountsToProfit,
+                        platforms[videos[videoId].platform].rateAuditorDivide,
+                        subtitleNFT[totalApplys[applyId].adopted].supporters
+                    );
+                unsettled -= subtitleGet;
             }
         }
-        // IVT(videoToken).mintStableToken(
-        //     platforms[videos[videoId].platform].platformId,
-        //     videos[videoId].creator,
-        //     (videos[videoId].unsettled *
-        //         platforms[videos[videoId].platform].rateCountsToProfit) /
-        //         (10 ^ 6)
-        // );
+
+        if (unsettled > 0) {
+            IVT(videoToken).mintStableToken(
+                platforms[videos[videoId].platform].platformId,
+                videos[videoId].creator,
+                unsettled
+            );
+        }
     }
 
     function setZimuToken(address token) external auth {

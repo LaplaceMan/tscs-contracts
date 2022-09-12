@@ -11,7 +11,7 @@ interface ISettlementStrategy {
         uint256 countsToProfit,
         uint16 auditorDivide,
         address[] memory supporters
-    ) external;
+    ) external returns (uint256);
 
     function updateDebtOrReward(uint256 applyId, uint256 amount) external;
 }

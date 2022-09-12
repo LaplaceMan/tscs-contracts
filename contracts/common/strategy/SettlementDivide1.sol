@@ -12,7 +12,12 @@ contract SettlementDivide1 is ISettlementStrategy {
 
     struct SubtitleSettlement {
         uint256 settled;
-        uint256 unsettled; //表示未结算的使用量;
+        uint256 unsettled;
+    }
+
+    modifier auth() {
+        require(msg.sender == subtitleSystem, "No Permission");
+        _;
     }
 
     function settlement(
@@ -20,16 +25,17 @@ contract SettlementDivide1 is ISettlementStrategy {
         address platform,
         address maker,
         address,
-        uint256 amount,
-        uint256 countsToProfit,
+        uint256 amount, //此处为分成比例
+        uint256,
         uint16 auditorDivide,
         address[] memory supporters
-    ) external override {
-        uint256 subtitleGet = (((countsToProfit *
-            settlements[applyId].unsettled) / (10 ^ 6)) * uint16(amount)) /
-            (10 ^ 6);
-        uint256 length = supporters.length;
-        uint256 divide = ((subtitleGet * auditorDivide) / (10 ^ 6) / length);
+    ) external override auth returns (uint256) {
+        //字幕使用量是视频播放量的子集
+        uint256 subtitleGet = ((settlements[applyId].unsettled) *
+            uint16(amount)) / (10 ^ 6);
+        uint256 divide = ((subtitleGet * auditorDivide) /
+            (10 ^ 6) /
+            supporters.length);
         ISubtitleSystem(subtitleSystem).preDivideBatch(
             platform,
             supporters,
@@ -38,8 +44,13 @@ contract SettlementDivide1 is ISettlementStrategy {
         ISubtitleSystem(subtitleSystem).preDivide(
             platform,
             maker,
-            subtitleGet - divide * length
+            subtitleGet - divide * supporters.length
         );
         settlements[applyId].unsettled = 0;
+        return subtitleGet;
+    }
+
+    function updateDebtOrReward(uint256 applyId, uint256 amount) external auth {
+        settlements[applyId].unsettled += amount;
     }
 }
