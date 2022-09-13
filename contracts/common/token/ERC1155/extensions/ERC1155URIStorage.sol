@@ -6,7 +6,7 @@ pragma solidity ^0.8.0;
 import "../../../utils/Strings.sol";
 import "../ERC1155.sol";
 
-/**
+/***
  * @dev ERC1155 token with storage based token URI management.
  * Inspired by the ERC721URIStorage extension
  *
@@ -21,7 +21,7 @@ abstract contract ERC1155URIStorage is ERC1155 {
     // Optional mapping for token URIs
     mapping(uint256 => string) private _tokenURIs;
 
-    /**
+    /***
      * @dev See {IERC1155MetadataURI-uri}.
      *
      * This implementation returns the concatenation of the `_baseURI`
@@ -39,14 +39,23 @@ abstract contract ERC1155URIStorage is ERC1155 {
      * - if `_tokenURIs[tokenId]` is NOT set, and if the parents do not have a
      *   uri value set, then the result is empty.
      */
-    function uri(uint256 tokenId) public view virtual override returns (string memory) {
+    function uri(uint256 tokenId)
+        public
+        view
+        virtual
+        override
+        returns (string memory)
+    {
         string memory tokenURI = _tokenURIs[tokenId];
 
         // If token URI is set, concatenate base URI and tokenURI (via abi.encodePacked).
-        return bytes(tokenURI).length > 0 ? string(abi.encodePacked(_baseURI, tokenURI)) : super.uri(tokenId);
+        return
+            bytes(tokenURI).length > 0
+                ? string(abi.encodePacked(_baseURI, tokenURI))
+                : super.uri(tokenId);
     }
 
-    /**
+    /***
      * @dev Sets `tokenURI` as the tokenURI of `tokenId`.
      */
     function _setURI(uint256 tokenId, string memory tokenURI) internal virtual {
@@ -54,7 +63,7 @@ abstract contract ERC1155URIStorage is ERC1155 {
         emit URI(uri(tokenId), tokenId);
     }
 
-    /**
+    /***
      * @dev Sets `baseURI` as the `_baseURI` for all tokens
      */
     function _setBaseURI(string memory baseURI) internal virtual {

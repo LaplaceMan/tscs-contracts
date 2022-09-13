@@ -11,7 +11,7 @@ import "../../utils/Context.sol";
 import "../../utils/Strings.sol";
 import "../../utils/introspection/ERC165.sol";
 
-/**
+/***
  * @dev Implementation of https://eips.ethereum.org/EIPS/eip-721[ERC721] Non-Fungible Token Standard, including
  * the Metadata extension, but not including the Enumerable extension, which is available separately as
  * {ERC721Enumerable}.
@@ -40,7 +40,7 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
     // Mapping from owner to operator approvals
     mapping(address => mapping(address => bool)) private _operatorApprovals;
 
-    /**
+    /***
      * @dev See {IERC165-supportsInterface}.
      */
     function supportsInterface(bytes4 interfaceId)
@@ -56,7 +56,7 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
             super.supportsInterface(interfaceId);
     }
 
-    /**
+    /***
      * @dev See {IERC721-balanceOf}.
      */
     function balanceOf(address owner)
@@ -73,7 +73,7 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
         return _balances[owner];
     }
 
-    /**
+    /***
      * @dev See {IERC721-ownerOf}.
      */
     function ownerOf(uint256 tokenId)
@@ -88,21 +88,21 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
         return owner;
     }
 
-    /**
+    /***
      * @dev See {IERC721Metadata-name}.
      */
     function name() public view virtual override returns (string memory) {
         return _name;
     }
 
-    /**
+    /***
      * @dev See {IERC721Metadata-symbol}.
      */
     function symbol() public view virtual override returns (string memory) {
         return _symbol;
     }
 
-    /**
+    /***
      * @dev See {IERC721Metadata-tokenURI}.
      */
     function tokenURI(uint256 tokenId)
@@ -121,7 +121,7 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
                 : "";
     }
 
-    /**
+    /***
      * @dev Base URI for computing {tokenURI}. If set, the resulting URI for each
      * token will be the concatenation of the `baseURI` and the `tokenId`. Empty
      * by default, can be overridden in child contracts.
@@ -130,7 +130,7 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
         return _baseFileURI;
     }
 
-    /**
+    /***
      * @dev See {IERC721-approve}.
      */
     function approve(address to, uint256 tokenId) public virtual override {
@@ -145,7 +145,7 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
         _approve(to, tokenId);
     }
 
-    /**
+    /***
      * @dev See {IERC721-getApproved}.
      */
     function getApproved(uint256 tokenId)
@@ -160,7 +160,7 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
         return _tokenApprovals[tokenId];
     }
 
-    /**
+    /***
      * @dev See {IERC721-setApprovalForAll}.
      */
     function setApprovalForAll(address operator, bool approved)
@@ -171,7 +171,7 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
         _setApprovalForAll(_msgSender(), operator, approved);
     }
 
-    /**
+    /***
      * @dev See {IERC721-isApprovedForAll}.
      */
     function isApprovedForAll(address owner, address operator)
@@ -184,7 +184,7 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
         return _operatorApprovals[owner][operator];
     }
 
-    /**
+    /***
      * @dev See {IERC721-transferFrom}.
      */
     function transferFrom(
@@ -201,7 +201,7 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
         _transfer(from, to, tokenId);
     }
 
-    /**
+    /***
      * @dev See {IERC721-safeTransferFrom}.
      */
     function safeTransferFrom(
@@ -212,7 +212,7 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
         safeTransferFrom(from, to, tokenId, "");
     }
 
-    /**
+    /***
      * @dev See {IERC721-safeTransferFrom}.
      */
     function safeTransferFrom(
@@ -228,7 +228,7 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
         _safeTransfer(from, to, tokenId, data);
     }
 
-    /**
+    /***
      * @dev Safely transfers `tokenId` token from `from` to `to`, checking first that contract recipients
      * are aware of the ERC721 protocol to prevent tokens from being forever locked.
      *
@@ -259,14 +259,14 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
         );
     }
 
-    /**
+    /***
      * @dev Returns the owner of the `tokenId`. Does NOT revert if token doesn't exist
      */
     function _ownerOf(uint256 tokenId) internal view virtual returns (address) {
         return _owners[tokenId];
     }
 
-    /**
+    /***
      * @dev Returns whether `tokenId` exists.
      *
      * Tokens can be managed by their owner or approved accounts via {approve} or {setApprovalForAll}.
@@ -278,7 +278,7 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
         return _ownerOf(tokenId) != address(0);
     }
 
-    /**
+    /***
      * @dev Returns whether `spender` is allowed to manage `tokenId`.
      *
      * Requirements:
@@ -297,7 +297,7 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
             getApproved(tokenId) == spender);
     }
 
-    /**
+    /***
      * @dev Safely mints `tokenId` and transfers it to `to`.
      *
      * Requirements:
@@ -311,7 +311,7 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
         _safeMint(to, tokenId, "");
     }
 
-    /**
+    /***
      * @dev Same as {xref-ERC721-_safeMint-address-uint256-}[`_safeMint`], with an additional `data` parameter which is
      * forwarded in {IERC721Receiver-onERC721Received} to contract recipients.
      */
@@ -327,7 +327,7 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
         );
     }
 
-    /**
+    /***
      * @dev Mints `tokenId` and transfers it to `to`.
      *
      * WARNING: Usage of this method is discouraged, use {_safeMint} whenever possible
@@ -363,7 +363,7 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
         _afterTokenTransfer(address(0), to, tokenId);
     }
 
-    /**
+    /***
      * @dev Destroys `tokenId`.
      * The approval is cleared when the token is burned.
      * This is an internal function that does not check if the sender is authorized to operate on the token.
@@ -397,7 +397,7 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
         _afterTokenTransfer(owner, address(0), tokenId);
     }
 
-    /**
+    /***
      * @dev Transfers `tokenId` from `from` to `to`.
      *  As opposed to {transferFrom}, this imposes no restrictions on msg.sender.
      *
@@ -446,7 +446,7 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
         _afterTokenTransfer(from, to, tokenId);
     }
 
-    /**
+    /***
      * @dev Approve `to` to operate on `tokenId`
      *
      * Emits an {Approval} event.
@@ -456,7 +456,7 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
         emit Approval(ERC721.ownerOf(tokenId), to, tokenId);
     }
 
-    /**
+    /***
      * @dev Approve `operator` to operate on all of `owner` tokens
      *
      * Emits an {ApprovalForAll} event.
@@ -471,14 +471,14 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
         emit ApprovalForAll(owner, operator, approved);
     }
 
-    /**
+    /***
      * @dev Reverts if the `tokenId` has not been minted yet.
      */
     function _requireMinted(uint256 tokenId) internal view virtual {
         require(_exists(tokenId), "ERC721: invalid token ID");
     }
 
-    /**
+    /***
      * @dev Internal function to invoke {IERC721Receiver-onERC721Received} on a target address.
      * The call is not executed if the target address is not a contract.
      *
@@ -521,7 +521,7 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
         }
     }
 
-    /**
+    /***
      * @dev Hook that is called before any (single) token transfer. This includes minting and burning.
      * See {_beforeConsecutiveTokenTransfer}.
      *
@@ -541,7 +541,7 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
         uint256 tokenId
     ) internal virtual {}
 
-    /**
+    /***
      * @dev Hook that is called after any (single) transfer of tokens. This includes minting and burning.
      * See {_afterConsecutiveTokenTransfer}.
      *
@@ -558,7 +558,7 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
         uint256 tokenId
     ) internal virtual {}
 
-    /**
+    /***
      * @dev Hook that is called before consecutive token transfers.
      * Calling conditions are similar to {_beforeTokenTransfer}.
      *
@@ -568,7 +568,7 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
     function _beforeConsecutiveTokenTransfer(
         address from,
         address to,
-        uint256, /*first*/
+        uint256, /**first*/
         uint96 size
     ) internal virtual {
         if (from != address(0)) {
@@ -579,14 +579,14 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
         }
     }
 
-    /**
+    /***
      * @dev Hook that is called after consecutive token transfers.
      * Calling conditions are similar to {_afterTokenTransfer}.
      */
     function _afterConsecutiveTokenTransfer(
-        address, /*from*/
-        address, /*to*/
-        uint256, /*first*/
-        uint96 /*size*/
+        address, /**from*/
+        address, /**to*/
+        uint256, /**first*/
+        uint96 /**size*/
     ) internal virtual {}
 }

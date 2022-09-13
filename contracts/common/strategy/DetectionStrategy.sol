@@ -28,7 +28,7 @@ contract DetectionStrategy {
     {
         for (uint256 i = 0; i < history.length; i++) {
             uint256 distance = _hammingDistance(origin, history[i]);
-            if (distance >= distanceThreshold) {
+            if (distance <= distanceThreshold) {
                 return false;
             }
         }

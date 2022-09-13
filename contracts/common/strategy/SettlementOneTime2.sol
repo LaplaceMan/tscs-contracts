@@ -42,7 +42,7 @@ contract SettlementOneTime2 is ISettlementStrategy {
                 settlements[applyId].settled += amount;
             }
             uint256 divide = ((subtitleGet * auditorDivide) /
-                (10 ^ 6) /
+                65535 /
                 supporters.length);
             ISubtitleSystem(subtitleSystem).preDivideBatch(
                 platform,

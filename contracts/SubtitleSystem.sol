@@ -9,7 +9,7 @@ import "./interfaces/IVT.sol";
 
 contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
     uint256 public totalApplyNumber;
-
+    uint16 constant RATE_BASE = 65535;
     struct Application {
         address applicant;
         uint256 videoId;
@@ -33,13 +33,14 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
         string memory symbol,
         address creator,
         uint256 total
-    ) external {
+    ) external returns (uint256) {
         require(
             platform != address(0) &&
                 platforms[platform].rateCountsToProfit > 0,
             "Platform Invaild"
         );
-        _createVideo(platform, id, symbol, creator, total);
+        uint256 videoId = _createVideo(platform, id, symbol, creator, total);
+        return videoId;
     }
 
     function submitApplication(
@@ -104,6 +105,10 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
         uint16 languageId,
         uint256 fingerprint
     ) external {
+        require(
+            languageId == totalApplys[applyId].language,
+            "Language Inconsistency"
+        );
         _userInitialization(msg.sender, 0);
         require(
             accessStrategy.access(
@@ -137,7 +142,7 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
                 require(msg.sender == platform, "No Permission");
                 require(totalApplys[id[i]].mode != 0, "Invaild Mode");
                 uint256 unpaidToken = (platforms[platform].rateCountsToProfit *
-                    ss[i]) / (10 ^ 6);
+                    ss[i]) / RATE_BASE;
                 ISettlementStrategy(
                     settlementStrategy[totalApplys[id[i]].mode].strategy
                 ).updateDebtOrReward(id[i], unpaidToken);
@@ -181,8 +186,8 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
         if (flag == 2) newFlag = -1;
         _updateUser(
             ownerOf(subtitleId),
-            int256(reputionSpread * multiplier) * newFlag,
-            int256(tokenSpread * multiplier) * newFlag
+            int256((reputionSpread * multiplier) / 100) * newFlag,
+            int256((tokenSpread * multiplier) / 100) * newFlag
         );
         for (
             uint256 i = 0;
@@ -263,7 +268,7 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
     function preExtract(uint256 videoId) external {
         require(videos[videoId].unsettled > 0, "Invalid Settlement");
         uint256 unsettled = (platforms[videos[videoId].platform]
-            .rateCountsToProfit * videos[videoId].unsettled) / (10 ^ 6);
+            .rateCountsToProfit * videos[videoId].unsettled) / RATE_BASE;
         for (uint256 i = 0; i < videos[videoId].applys.length; i++) {
             uint256 applyId = videos[videoId].applys[i];
             if (
@@ -317,6 +322,8 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
                 unsettled
             );
         }
+
+        videos[videoId].unsettled = 0;
     }
 
     function setZimuToken(address token) external auth {

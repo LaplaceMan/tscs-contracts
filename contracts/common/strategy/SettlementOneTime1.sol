@@ -31,7 +31,7 @@ contract SettlementOneTime0 is ISettlementStrategy {
         address[] memory supporters
     ) external override auth returns (uint256) {
         if (settlements[applyId].settled < amount) {
-            uint256 supporterGet = (amount * auditorDivide) / (10 ^ 6);
+            uint256 supporterGet = (amount * auditorDivide) / 65535;
             uint256 unit = supporterGet / supporters.length;
 
             ISubtitleSystem(subtitleSystem).preDivide(
