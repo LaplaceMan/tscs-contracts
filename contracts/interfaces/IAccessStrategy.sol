@@ -11,8 +11,24 @@ interface IAccessStrategy {
             uint8
         );
 
-    function access(uint256 repution, uint256 deposit)
+    function access(uint256 repution, int256 deposit)
         external
         view
         returns (bool);
+
+    function baseRatio() external view returns (uint16);
+
+    function depoitThreshold() external view returns (uint8);
+
+    function blacklistThreshold() external view returns (uint8);
+
+    function minDeposit() external view returns (uint256);
+
+    function rewardToken() external view returns (uint256);
+
+    function punishmentToken() external view returns (uint256);
+
+    function multiplier() external view returns (uint8);
+
+    function opeator() external view returns (address);
 }

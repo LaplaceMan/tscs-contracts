@@ -37,12 +37,12 @@ contract EntityManager {
     /**
      * @notice 每个用户在TSCS内的行为记录
      * @param repution 信誉度分数
-     * @param deposit 已质押以太数
+     * @param deposit 已质押以太数, 为负表示负债
      * @param lock 区块链地址 => 天（Unix）=> 锁定稳定币数量
      */
     struct User {
         uint256 repution;
-        uint256 deposit;
+        int256 deposit;
         mapping(address => mapping(uint256 => uint256)) lock;
     }
 
@@ -79,7 +79,7 @@ contract EntityManager {
      * @param usr 用户区块链地址
      * @param amount 质押代币数
      */
-    function _userInitialization(address usr, uint256 amount) internal {
+    function _userInitialization(address usr, int256 amount) internal {
         if (users[usr].repution == 0) {
             users[usr].repution = 100;
             users[usr].deposit = amount;
@@ -92,10 +92,10 @@ contract EntityManager {
      */
     function userJoin(address usr) external payable {
         if (users[usr].repution == 0) {
-            _userInitialization(usr, msg.value);
+            _userInitialization(usr, int256(msg.value));
         } else {
             //当已加入时, 仍可调用此功能增加质押ETH数
-            users[usr].deposit += msg.value;
+            users[usr].deposit += int256(msg.value);
         }
     }
 
@@ -133,9 +133,7 @@ contract EntityManager {
         );
         if (tokenSpread < 0) {
             //小于0意味着惩罚操作, 扣除质押ETH数
-            users[usr].deposit = uint256(
-                int256(users[usr].deposit) + tokenSpread
-            );
+            users[usr].deposit = users[usr].deposit + tokenSpread;
             penalty += uint256(tokenSpread);
         }
         //此处待定, 临时设计为奖励操作时, 给与特定数目的平台币Zimu Token
@@ -189,7 +187,7 @@ contract EntityManager {
     function getUserBaseInfo(address usr)
         public
         view
-        returns (uint256, uint256)
+        returns (uint256, int256)
     {
         return (users[usr].repution, users[usr].deposit);
     }

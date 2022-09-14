@@ -20,12 +20,18 @@ interface IVT is IERC1155 {
         uint256 amount
     ) external;
 
-    function divide(
+    function burnStableToken(
         uint256 platformId,
         address from,
-        address to,
         uint256 amount
     ) external;
+
+    // function divide(
+    //     uint256 platformId,
+    //     address from,
+    //     address to,
+    //     uint256 amount
+    // ) external;
 
     function subtitleSystem() external returns (address);
 }

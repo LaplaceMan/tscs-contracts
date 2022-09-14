@@ -1,9 +1,23 @@
+/**
+ * @Author: LaplaceMan 505876833@qq.com
+ * @Date: 2022-09-08 14:44:30
+ * @Description: TSCS 内默认的字幕审核策略, 设计逻辑可参阅论文
+ * @Copyright (c) 2022 by LaplaceMan 505876833@qq.com, All Rights Reserved.
+ */
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 import "../../interfaces/IAuditStrategy.sol";
 
 contract GeneralStrategy is IAuditStrategy {
+    /**
+     * @notice 根据观众（审核员）对字幕的评价数据判断字幕是否被采纳, 内部功能
+     * @param uploaded 已上传的字幕数目
+     * @param support 单个字幕获得的支持数
+     * @param against 单个字幕获得的反对（举报）数
+     * @param allSupport 相应申请下所有字幕获得支持数的和
+     * @return 返回 0 表示字幕状态不变化, 返回 1 表示字幕被采纳（申请被确认）
+     */
     function _adopt(
         uint256 uploaded,
         uint256 support,
@@ -28,6 +42,12 @@ contract GeneralStrategy is IAuditStrategy {
         return flag;
     }
 
+    /**
+     * @notice 根据观众（审核员）对字幕的评价数据判断字幕是否被认定为恶意字幕, 内部功能
+     * @param support 单个字幕获得的支持数
+     * @param against 单个字幕获得的反对（举报）数
+     * @return 返回 0 表示字幕状态不变化, 返回 2 表示字幕被认定为恶意字幕
+     */
     function _delete(uint256 support, uint256 against)
         internal
         pure
@@ -46,6 +66,14 @@ contract GeneralStrategy is IAuditStrategy {
         return flag;
     }
 
+    /**
+     * @notice 根据观众（审核员）对字幕的评价数据判断字幕状态是否发生变化
+     * @param uploaded 相应申请下已经上传的字幕数量
+     * @param support 单个字幕获得的支持数
+     * @param against 单个字幕获得的反对（举报）数
+     * @param allSupport 相应申请下所有字幕获得支持数的和
+     * @return 返回 0 表示状态不变化, 返回 1 表示字幕被采纳（申请被采纳）, 返回 2 表示字幕被认定为恶意字幕
+     */
     function auditResult(
         uint256 uploaded,
         uint256 support,

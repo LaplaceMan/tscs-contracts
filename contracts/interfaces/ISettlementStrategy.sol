@@ -14,4 +14,6 @@ interface ISettlementStrategy {
     ) external returns (uint256);
 
     function updateDebtOrReward(uint256 applyId, uint256 amount) external;
+
+    function subtitleSystem() external view returns (address);
 }
