@@ -46,6 +46,20 @@ contract EntityManager {
         mapping(address => mapping(uint256 => uint256)) lock;
     }
 
+    event RegisterLanguage(string language, uint16 id);
+    event UserJoin(address user, uint256 repution, int256 deposit);
+    event UserLockRewardUpdate(
+        address user,
+        address platform,
+        uint256 day,
+        int256 reward
+    );
+    event UserInfoUpdate(
+        address usr,
+        int256 reputionSpread,
+        int256 tokenSpread
+    );
+
     /**
      * @notice 为了节省存储成本, 使用ID（uint16）代替语言文本（string）, 同时任何人可调用, 保证适用性
      * @param language 欲添加语言类型
@@ -58,6 +72,7 @@ contract EntityManager {
         languageTypes++;
         require(languages[language] == 0, "Have Register");
         languages[language] = languageTypes;
+        emit RegisterLanguage(language, languageTypes);
         return languageTypes;
     }
 
@@ -84,6 +99,7 @@ contract EntityManager {
             users[usr].repution = 100;
             users[usr].deposit = amount;
         }
+        emit UserJoin(usr, users[usr].repution, users[usr].deposit);
     }
 
     /**
@@ -96,6 +112,7 @@ contract EntityManager {
         } else {
             //当已加入时, 仍可调用此功能增加质押ETH数
             users[usr].deposit += int256(msg.value);
+            emit UserInfoUpdate(usr, 0, int256(msg.value));
         }
     }
 
@@ -115,6 +132,7 @@ contract EntityManager {
         require(users[usr].repution == 0, "User Initialized");
         uint256 current = users[usr].lock[platform][day];
         users[usr].lock[platform][day] = uint256(int256(current) + amount);
+        emit UserLockRewardUpdate(usr, platform, day, amount);
     }
 
     /**
@@ -142,6 +160,7 @@ contract EntityManager {
         if (users[usr].repution == 0) {
             users[usr].repution = 1;
         }
+        emit UserInfoUpdate(usr, reputionSpread, tokenSpread);
     }
 
     /**

@@ -36,6 +36,17 @@ contract PlatformManager is Ownable, EntityManager {
         uint16 rateAuditorDivide;
     }
 
+    event PlatformJoin(
+        address platform,
+        uint256 id,
+        string name,
+        string symbol,
+        uint16 rate1,
+        uint16 rate2
+    );
+
+    event PlatformSetRate(address platform, uint16 rate1, uint16 rate2);
+
     /**
      * @notice 由 TSCS 管理员操作, 添加新 Platform 生态
      * @param platfrom Platform区块链地址,
@@ -66,6 +77,7 @@ contract PlatformManager is Ownable, EntityManager {
         );
         //因为涉及到播放量结算, 所以每个 Platform 拥有相应的稳定币, 并且为其价值背书
         IVT(videoToken).createPlatformToken(symbol, platfrom, totalPlatforms);
+        emit PlatformJoin(platfrom, totalPlatforms, name, symbol, rate1, rate2);
         return totalPlatforms;
     }
 
@@ -90,6 +102,7 @@ contract PlatformManager is Ownable, EntityManager {
         if (rate2 != 0) {
             platforms[msg.sender].rateAuditorDivide = rate2;
         }
+        emit PlatformSetRate(msg.sender, rate1, rate2);
         return (
             platforms[msg.sender].rateCountsToProfit,
             platforms[msg.sender].rateAuditorDivide

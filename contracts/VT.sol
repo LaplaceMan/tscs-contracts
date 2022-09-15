@@ -32,6 +32,8 @@ contract VideoToken is ERC1155, IVT {
         _;
     }
 
+    event PlatformToken(address platform, uint256 id);
+
     constructor(address ss) ERC1155("VideoToken") {
         subtitleSystem = ss;
         suffix[0] = "Default";
@@ -78,6 +80,7 @@ contract VideoToken is ERC1155, IVT {
         require(platform[platformId] == address(0), "Already Joined");
         platform[platformId] = endorser;
         suffix[platformId] = symbol;
+        emit PlatformToken(endorser, platformId);
     }
 
     /**

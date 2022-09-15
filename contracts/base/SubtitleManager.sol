@@ -21,7 +21,7 @@ contract SubtitleManager is ERC721 {
      * @param languageId 字幕所属语种的 ID
      * @param fingerprint 字幕指纹信息, 此处暂定为 Simhash
      * @param state 字幕当前状态, 0 为默认状态, 1 为被确认, 2 为被认定为恶意字幕
-     * @param stateChangeTime 字幕状态改变时的时间戳, 用于利益相关者稳定币锁定期判断
+     * @param stateChangeTime 字幕状态改变时的时间戳, 用于利益相关者稳定币锁定期判断, 在申请未确认前, 指的是字幕上传时间
      * @param supporters 支持该字幕被采纳的观众（审核员）地址集合
      * @param dissenter 举报该字幕为恶意字幕的观众（审核员）地址集合
      */
@@ -45,6 +45,20 @@ contract SubtitleManager is ERC721 {
      */
     mapping(address => mapping(uint256 => bool)) evaluated;
 
+    event SubtitleUpload(
+        address maker,
+        uint256 applyId,
+        uint256 subtitleId,
+        uint16 languageId,
+        uint256 fingerprint
+    );
+    event SubtilteStateChange(uint256 subtitleId, uint8 state, uint256 time);
+    event SubitlteGetEvaluation(
+        uint256 subtitleId,
+        address evaluator,
+        uint8 attitude
+    );
+
     /**
      * @notice 创建 ST, 内部功能
      * @param maker 字幕制作者区块链地址
@@ -64,6 +78,14 @@ contract SubtitleManager is ERC721 {
         subtitleNFT[_tokenIdTracker].applyId = applyId;
         subtitleNFT[_tokenIdTracker].languageId = languageId;
         subtitleNFT[_tokenIdTracker].fingerprint = fingerprint;
+        subtitleNFT[_tokenIdTracker].stateChangeTime = block.timestamp;
+        emit SubtitleUpload(
+            maker,
+            applyId,
+            _tokenIdTracker,
+            languageId,
+            fingerprint
+        );
         return _tokenIdTracker;
     }
 
@@ -75,6 +97,7 @@ contract SubtitleManager is ERC721 {
     function _changeST(uint256 id, uint8 state) internal {
         subtitleNFT[id].state = state;
         subtitleNFT[id].stateChangeTime = block.timestamp;
+        emit SubtilteStateChange(id, state, block.timestamp);
     }
 
     /**
@@ -96,6 +119,7 @@ contract SubtitleManager is ERC721 {
             subtitleNFT[subtitleId].dissenter.push(evaluator);
         }
         evaluated[evaluator][subtitleId] = true;
+        emit SubitlteGetEvaluation(subtitleId, evaluator, attitude);
     }
 
     /**

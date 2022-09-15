@@ -38,6 +38,11 @@ contract StrategyManager is PlatformManager {
         string notes;
     }
 
+    event SystemSetAudit(address newAudit);
+    event SystemSetAccess(address newAccess);
+    event SystemSetDetection(address newDetection);
+    event SystemSetSettlement(uint8 strategyId, address strategy, string notes);
+
     /**
      * @notice 结算策略 ID 与 SettlementStruct 的映射, 在 TSCS 内用 ID 唯一标识结算策略, 从0开始
      */
@@ -49,6 +54,7 @@ contract StrategyManager is PlatformManager {
      */
     function setDefaultAuditStrategy(IAuditStrategy newAudit) external auth {
         auditStrategy = newAudit;
+        emit SystemSetAudit(address(newAudit));
     }
 
     /**
@@ -57,6 +63,7 @@ contract StrategyManager is PlatformManager {
      */
     function setDefaultAccessStrategy(IAccessStrategy newAccess) external auth {
         accessStrategy = newAccess;
+        emit SystemSetAccess(address(newAccess));
     }
 
     /**
@@ -68,6 +75,7 @@ contract StrategyManager is PlatformManager {
         auth
     {
         detectionStrategy = newDetection;
+        emit SystemSetDetection(address(newDetection));
     }
 
     /**
@@ -83,6 +91,7 @@ contract StrategyManager is PlatformManager {
     ) external auth {
         settlementStrategy[strategyId].strategy = strategy;
         settlementStrategy[strategyId].notes = notes;
+        emit SystemSetSettlement(strategyId, strategy, notes);
     }
 
     /**

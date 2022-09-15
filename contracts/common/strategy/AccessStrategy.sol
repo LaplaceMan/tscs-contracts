@@ -49,6 +49,15 @@ contract AccessStrategy is IAccessStrategy {
      */
     address public opeator;
 
+    event SystemSetBaseRatio(uint16 newBaseRatio);
+    event SystemSetDepoitThreshold(uint8 newDepoitThreshold);
+    event SystemSetBlacklistThreshold(uint8 newBlacklistThreshold);
+    event SystemSetMinDeposit(uint256 newMinDeposit);
+    event SystemSetRewardToken(uint256 newRewardToken);
+    event SystemSetPunishmentToken(uint256 newPunishmentToken);
+    event SystemSetMultiplier(uint8 newMultiplier);
+    event SystemChangeOpeator(address newOpeator);
+
     modifier auth() {
         require(msg.sender == opeator, "No Permission");
         _;
@@ -139,33 +148,41 @@ contract AccessStrategy is IAccessStrategy {
      */
     function setBaseRatio(uint16 newRatio) external auth {
         baseRatio = newRatio;
+        emit SystemSetBaseRatio(newRatio);
     }
 
     function setDepoitThreshold(uint8 newDepoitThreshold) external auth {
         depoitThreshold = newDepoitThreshold;
+        emit SystemSetDepoitThreshold(newDepoitThreshold);
     }
 
     function setBlacklistThreshold(uint8 newBlacklistThreshold) external auth {
         blacklistThreshold = newBlacklistThreshold;
+        emit SystemSetBlacklistThreshold(newBlacklistThreshold);
     }
 
     function setMinDeposit(uint256 newMinDeposit) external auth {
         minDeposit = newMinDeposit;
+        emit SystemSetMinDeposit(newMinDeposit);
     }
 
     function setRewardToken(uint256 newRewardToken) external auth {
         rewardToken = newRewardToken;
+        emit SystemSetRewardToken(newRewardToken);
     }
 
     function setPunishmentToken(uint256 newPunishmentToken) external auth {
         punishmentToken = newPunishmentToken;
+        emit SystemSetPunishmentToken(newPunishmentToken);
     }
 
     function setMultiplier(uint8 newMultiplier) external auth {
         multiplier = newMultiplier;
+        emit SystemSetMultiplier(newMultiplier);
     }
 
     function changeOpeator(address newOpeator) external auth {
         opeator = newOpeator;
+        emit SystemChangeOpeator(newOpeator);
     }
 }

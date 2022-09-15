@@ -72,15 +72,22 @@ contract GeneralStrategy is IAuditStrategy {
      * @param support 单个字幕获得的支持数
      * @param against 单个字幕获得的反对（举报）数
      * @param allSupport 相应申请下所有字幕获得支持数的和
+     * @param uploadTime 字幕上传时间
+     * @param lockUpTime TSCS 内设置的锁定期/审核期
      * @return 返回 0 表示状态不变化, 返回 1 表示字幕被采纳（申请被采纳）, 返回 2 表示字幕被认定为恶意字幕
      */
     function auditResult(
         uint256 uploaded,
         uint256 support,
         uint256 against,
-        uint256 allSupport
-    ) external pure override returns (uint8) {
-        uint8 flag1 = _adopt(uploaded, support, against, allSupport);
+        uint256 allSupport,
+        uint256 uploadTime,
+        uint256 lockUpTime
+    ) external view override returns (uint8) {
+        uint8 flag1;
+        if (uploadTime + lockUpTime >= block.timestamp) {
+            flag1 = _adopt(uploaded, support, against, allSupport);
+        }
         uint8 flag2 = _delete(support, against);
         if (flag1 != 0) {
             return flag1;

@@ -19,6 +19,13 @@ contract DetectionStrategy is IDetectionStrategy {
      */
     address public opeator;
 
+    modifier auth() {
+        require(msg.sender == opeator, "No Permission");
+        _;
+    }
+    event SystemSetDistanceThreshold(uint8 newDistanceThreshold);
+    event SystemChangeOpeator(address newOpeator);
+
     /**
      * @notice 计算两个 Simhash 的汉明度距离
      * @param a 字幕文本 1
@@ -86,8 +93,13 @@ contract DetectionStrategy is IDetectionStrategy {
      * @notice 由操作员修改策略中的阈值参数
      * @param newDistanceThreshold 新的汉明距离阈值
      */
-    function setDistanceThreshold(uint8 newDistanceThreshold) external {
-        require(msg.sender == opeator, "No Permission");
+    function setDistanceThreshold(uint8 newDistanceThreshold) external auth {
         distanceThreshold = newDistanceThreshold;
+        emit SystemSetDistanceThreshold(newDistanceThreshold);
+    }
+
+    function changeOpeator(address newOpeator) external auth {
+        opeator = newOpeator;
+        emit SystemChangeOpeator(newOpeator);
     }
 }

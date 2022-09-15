@@ -43,6 +43,17 @@ contract VideoManager {
         uint256[] applys;
     }
 
+    event VideoCreate(
+        address platform,
+        uint256 reealId,
+        uint256 id,
+        string symbol,
+        address creator,
+        uint256 counts
+    );
+
+    event VideoCountsUpdate(address platform, uint256[] id, uint256[] counts);
+
     /**
      * @notice 初始化视频结构, 内部功能
      * @param platform 平台Platform地址
@@ -67,6 +78,14 @@ contract VideoManager {
         videos[totalVideoNumber].creator = creator;
         videos[totalVideoNumber].totalViewCouts = total;
         idReal2System[msg.sender][id] = totalVideoNumber;
+        emit VideoCreate(
+            platform,
+            id,
+            totalVideoNumber,
+            symbol,
+            creator,
+            total
+        );
         return totalVideoNumber;
     }
 
@@ -84,5 +103,6 @@ contract VideoManager {
             videos[id[i]].totalViewCouts += vs[i];
             videos[id[i]].unsettled += vs[i];
         }
+        emit VideoCountsUpdate(videos[id[0]].platform, id, vs);
     }
 }

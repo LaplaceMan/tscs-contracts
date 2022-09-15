@@ -1,0 +1,23 @@
+{
+  "name": "tscs",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LaplaceMan/TSCS.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/LaplaceMan/TSCS/issues"
+  },
+  "homepage": "https://github.com/LaplaceMan/TSCS#readme",
+  "devDependencies": {
+    "hardhat": "^2.11.2",
+    "hardhat-contract-sizer": "^2.6.1"
+  }
+}

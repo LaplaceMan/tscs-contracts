@@ -6,6 +6,8 @@ interface IAuditStrategy {
         uint256 uploaded,
         uint256 support,
         uint256 against,
-        uint256 allSupport
-    ) external pure returns (uint8);
+        uint256 allSupport,
+        uint256 uploadTime,
+        uint256 lockUpTime
+    ) external view returns (uint8);
 }
