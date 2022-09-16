@@ -4,7 +4,7 @@
  * @Description: TSCS 内提供了三种结算策略, 本合约为一次性抵押结算策略（2）
  * @Copyright (c) 2022 by LaplaceMan 505876833@qq.com, All Rights Reserved.
  */
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.0;
 
 import "../../interfaces/ISubtitleSystem.sol";

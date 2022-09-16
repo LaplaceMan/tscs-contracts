@@ -4,7 +4,7 @@
  * @Description: TSCS 内默认的字幕审核策略, 设计逻辑可参阅论文
  * @Copyright (c) 2022 by LaplaceMan 505876833@qq.com, All Rights Reserved.
  */
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.0;
 
 import "../../interfaces/IAuditStrategy.sol";

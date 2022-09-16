@@ -4,7 +4,7 @@
  * @Description: 基于区块链的代币化字幕众包系统
  * @Copyright (c) 2022 by LaplaceMan 505876833@qq.com, All Rights Reserved.
  */
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.0;
 
 import "./interfaces/ISettlementStrategy.sol";

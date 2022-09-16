@@ -4,7 +4,7 @@
  * @Description: 字幕上传前基于 Simhash 指纹值检测相似度, 目的是保护字幕版权
  * @Copyright (c) 2022 by LaplaceMan 505876833@qq.com, All Rights Reserved.
  */
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.0;
 
 import "../../interfaces/IDetectionStrategy.sol";

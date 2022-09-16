@@ -4,7 +4,7 @@
  * @Description: 管理 TSCS 所使用的审核策略、访问策略、检测策略和结算策略
  * @Copyright (c) 2022 by LaplaceMan email: 505876833@qq.com, All Rights Reserved.
  */
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.0;
 
 import "./PlatformManager.sol";
