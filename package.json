@@ -17,6 +17,11 @@
   },
   "homepage": "https://github.com/LaplaceMan/TSCS#readme",
   "devDependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.1.1",
+    "@nomiclabs/hardhat-waffle": "^2.0.3",
+    "chai": "^4.3.6",
+    "ethereum-waffle": "^3.4.4",
+    "ethers": "^5.7.1",
     "hardhat": "^2.11.2",
     "hardhat-contract-sizer": "^2.6.1"
   }

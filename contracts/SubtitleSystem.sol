@@ -49,8 +49,8 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
         uint256 deadline;
     }
 
-    constructor() {
-        _setOwner(msg.sender);
+    constructor(address owner) {
+        _setOwner(owner);
     }
 
     /**

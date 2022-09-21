@@ -37,6 +37,10 @@ contract SettlementDivide1 is ISettlementStrategy {
         _;
     }
 
+    constructor(address ss) {
+        subtitleSystem = ss;
+    }
+
     /**
      * @notice 完成结算策略为分成（1）的申请的结算（字幕制作费用）
      * @param applyId 结算策略为一次性结算的申请 ID
@@ -84,5 +88,13 @@ contract SettlementDivide1 is ISettlementStrategy {
      */
     function updateDebtOrReward(uint256 applyId, uint256 amount) external auth {
         settlements[applyId].unsettled += amount;
+    }
+
+    /**
+     * @notice 修改 TSCS 主合约调用地址
+     * @param newSS 新的 TSCS 主合约地址
+     */
+    function changeTSCS(address newSS) external auth {
+        subtitleSystem = newSS;
     }
 }

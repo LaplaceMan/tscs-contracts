@@ -26,6 +26,11 @@ contract DetectionStrategy is IDetectionStrategy {
     event SystemSetDistanceThreshold(uint8 newDistanceThreshold);
     event SystemChangeOpeator(address newOpeator);
 
+    constructor(address dao, uint8 threshold) {
+        opeator = dao;
+        distanceThreshold = threshold;
+    }
+
     /**
      * @notice 计算两个 Simhash 的汉明度距离
      * @param a 字幕文本 1
