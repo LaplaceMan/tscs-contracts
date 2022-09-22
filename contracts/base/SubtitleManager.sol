@@ -111,8 +111,8 @@ contract SubtitleManager is ERC721 {
         uint8 attitude,
         address evaluator
     ) internal {
-        require(subtitleNFT[subtitleId].state == 0, "Treated");
-        require(evaluated[evaluator][subtitleId] == false, "Evaluated");
+        require(subtitleNFT[subtitleId].state == 0, "ER3");
+        require(evaluated[evaluator][subtitleId] == false, "ER4");
         if (attitude == 0) {
             subtitleNFT[subtitleId].supporters.push(evaluator);
         } else {

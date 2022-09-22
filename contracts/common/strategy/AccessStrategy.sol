@@ -59,7 +59,7 @@ contract AccessStrategy is IAccessStrategy {
     event SystemChangeOpeator(address newOpeator);
 
     modifier auth() {
-        require(msg.sender == opeator, "No Permission");
+        require(msg.sender == opeator, "ER5");
         _;
     }
 

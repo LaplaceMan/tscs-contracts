@@ -19,7 +19,7 @@ contract ZMToken is ERC20, IZimu {
      * @notice 仅能由 TSCS 调用
      */
     modifier auth() {
-        require(msg.sender == subtitleSystem);
+        require(msg.sender == subtitleSystem, "ER5");
         _;
     }
 

@@ -138,13 +138,14 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
                 users[msg.sender].repution,
                 users[msg.sender].deposit
             ),
-            "Not Qualified"
+            "ER5"
         );
-        require(deadline > block.timestamp, "Invaild Deadline");
+        require(deadline > block.timestamp, "ER1");
+        require(settlementStrategy[strategy].strategy != address(0), "ER6");
         totalApplyNumber++;
         // 当平台地址为 0, 意味着使用默认结算策略
         if (platform == address(0)) {
-            require(strategy == 0, "GAM Only One-time");
+            require(strategy == 0, "ER7");
             // 一次性结算策略下, 使用先销毁申请人奖励代币, 后给字幕制作者和支持者铸造代币的方案
             IVT(videoToken).burnStableToken(
                 platforms[platform].platformId,
@@ -156,14 +157,11 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
                 .updateDebtOrReward(totalApplyNumber, amount);
         } else {
             // 当结算策略非一次性时, 与视频收益相关, 需要由视频创作者主动提起
-            require(videos[videoId].creator == msg.sender, "No Permission");
+            require(videos[videoId].creator == msg.sender, "ER5");
             // 下面是为了防止重复申请制作同一语言的字幕
             for (uint256 i; i < videos[videoId].applys.length; i++) {
                 uint256 applyId = videos[videoId].applys[i];
-                require(
-                    totalApplys[applyId].language != language,
-                    "Already Applied"
-                );
+                require(totalApplys[applyId].language != language, "ER0");
             }
         }
         totalApplys[totalApplyNumber].applicant = msg.sender;
@@ -217,19 +215,13 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
         uint256 fingerprint
     ) external returns (uint256) {
         // 无法为已被确认的申请上传字幕, 防止资金和制作力浪费
-        require(totalApplys[applyId].adopted == 0, "Finished");
+        require(totalApplys[applyId].adopted == 0, "ER3");
         // 期望截至日期前没有字幕上传则申请被冻结
         if (totalApplys[applyId].subtitles.length == 0) {
-            require(
-                block.timestamp <= totalApplys[applyId].deadline,
-                "Finished"
-            );
+            require(block.timestamp <= totalApplys[applyId].deadline, "ER3");
         }
         // 确保字幕的语言与申请所需的语言一致
-        require(
-            languageId == totalApplys[applyId].language,
-            "Language Inconsistency"
-        );
+        require(languageId == totalApplys[applyId].language, "ER9");
         // 若调用者未主动加入 TSCS, 则自动初始化用户的信誉度和质押数（质押数自动设置为 0）
         _userInitialization(msg.sender, 0);
         // 根据信誉度和质押 ETH 数判断用户是否有权限使用 TSCS 提供的服务
@@ -238,14 +230,16 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
                 users[msg.sender].repution,
                 users[msg.sender].deposit
             ),
-            "Not Qualified"
+            "ER5"
         );
         uint256[] memory history = _getHistoryFingerprint(applyId);
         // 字幕相似度检测
-        require(
-            detectionStrategy.beforeDetection(fingerprint, history),
-            "High Similarity"
-        );
+        if (address(detectionStrategy) != address(0)) {
+            require(
+                detectionStrategy.beforeDetection(fingerprint, history),
+                "ER10"
+            );
+        }
         // ERC721 Token 生成
         uint256 subtitleId = _createST(
             msg.sender,
@@ -269,8 +263,8 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
         for (uint256 i = 0; i < id.length; i++) {
             if (totalApplys[i].adopted > 0) {
                 address platform = videos[totalApplys[id[i]].videoId].platform;
-                require(msg.sender == platform, "No Permission");
-                require(totalApplys[id[i]].strategy != 0, "Invaild strategy");
+                require(msg.sender == platform, "ER5");
+                require(totalApplys[id[i]].strategy != 0, "ER1");
                 uint256 unpaidToken = (platforms[platform].rateCountsToProfit *
                     ss[i]) / RATE_BASE;
                 ISettlementStrategy(
@@ -367,7 +361,7 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
         // 无法为已被确认的申请上传字幕, 防止资金和制作力浪费
         require(
             totalApplys[subtitleNFT[subtitleId].applyId].adopted == 0,
-            "Finished"
+            "ER3"
         );
         // 若调用者未主动加入 TSCS, 则自动初始化用户的信誉度和质押数（质押数自动设置为 0）
         _userInitialization(msg.sender, 0);
@@ -377,7 +371,7 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
                 users[msg.sender].repution,
                 users[msg.sender].deposit
             ),
-            "Not Qualified"
+            "ER5"
         );
         _evaluateST(subtitleId, attitude, msg.sender);
         // 基于字幕审核信息和审核策略判断字幕状态改变
@@ -424,7 +418,7 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
      * @param applyId 申请 ID
      */
     function preExtractMode0(uint256 applyId) external {
-        require(totalApplys[applyId].strategy == 0, "Not Applicable");
+        require(totalApplys[applyId].strategy == 0, "ER6");
         address platform = videos[totalApplys[applyId].videoId].platform;
         ISettlementStrategy(settlementStrategy[0].strategy).settlement(
             applyId,
@@ -505,7 +499,7 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
      * @return 本次结算稳定币数目
      */
     function preExtract(uint256 videoId) external returns (uint256) {
-        require(videos[videoId].unsettled > 0, "Invalid Settlement");
+        require(videos[videoId].unsettled > 0, "ER11");
         // 获得相应的代币计价
         uint256 unsettled = (platforms[videos[videoId].platform]
             .rateCountsToProfit * videos[videoId].unsettled) / RATE_BASE;
@@ -529,6 +523,7 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
      * @param token 新的 ERC20 TSCS 平台币合约地址
      */
     function setZimuToken(address token) external auth {
+        require(token != address(0), "ER1");
         zimuToken = token;
         emit SystemSetZimuToken(token);
     }
@@ -538,6 +533,7 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
      * @param token 新的 ERC1155 稳定币合约地址
      */
     function setVideoToken(address token) external auth {
+        require(token != address(0), "ER1");
         videoToken = token;
         emit SystemSetVideoToken(token);
     }
@@ -547,7 +543,7 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
      * @param time 新的锁定时间（审核期）
      */
     function setLockUpTime(uint256 time) external auth {
-        require(time > 0, "Invaild Lock Time");
+        require(time > 0, "ER1");
         lockUpTime = time;
         emit SystemSetLockUpTime(time);
     }
@@ -616,14 +612,14 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
      * @param applyId 申请 ID
      */
     function cancel(uint256 applyId) external {
-        require(msg.sender == totalApplys[applyId].applicant, "No Permission");
+        require(msg.sender == totalApplys[applyId].applicant, "ER5");
         require(
             totalApplys[applyId].adopted == 0 &&
                 totalApplys[applyId].subtitles.length == 0 &&
                 totalApplys[applyId].deadline <= block.timestamp,
             "Cannot Cancel"
         );
-        require(totalApplys[applyId].strategy == 0, "Auto Cancel");
+        require(totalApplys[applyId].strategy == 0, "ER6");
         uint256 platformId = platforms[
             videos[totalApplys[applyId].videoId].platform
         ].platformId;
@@ -646,15 +642,15 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
         uint256 amount,
         uint256 deadline
     ) external {
-        require(msg.sender == totalApplys[applyId].applicant, "No Permission");
+        require(msg.sender == totalApplys[applyId].applicant, "ER5");
         require(
             totalApplys[applyId].adopted == 0 &&
                 totalApplys[applyId].subtitles.length == 0 &&
                 totalApplys[applyId].deadline <= block.timestamp,
             "Cannot Cancel"
         );
-        require(totalApplys[applyId].strategy != 0, "Cannot Cancel");
-        require(deadline > block.timestamp, "Invaild Deadline");
+        require(totalApplys[applyId].strategy != 0, "ER6");
+        require(deadline > block.timestamp, "ER1");
         totalApplys[applyId].deadline = deadline;
         totalApplys[applyId].amount = amount;
         emit ApplicationRecover(applyId, amount, deadline);

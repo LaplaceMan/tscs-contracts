@@ -20,7 +20,7 @@ contract DetectionStrategy is IDetectionStrategy {
     address public opeator;
 
     modifier auth() {
-        require(msg.sender == opeator, "No Permission");
+        require(msg.sender == opeator, "ER5");
         _;
     }
     event SystemSetDistanceThreshold(uint8 newDistanceThreshold);

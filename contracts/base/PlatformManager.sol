@@ -63,8 +63,8 @@ contract PlatformManager is Ownable, EntityManager {
         uint16 rate1,
         uint16 rate2
     ) external auth returns (uint256) {
-        require(platforms[platfrom].rateCountsToProfit == 0, "Have Joined");
-        require(rate1 > 0 && rate2 > 0, "Invaild Rate");
+        require(platforms[platfrom].rateCountsToProfit == 0, "ER0");
+        require(rate1 > 0 && rate2 > 0, "ER1");
         totalPlatforms++;
         platforms[platfrom] = (
             Platform({
@@ -91,11 +91,8 @@ contract PlatformManager is Ownable, EntityManager {
         external
         returns (uint16, uint16)
     {
-        require(rate1 != 0 || rate2 != 0, "Invaild Rate");
-        require(
-            platforms[msg.sender].rateCountsToProfit != 0,
-            "Platform Not Existence"
-        );
+        require(rate1 != 0 || rate2 != 0, "ER1");
+        require(platforms[msg.sender].rateCountsToProfit != 0, "ER2");
         if (rate1 != 0) {
             platforms[msg.sender].rateCountsToProfit = rate1;
         }

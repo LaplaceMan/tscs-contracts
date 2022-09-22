@@ -33,7 +33,7 @@ contract SettlementOneTime0 is ISettlementStrategy {
      * @notice 仅能由 TSCS 调用
      */
     modifier auth() {
-        require(msg.sender == subtitleSystem, "No Permission");
+        require(msg.sender == subtitleSystem, "ER5");
         _;
     }
 

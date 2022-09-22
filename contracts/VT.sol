@@ -77,7 +77,7 @@ contract VideoToken is ERC1155, IVT {
         address endorser,
         uint256 platformId
     ) external override auth {
-        require(platform[platformId] == address(0), "Already Joined");
+        require(platform[platformId] == address(0), "ER0");
         platform[platformId] = endorser;
         suffix[platformId] = symbol;
         emit PlatformToken(endorser, platformId);
@@ -94,7 +94,7 @@ contract VideoToken is ERC1155, IVT {
         address to,
         uint256 amount
     ) external override auth {
-        require(platform[platformId] != address(0), "Not Joined");
+        require(platform[platformId] != address(0), "ER2");
         _mint(to, platformId, amount, "");
     }
 
@@ -109,7 +109,7 @@ contract VideoToken is ERC1155, IVT {
         address from,
         uint256 amount
     ) external override auth {
-        require(platform[platformId] != address(0), "Not Joined");
+        require(platform[platformId] != address(0), "ER2");
         _burn(from, platformId, amount);
     }
     /**

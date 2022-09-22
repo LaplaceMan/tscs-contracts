@@ -8,12 +8,9 @@
 pragma solidity ^0.8.0;
 
 import "../interfaces/IZimu.sol";
+import "./VaultManager.sol";
 
-contract EntityManager {
-    /**
-     * @notice TSCS内产生的罚款总数（以ETH计价）
-     */
-    uint256 public penalty;
+contract EntityManager is VaultManager {
     /**
      * @notice TSCS代币 ERC20合约地址
      */
@@ -27,7 +24,7 @@ contract EntityManager {
      */
     uint16 public languageTypes;
     /**
-     * @notice 语言名称与对应ID（注册顺序）的映射, 从1开始
+     * @notice 语言名称与对应ID（注册顺序）的映射, 从1开始（ISO 3166-1 alpha-2 code）
      */
     mapping(string => uint16) languages;
     /**
@@ -38,7 +35,7 @@ contract EntityManager {
      * @notice 每个用户在TSCS内的行为记录
      * @param repution 信誉度分数
      * @param deposit 已质押以太数, 为负表示负债
-     * @param lock 区块链地址 => 天（Unix）=> 锁定稳定币数量
+     * @param lock 平台区块链地址 => 天（Unix）=> 锁定稳定币数量，Default 为 0x0
      */
     struct User {
         uint256 repution;
@@ -65,14 +62,17 @@ contract EntityManager {
      * @param language 欲添加语言类型
      * @return 新添加语言的ID
      */
-    function registerLanguage(string memory language)
+    function registerLanguage(string[] memory language)
         external
         returns (uint16)
     {
-        languageTypes++;
-        require(languages[language] == 0, "Have Register");
-        languages[language] = languageTypes;
-        emit RegisterLanguage(language, languageTypes);
+        for (uint256 i; i < language.length; i++) {
+            languageTypes++;
+            require(languages[language[i]] == 0, "ER0");
+            languages[language[i]] = languageTypes;
+            emit RegisterLanguage(language[i], languageTypes);
+        }
+
         return languageTypes;
     }
 
@@ -108,10 +108,12 @@ contract EntityManager {
      */
     function userJoin(address usr) external payable {
         if (users[usr].repution == 0) {
+            _changeDespoitETH(int256(msg.value));
             _userInitialization(usr, int256(msg.value));
         } else {
             //当已加入时, 仍可调用此功能增加质押ETH数
             users[usr].deposit += int256(msg.value);
+            _changeDespoitETH(int256(msg.value));
             emit UserInfoUpdate(usr, 0, int256(msg.value));
         }
     }
@@ -129,7 +131,7 @@ contract EntityManager {
         int256 amount,
         address usr
     ) internal {
-        require(users[usr].repution == 0, "User Initialized");
+        require(users[usr].repution == 0, "ER0");
         uint256 current = users[usr].lock[platform][day];
         users[usr].lock[platform][day] = uint256(int256(current) + amount);
         emit UserLockRewardUpdate(usr, platform, day, amount);
@@ -152,7 +154,7 @@ contract EntityManager {
         if (tokenSpread < 0) {
             //小于0意味着惩罚操作, 扣除质押ETH数
             users[usr].deposit = users[usr].deposit + tokenSpread;
-            penalty += uint256(tokenSpread);
+            _changePenaltyETH(uint256(tokenSpread));
         }
         //此处待定, 临时设计为奖励操作时, 给与特定数目的平台币Zimu Token
         IZimu(zimuToken).mintReward(usr, uint256(tokenSpread));

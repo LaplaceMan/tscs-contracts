@@ -53,6 +53,7 @@ contract StrategyManager is PlatformManager {
      * @param newAudit 新的审核策略合约地址
      */
     function setDefaultAuditStrategy(IAuditStrategy newAudit) external auth {
+        require(address(newAudit) != address(0), "ER1");
         auditStrategy = newAudit;
         emit SystemSetAudit(address(newAudit));
     }
@@ -62,6 +63,7 @@ contract StrategyManager is PlatformManager {
      * @param newAccess 新的访问策略合约地址
      */
     function setDefaultAccessStrategy(IAccessStrategy newAccess) external auth {
+        require(address(newAccess) != address(0), "ER1");
         accessStrategy = newAccess;
         emit SystemSetAccess(address(newAccess));
     }
@@ -74,6 +76,7 @@ contract StrategyManager is PlatformManager {
         external
         auth
     {
+        require(address(newDetection) != address(0), "ER1");
         detectionStrategy = newDetection;
         emit SystemSetDetection(address(newDetection));
     }
@@ -89,6 +92,7 @@ contract StrategyManager is PlatformManager {
         address strategy,
         string memory notes
     ) external auth {
+        require(strategy != address(0), "ER1");
         settlementStrategy[strategyId].strategy = strategy;
         settlementStrategy[strategyId].notes = notes;
         emit SystemSetSettlement(strategyId, strategy, notes);

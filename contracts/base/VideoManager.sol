@@ -71,7 +71,7 @@ contract VideoManager {
         uint256 total
     ) internal returns (uint256) {
         totalVideoNumber++;
-        require(idReal2System[msg.sender][id] == 0, "Video Have Created");
+        require(idReal2System[msg.sender][id] == 0, "ER0");
         videos[totalVideoNumber].platform = platform;
         videos[totalVideoNumber].id = id;
         videos[totalVideoNumber].symbol = symbol;
@@ -99,7 +99,7 @@ contract VideoManager {
     {
         assert(id.length == vs.length);
         for (uint256 i = 0; i < id.length; i++) {
-            require(msg.sender == videos[id[i]].platform, "No Permission");
+            require(msg.sender == videos[id[i]].platform, "ER5");
             videos[id[i]].totalViewCouts += vs[i];
             videos[id[i]].unsettled += vs[i];
         }

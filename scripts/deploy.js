@@ -51,6 +51,7 @@ async function main() {
     // 主合约设置代币合约地址
     const tx7 = await tscsExemple.setZimuToken(zimuAddress);
     const tx8 = await tscsExemple.setZimuToken(vtAddress);
+    console.log(tx1, tx2, tx3, tx4, tx5, tx6, tx7, tx8);
 }
   
   main()
