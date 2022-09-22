@@ -33,6 +33,10 @@
 | ER10  | High Similarity        |
 | ER11  | Invalid Settlement     |
 
+## Contracts UML Diagram
+
+![Contracts UML](./contractsUMLDiagram.svg)
+
 ## Next Update
 
 - [ ] 默认结算策略下支付资产的拓展化（目前设计为使用由 TSCS 发行的稳定币）
