@@ -15,7 +15,7 @@ contract AccessStrategy is IAccessStrategy {
      */
     uint16 public baseRatio;
     /**
-     * @notice TSCS 内用户初始化时的信誉度分数
+     * @notice TSCS 内用户初始化时的信誉度分数, 精度为 1 即 100.0
      */
     uint16 constant baseRepution = 100;
     /**
@@ -64,7 +64,7 @@ contract AccessStrategy is IAccessStrategy {
     }
 
     constructor(address dao) {
-        baseRatio = 10 * 100;
+        baseRatio = 10 * 1000;
         minDeposit = 0.01 ether;
         rewardToken = 0;
         punishmentToken = 0.001 ether;
