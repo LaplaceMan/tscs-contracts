@@ -46,7 +46,7 @@ contract SettlementOneTime2 is ISettlementStrategy {
      * @param applyId 结算策略为一次性抵押结算（策略 ID 为 2）的申请 ID
      * @param platform 平台 Platform 的区块链地址
      * @param maker 字幕制作者（所有者）区块链地址
-     * @param amount 此处为经过一系列结算后剩余收益
+     * @param unsettled 此处为经过一系列结算后剩余收益
      * @param auditorDivide 该 Platform 设置的审核员分成字幕制作者收益的比例
      * @param supporters 申请下被采纳字幕的支持者们
      * @return 本次结算所支付的字幕制作费用
@@ -55,26 +55,19 @@ contract SettlementOneTime2 is ISettlementStrategy {
         uint256 applyId,
         address platform,
         address maker,
-        address,
-        uint256 amount, //此处表示为总剩余收益
-        uint256,
+        uint256 unsettled,
         uint16 auditorDivide,
         address[] memory supporters
     ) external override auth returns (uint256) {
         uint256 subtitleGet;
         if (settlements[applyId].unsettled > 0) {
-            if (amount > settlements[applyId].unsettled) {
+            if (unsettled > settlements[applyId].unsettled) {
                 subtitleGet = settlements[applyId].unsettled;
-                settlements[applyId].unsettled = 0;
-                settlements[applyId].settled += settlements[applyId].unsettled;
             } else {
-                subtitleGet = amount;
-                settlements[applyId].unsettled -= amount;
-                settlements[applyId].settled += amount;
+                subtitleGet = unsettled;
             }
-            uint256 divide = ((subtitleGet * auditorDivide) /
-                65535 /
-                supporters.length);
+            uint256 supporterGet = (subtitleGet * auditorDivide) / 65535;
+            uint256 divide = supporterGet / supporters.length;
             ISubtitleSystem(subtitleSystem).preDivideBatch(
                 platform,
                 supporters,
@@ -85,6 +78,8 @@ contract SettlementOneTime2 is ISettlementStrategy {
                 maker,
                 subtitleGet - divide * supporters.length
             );
+            settlements[applyId].unsettled -= subtitleGet;
+            settlements[applyId].settled += subtitleGet;
         }
         return subtitleGet;
     }
@@ -92,9 +87,14 @@ contract SettlementOneTime2 is ISettlementStrategy {
     /**
      * @notice 更新相应申请下被采纳字幕的预期收益情况
      * @param applyId 结算策略为一次性抵押结算（策略 ID 为 2）的申请 ID
-     * @param amount 新增未结算稳定币
+     * @param amount 新增未结算稳定币，申请中设置的支付代币数
      */
-    function updateDebtOrReward(uint256 applyId, uint256 amount) external auth {
+    function updateDebtOrReward(
+        uint256 applyId,
+        uint256,
+        uint256 amount,
+        uint16
+    ) external auth {
         settlements[applyId].unsettled += amount;
     }
 

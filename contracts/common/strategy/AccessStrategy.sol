@@ -19,7 +19,7 @@ contract AccessStrategy is IAccessStrategy {
      */
     uint16 constant baseRepution = 100;
     /**
-     * @notice 需要质押 ETH 的信誉度分数阈值
+     * @notice 需要质押 Zimu 的信誉度分数阈值
      */
     uint8 public depoitThreshold;
 
@@ -28,15 +28,15 @@ contract AccessStrategy is IAccessStrategy {
      */
     uint8 public blacklistThreshold;
     /**
-     * @notice 信誉度小于等于 depoitThreshold 时必须最小质押的 ETH 数
+     * @notice 信誉度小于等于 depoitThreshold 时必须最小质押的 Zimu 数
      */
     uint256 public minDeposit;
     /**
-     * @notice 奖励的代币数量, 此处为 ETH
+     * @notice 奖励的代币数量, 此处为 Zimu
      */
     uint256 public rewardToken;
     /**
-     * @notice 惩罚的代币数量, 此处为 ETH
+     * @notice 惩罚的代币数量, 此处为 Zimu
      */
     uint256 public punishmentToken;
     /**
@@ -65,9 +65,9 @@ contract AccessStrategy is IAccessStrategy {
 
     constructor(address dao) {
         baseRatio = 10 * 1000;
-        minDeposit = 0.01 ether;
+        minDeposit = 10**18;
         rewardToken = 0;
-        punishmentToken = 0.001 ether;
+        punishmentToken = 1**17;
         multiplier = 150; //表示字幕制作者扣除的信誉度是支持者的 1.5 倍
         blacklistThreshold = 1;
         opeator = dao;
@@ -95,7 +95,7 @@ contract AccessStrategy is IAccessStrategy {
      * @notice 根据用户当前信誉度分数获得奖励或惩罚的力度
      * @param repution 用户当前信誉度分数
      * @param flag 奖惩标志位, 1 为奖励, 2 为惩罚
-     * @return 奖励/扣除信誉度分数, 奖励/扣除 ETH 数目, 字幕制作者受到的奖励/惩罚力度放大倍数
+     * @return 奖励/扣除信誉度分数, 奖励/扣除 Zimu 数目, 字幕制作者受到的奖励/惩罚力度放大倍数
      */
     function spread(uint256 repution, uint8 flag)
         external
@@ -111,7 +111,7 @@ contract AccessStrategy is IAccessStrategy {
             //rewardToken 为 0, 代币奖励策略仍在设计中
             return (_reward(repution), rewardToken, multiplier);
         } else if (flag == 2) {
-            //当信誉度分数低于 depoitThreshold 时, 每次惩罚都会扣除 ETH, 此处对用户的区分逻辑为: （优秀）正常、危险、恶意
+            //当信誉度分数低于 depoitThreshold 时, 每次惩罚都会扣除 Zimu, 此处对用户的区分逻辑为: （优秀）正常、危险、恶意
             if (repution - _punishment(repution) < depoitThreshold) {
                 return (_punishment(repution), punishmentToken, multiplier);
             }
@@ -122,9 +122,9 @@ contract AccessStrategy is IAccessStrategy {
     }
 
     /**
-     * @notice 根据信誉度分数和质押 ETH 数判断当前用户是否有使用 TSCS 提供的服务的资格
+     * @notice 根据信誉度分数和质押 Zimu 数判断当前用户是否有使用 TSCS 提供的服务的资格
      * @param repution 用户当前信誉度分数
-     * @param deposit 用户当前质押 ETH 数
+     * @param deposit 用户当前质押 Zimu 数
      * @return 返回 false 表示用户被禁止使用 TSCS 提供的服务, 反之可以继续使用
      */
     function access(uint256 repution, int256 deposit)

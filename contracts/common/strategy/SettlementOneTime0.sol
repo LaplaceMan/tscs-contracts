@@ -46,7 +46,7 @@ contract SettlementOneTime0 is ISettlementStrategy {
      * @param applyId 结算策略为一次性结算（策略 ID 为 0）的申请 ID
      * @param platform 平台 Platform 的区块链地址
      * @param maker 字幕制作者（所有者）区块链地址
-     * @param amount 此处为申请制作字幕时设置的支付稳定币数量（以相应 Platform 的稳定币计价）
+     * @param unsettled 视频收益结算剩余量
      * @param auditorDivide 该 Platform 设置的审核员分成字幕制作者收益的比例
      * @param supporters 申请下被采纳字幕的支持者们
      * @return 本次结算所支付的字幕制作费用
@@ -55,37 +55,47 @@ contract SettlementOneTime0 is ISettlementStrategy {
         uint256 applyId,
         address platform,
         address maker,
-        address,
-        uint256 amount,
-        uint256,
+        uint256 unsettled,
         uint16 auditorDivide,
         address[] memory supporters
     ) external override auth returns (uint256) {
-        if (settlements[applyId].settled < amount) {
-            uint256 supporterGet = (amount * auditorDivide) / 65535;
-            uint256 unit = supporterGet / supporters.length;
+        uint256 subtitleGet;
+        if (settlements[applyId].unsettled > 0) {
+            if (unsettled > settlements[applyId].unsettled) {
+                subtitleGet = settlements[applyId].unsettled;
+            } else {
+                subtitleGet = unsettled;
+            }
+            uint256 supporterGet = (subtitleGet * auditorDivide) / 65535;
+            uint256 divide = supporterGet / supporters.length;
 
             ISubtitleSystem(subtitleSystem).preDivide(
                 platform,
                 maker,
-                amount - unit * supporters.length
+                subtitleGet - divide * supporters.length
             );
             ISubtitleSystem(subtitleSystem).preDivideBatch(
                 platform,
                 supporters,
-                unit
+                divide
             );
-            settlements[applyId].settled += amount;
+            settlements[applyId].settled += subtitleGet;
+            settlements[applyId].unsettled -= subtitleGet;
         }
-        return settlements[applyId].settled;
+        return subtitleGet;
     }
 
     /**
      * @notice 更新相应申请下被采纳字幕的预期收益情况
      * @param applyId 结算策略为一次性结算（策略 ID 为 0）的申请 ID
-     * @param amount 新增未结算稳定币
+     * @param amount 新增未结算稳定币，申请中设置的支付代币数
      */
-    function updateDebtOrReward(uint256 applyId, uint256 amount) external auth {
+    function updateDebtOrReward(
+        uint256 applyId,
+        uint256,
+        uint256 amount,
+        uint16
+    ) external auth {
         settlements[applyId].unsettled += amount;
     }
 

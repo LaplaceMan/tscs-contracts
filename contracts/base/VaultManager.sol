@@ -9,35 +9,35 @@ pragma solidity ^0.8.0;
 
 contract VaultManager {
     /**
-     * @notice 用户加入生态时在 TSCS 内质押的 ETH数
+     * @notice 用户加入生态时在 TSCS 内质押的 Zimu 数
      */
-    uint256 public DespoitETH;
+    uint256 public Despoit;
     /**
-     * @notice TSCS内产生的罚款总数（以ETH计价）
+     * @notice TSCS内产生的罚款总数（以Zimu计价）
      */
-    uint256 public penaltyETH;
+    uint256 public penalty;
     /**
      * @notice 未调用功能而直接发送到合约的 ETH
      */
     uint256 public donationETH;
 
     /**
-     * @notice 更改 TSCS 内质押的 ETH 数量
+     * @notice 更改 TSCS 内质押的 Zimu 数量
      * @param amount 变化数量
      */
-    function _changeDespoitETH(int256 amount) internal {
+    function _changeDespoit(int256 amount) internal {
         if (amount != 0) {
-            DespoitETH = uint256(int256(DespoitETH) + amount);
+            Despoit = uint256(int256(Despoit) + amount);
         }
     }
 
     /**
-     * @notice TSCS 内罚没 ETH 资产
-     * @param amount 新增罚没 ETH 数量
+     * @notice TSCS 内罚没 Zimu 资产
+     * @param amount 新增罚没 Zimu 数量
      */
-    function _changePenaltyETH(uint256 amount) internal {
-        penaltyETH += amount;
-        _changeDespoitETH(int256(amount) * -1);
+    function _changePenalty(uint256 amount) internal {
+        penalty += amount;
+        _changeDespoit(int256(amount) * -1);
     }
 
     /**

@@ -103,18 +103,19 @@ contract EntityManager is VaultManager {
     }
 
     /**
-     * @notice 主动加入TSCS, 并质押一定数目的ETH
+     * @notice 主动加入TSCS, 并质押一定数目的 Zimu
      * @param usr 用户区块链地址
      */
-    function userJoin(address usr) external payable {
+    function userJoin(address usr, uint256 despoit) external {
+        IZimu(zimuToken).transferFrom(usr, address(this), despoit);
         if (users[usr].repution == 0) {
-            _changeDespoitETH(int256(msg.value));
-            _userInitialization(usr, int256(msg.value));
+            _changeDespoit(int256(despoit));
+            _userInitialization(usr, int256(despoit));
         } else {
-            //当已加入时, 仍可调用此功能增加质押ETH数
-            users[usr].deposit += int256(msg.value);
-            _changeDespoitETH(int256(msg.value));
-            emit UserInfoUpdate(usr, 0, int256(msg.value));
+            //当已加入时, 仍可调用此功能增加质押 Zimu 数
+            users[usr].deposit += int256(despoit);
+            _changeDespoit(int256(despoit));
+            emit UserInfoUpdate(usr, 0, int256(despoit));
         }
     }
 
@@ -138,10 +139,10 @@ contract EntityManager is VaultManager {
     }
 
     /**
-     * @notice 更新用户信誉度分数和质押ETH数
+     * @notice 更新用户信誉度分数和质押 Zimu 数
      * @param usr 用户区块链地址
      * @param reputionSpread 有正负（增加或扣除）的信誉度分数
-     * @param tokenSpread 有正负的（增加或扣除）ETH数量
+     * @param tokenSpread 有正负的（增加或扣除）Zimu 数量
      */
     function _updateUser(
         address usr,
@@ -152,12 +153,13 @@ contract EntityManager is VaultManager {
             int256(users[usr].repution) + reputionSpread
         );
         if (tokenSpread < 0) {
-            //小于0意味着惩罚操作, 扣除质押ETH数
+            //小于0意味着惩罚操作, 扣除质押Zimu数
             users[usr].deposit = users[usr].deposit + tokenSpread;
-            _changePenaltyETH(uint256(tokenSpread));
+            _changePenalty(uint256(tokenSpread));
+        } else {
+            //此处待定, 临时设计为奖励操作时, 给与特定数目的平台币Zimu Token
+            IZimu(zimuToken).mintReward(usr, uint256(tokenSpread));
         }
-        //此处待定, 临时设计为奖励操作时, 给与特定数目的平台币Zimu Token
-        IZimu(zimuToken).mintReward(usr, uint256(tokenSpread));
         //用户的最小信誉度为1, 这样是为了便于判断用户是否已加入系统（User结构已经初始化过）
         if (users[usr].repution == 0) {
             users[usr].repution = 1;
@@ -201,9 +203,9 @@ contract EntityManager is VaultManager {
     }
 
     /**
-     * @notice 获得特定用户当前信誉度分数和质押ETH数量
+     * @notice 获得特定用户当前信誉度分数和质押 Zimu 数量
      * @param {usr} 欲查询用户的区块链地址
-     * @return 信誉度分数, 质押ETH数
+     * @return 信誉度分数, 质押 Zimu 数
      */
     function getUserBaseInfo(address usr)
         public

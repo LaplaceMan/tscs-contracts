@@ -132,7 +132,7 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
     ) external returns (uint256) {
         // 若调用者未主动加入 TSCS, 则自动初始化用户的信誉度和质押数（质押数自动设置为 0）
         _userInitialization(msg.sender, 0);
-        // 根据信誉度和质押 ETH 数判断用户是否有权限使用 TSCS 提供的服务
+        // 根据信誉度和质押 Zimu 数判断用户是否有权限使用 TSCS 提供的服务
         require(
             accessStrategy.access(
                 users[msg.sender].repution,
@@ -152,9 +152,6 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
                 msg.sender,
                 amount
             );
-            // 更新未结算稳定币数目
-            ISettlementStrategy(settlementStrategy[0].strategy)
-                .updateDebtOrReward(totalApplyNumber, amount);
         } else {
             // 当结算策略非一次性时, 与视频收益相关, 需要由视频创作者主动提起
             require(videos[videoId].creator == msg.sender, "ER5");
@@ -164,6 +161,18 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
                 require(totalApplys[applyId].language != language, "ER0");
             }
         }
+        uint256[] memory newApplyArr = _sortStrategyPriority(
+            videos[videoId].applys,
+            strategy,
+            totalApplyNumber
+        );
+        videos[videoId].applys = newApplyArr;
+        if (strategy == 2 || strategy == 0) {
+            // 更新未结算稳定币数目
+            ISettlementStrategy(settlementStrategy[strategy].strategy)
+                .updateDebtOrReward(totalApplyNumber, 0, amount, 0);
+        }
+        // 上面都是对不同支付策略时申请变化的判断，也可以或者说应该模块化设计
         totalApplys[totalApplyNumber].applicant = msg.sender;
         totalApplys[totalApplyNumber].videoId = videoId;
         totalApplys[totalApplyNumber].strategy = strategy;
@@ -180,6 +189,37 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
             deadline
         );
         return totalApplyNumber;
+    }
+
+    /**
+     * @notice 每次为视频新添加申请时，根据结算策略优先度更新 applys 数组（主要是方便结算逻辑的执行）
+     * @param arr 已有的申请序列
+     * @param spot 新申请的策略
+     * @param id 新申请的 id
+     * @return 从小到大（策略结算优先级）顺序的申请序列
+     */
+    function _sortStrategyPriority(
+        uint256[] memory arr,
+        uint256 spot,
+        uint256 id
+    ) internal view returns (uint256[] memory) {
+        uint256[] memory newArr = new uint256[](arr.length + 1);
+        uint256 flag;
+        for (flag = arr.length - 1; flag >= 0; flag--) {
+            if (spot >= totalApplys[arr[flag]].strategy) {
+                break;
+            }
+        }
+        for (uint256 i; i < arr.length + 1; i++) {
+            if (i <= flag) {
+                newArr[i] = arr[i];
+            } else if (i == flag + 1) {
+                newArr[i] = id;
+            } else {
+                newArr[i] = arr[i - 1];
+            }
+        }
+        return newArr;
     }
 
     /**
@@ -224,7 +264,7 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
         require(languageId == totalApplys[applyId].language, "ER9");
         // 若调用者未主动加入 TSCS, 则自动初始化用户的信誉度和质押数（质押数自动设置为 0）
         _userInitialization(msg.sender, 0);
-        // 根据信誉度和质押 ETH 数判断用户是否有权限使用 TSCS 提供的服务
+        // 根据信誉度和质押 Zimu 数判断用户是否有权限使用 TSCS 提供的服务
         require(
             accessStrategy.access(
                 users[msg.sender].repution,
@@ -252,24 +292,27 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
     }
 
     /**
-     * @notice 由平台 Platform 更新其旗下视频中被确认字幕的使用量
+     * @notice 由平台 Platform 更新其旗下视频中被确认字幕的使用量，目前只对于分成结算有用
      * @param id 相应的申请 ID
      * @param ss 新增使用量
      */
     function updateUsageCounts(uint256[] memory id, uint256[] memory ss)
         external
     {
-        assert(id.length == ss.length);
+        require(id.length == ss.length, "ER1");
         for (uint256 i = 0; i < id.length; i++) {
-            if (totalApplys[i].adopted > 0) {
+            if (totalApplys[id[i]].adopted > 0) {
                 address platform = videos[totalApplys[id[i]].videoId].platform;
                 require(msg.sender == platform, "ER5");
                 require(totalApplys[id[i]].strategy != 0, "ER1");
-                uint256 unpaidToken = (platforms[platform].rateCountsToProfit *
-                    ss[i]) / RATE_BASE;
                 ISettlementStrategy(
                     settlementStrategy[totalApplys[id[i]].strategy].strategy
-                ).updateDebtOrReward(id[i], unpaidToken);
+                ).updateDebtOrReward(
+                        id[i],
+                        ss[i],
+                        totalApplys[id[i]].amount,
+                        platforms[platform].rateCountsToProfit
+                    );
             }
         }
         emit SubtitleCountsUpdate(msg.sender, id, ss);
@@ -312,7 +355,7 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
      * @param subtitleId 字幕 ID
      * @param flag 1 表示字幕被采用（奖励）, 2 表示字幕被认定为恶意字幕（惩罚）
      * @param reputionSpread 信誉度变化值
-     * @param tokenSpread ETH 变化值
+     * @param tokenSpread Zimu 变化值
      * @param multiplier 字幕制作者受到的奖励/惩罚倍数
      */
     function _updateUsers(
@@ -325,7 +368,7 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
         int8 newFlag = 1;
         // 2 表示字幕被认定为恶意字幕, 对字幕制作者和支持者进行惩罚, 所以标志位为 负
         if (flag == 2) newFlag = -1;
-        // 更新字幕制作者信誉度和 ETH 质押数信息
+        // 更新字幕制作者信誉度和 Zimu 质押数信息
         _updateUser(
             ownerOf(subtitleId),
             int256((reputionSpread * multiplier) / 100) * newFlag,
@@ -391,7 +434,7 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
             lockUpTime
         );
         if (flag != 0) {
-            // 改变 ST 状态, 以及利益相关者信誉度和质押 ETH 信息
+            // 改变 ST 状态, 以及利益相关者信誉度和质押 Zimu 信息
             _changeST(subtitleId, flag);
             (
                 uint256 reputionSpread,
@@ -417,15 +460,13 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
      * @notice 预结算（视频和字幕）收益, 此处仅适用于结算策略为一次性结算（0）的申请
      * @param applyId 申请 ID
      */
-    function preExtractMode0(uint256 applyId) external {
+    function preExtract0(uint256 applyId) external {
         require(totalApplys[applyId].strategy == 0, "ER6");
         address platform = videos[totalApplys[applyId].videoId].platform;
         ISettlementStrategy(settlementStrategy[0].strategy).settlement(
             applyId,
             platform,
             ownerOf(totalApplys[applyId].adopted),
-            address(0),
-            totalApplys[applyId].amount,
             platforms[platform].rateCountsToProfit,
             platforms[platform].rateAuditorDivide,
             subtitleNFT[totalApplys[applyId].adopted].supporters
@@ -445,45 +486,15 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
         // 结算策略 strategy 拥有优先度, 根据id（小的优先级高）划分
         for (uint256 i = 0; i < videos[videoId].applys.length; i++) {
             uint256 applyId = videos[videoId].applys[i];
-            if (
-                totalApplys[applyId].adopted > 0 &&
-                totalApplys[applyId].strategy == 1 &&
-                unsettled > 0
-            ) {
+            if (totalApplys[applyId].adopted > 0 && unsettled > 0) {
                 address platform = videos[videoId].platform;
                 uint256 subtitleGet = ISettlementStrategy(
-                    settlementStrategy[1].strategy
+                    settlementStrategy[totalApplys[applyId].strategy].strategy
                 ).settlement(
                         applyId,
                         platform,
                         ownerOf(totalApplys[applyId].adopted),
-                        videos[videoId].creator,
-                        totalApplys[applyId].amount,
-                        platforms[platform].rateCountsToProfit,
-                        platforms[platform].rateAuditorDivide,
-                        subtitleNFT[totalApplys[applyId].adopted].supporters
-                    );
-                unsettled -= subtitleGet;
-            }
-        }
-
-        for (uint256 i = 0; i < videos[videoId].applys.length; i++) {
-            uint256 applyId = videos[videoId].applys[i];
-            if (
-                totalApplys[applyId].adopted > 0 &&
-                totalApplys[applyId].strategy == 2 &&
-                unsettled > 0
-            ) {
-                address platform = videos[videoId].platform;
-                uint256 subtitleGet = ISettlementStrategy(
-                    settlementStrategy[2].strategy
-                ).settlement(
-                        applyId,
-                        platform,
-                        ownerOf(totalApplys[applyId].adopted),
-                        videos[videoId].creator,
-                        totalApplys[applyId].amount,
-                        platforms[platform].rateCountsToProfit,
+                        unsettled,
                         platforms[platform].rateAuditorDivide,
                         subtitleNFT[totalApplys[applyId].adopted].supporters
                     );
@@ -498,7 +509,7 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
      * @param videoId 视频在 TSCS 内的 ID
      * @return 本次结算稳定币数目
      */
-    function preExtract(uint256 videoId) external returns (uint256) {
+    function preExtractOther(uint256 videoId) external returns (uint256) {
         require(videos[videoId].unsettled > 0, "ER11");
         // 获得相应的代币计价
         uint256 unsettled = (platforms[videos[videoId].platform]

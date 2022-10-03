@@ -3,19 +3,20 @@
 ## Install Dependencies
 
 `git clone https://github.com/LaplaceMan/tscs-contracts`
+
 `npm install`
 
 ## Compile Contracts
 
 `npx hardhat compile --force`
 
-> 先部署 TSCS 主合约 SubtitleSystem.sol ，构造函数输入参数为 DAO 合约地址
-> 然后部署代币合约 VT.sol 和 Zimu.sol ，构造函数输入参数为主合约地址
-> 最后部署策略合约 AccessStrategy.sol（访问权限策略）、AuditStrategy.sol（审核策略）、DetectionStrategy.sol（相似度检测策略）和三个结算策略合约。其中，结算策略合约构造函数输入参数为主合约地址，其余为 DAO 合约地址
-
 ## Deploy Contracts
 
 `npx hardhat run scripts/deploy.js --network <network-name>`
+
+> 先部署 TSCS 主合约 SubtitleSystem.sol ，构造函数输入参数为 DAO 合约地址
+> 然后部署代币合约 VT.sol 和 Zimu.sol ，构造函数输入参数为主合约地址
+> 最后部署策略合约 AccessStrategy.sol（访问权限策略）、AuditStrategy.sol（审核策略）、DetectionStrategy.sol（相似度检测策略）和三个结算策略合约。其中，结算策略合约构造函数输入参数为主合约地址，其余为 DAO 合约地址
 
 ## Error Explain
 
@@ -39,14 +40,12 @@
 
 ## Next Update
 
-- [ ] 默认结算策略下支付资产的拓展化（目前设计为使用由 TSCS 发行的稳定币）
 - [ ] 添加制作字幕手续费（手续费收取逻辑的模块化）
 - [ ] 使用 Zimu 代币兑换 NFT，NFT 的差异化设计
 - [ ] Zimu 代币的经济模型（使用途径）
 - [ ] DAO 管理
 - [ ] 仲裁（法庭）机制
 - [ ] 字幕组 DAO
-- [ ] 结算策略模块化合约优化
 - [ ] 粉丝空投奖励
 
 ## Test Function Task

@@ -11,6 +11,7 @@ import "../../interfaces/ISubtitleSystem.sol";
 import "../../interfaces/ISettlementStrategy.sol";
 
 contract SettlementDivide1 is ISettlementStrategy {
+    uint16 constant RATE_BASE = 65535;
     /**
      * @notice TSCS 合约地址
      */
@@ -25,7 +26,7 @@ contract SettlementDivide1 is ISettlementStrategy {
      * @param unsettled 未结算的稳定币数量
      */
     struct SubtitleSettlement {
-        //此处均以稳定币计价, 这样做的好处是避免比率突然变化带来的影响
+        //此处均以稳定币计价, 这样做的好处是避免比率突然变化带来的影响，字幕使用量
         uint256 settled;
         uint256 unsettled;
     }
@@ -46,7 +47,7 @@ contract SettlementDivide1 is ISettlementStrategy {
      * @param applyId 结算策略为一次性结算的申请 ID
      * @param platform 平台 Platform 的区块链地址
      * @param maker 字幕制作者（所有者）区块链地址
-     * @param amount 此处为申请制作字幕时设置的分成比例
+     * @param unsettled 视频剩余收益
      * @param auditorDivide 该 Platform 设置的审核员分成字幕制作者收益的比例
      * @param supporters 申请下被采纳字幕的支持者们
      * @return 本次结算所支付的字幕制作费用
@@ -55,39 +56,53 @@ contract SettlementDivide1 is ISettlementStrategy {
         uint256 applyId,
         address platform,
         address maker,
-        address,
-        uint256 amount,
-        uint256,
+        uint256 unsettled,
         uint16 auditorDivide,
         address[] memory supporters
     ) external override auth returns (uint256) {
-        //字幕使用量是视频播放量的子集
-        uint256 subtitleGet = ((settlements[applyId].unsettled) *
-            uint16(amount)) / 65535;
-        uint256 divide = ((subtitleGet * auditorDivide) /
-            65535 /
-            supporters.length);
-        ISubtitleSystem(subtitleSystem).preDivideBatch(
-            platform,
-            supporters,
-            divide
-        );
-        ISubtitleSystem(subtitleSystem).preDivide(
-            platform,
-            maker,
-            subtitleGet - divide * supporters.length
-        );
-        settlements[applyId].unsettled = 0;
+        uint256 subtitleGet;
+        if (settlements[applyId].unsettled > 0) {
+            if (unsettled >= settlements[applyId].unsettled) {
+                subtitleGet = settlements[applyId].unsettled;
+            } else {
+                subtitleGet = unsettled;
+            }
+
+            uint256 divide = ((subtitleGet * auditorDivide) /
+                65535 /
+                supporters.length);
+            ISubtitleSystem(subtitleSystem).preDivideBatch(
+                platform,
+                supporters,
+                divide
+            );
+            ISubtitleSystem(subtitleSystem).preDivide(
+                platform,
+                maker,
+                subtitleGet - divide * supporters.length
+            );
+            settlements[applyId].settled += subtitleGet;
+            settlements[applyId].unsettled -= subtitleGet;
+        }
         return subtitleGet;
     }
 
     /**
      * @notice 更新相应申请下被采纳字幕的预期收益情况
      * @param applyId 结算策略为分成结算（策略 ID 为 1）的申请 ID
-     * @param amount 新增未结算稳定币
+     * @param number 新增视频播放量
+     * @param amount 申请中设置的支付代币数
+     * @param rateCountsToProfit 平台Platform设定的审核人员分成比例
      */
-    function updateDebtOrReward(uint256 applyId, uint256 amount) external auth {
-        settlements[applyId].unsettled += amount;
+    function updateDebtOrReward(
+        uint256 applyId,
+        uint256 number,
+        uint256 amount,
+        uint16 rateCountsToProfit
+    ) external auth {
+        uint256 unpaidToken0 = (rateCountsToProfit * number) / RATE_BASE;
+        uint256 unpaidToken1 = (unpaidToken0 * amount) / RATE_BASE;
+        settlements[applyId].unsettled += unpaidToken1;
     }
 
     /**
