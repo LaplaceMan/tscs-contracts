@@ -56,7 +56,7 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
     /**
      * @notice applyId 与 Application 的映射, 从 1 开始（发出申请的顺位）
      */
-    mapping(uint256 => Application) totalApplys;
+    mapping(uint256 => Application) public totalApplys;
 
     event ApplicationSubmit(
         address applicant,
@@ -160,13 +160,13 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
                 uint256 applyId = videos[videoId].applys[i];
                 require(totalApplys[applyId].language != language, "ER0");
             }
+            uint256[] memory newApplyArr = _sortStrategyPriority(
+                videos[videoId].applys,
+                strategy,
+                totalApplyNumber
+            );
+            videos[videoId].applys = newApplyArr;
         }
-        uint256[] memory newApplyArr = _sortStrategyPriority(
-            videos[videoId].applys,
-            strategy,
-            totalApplyNumber
-        );
-        videos[videoId].applys = newApplyArr;
         if (strategy == 2 || strategy == 0) {
             // 更新未结算稳定币数目
             ISettlementStrategy(settlementStrategy[strategy].strategy)

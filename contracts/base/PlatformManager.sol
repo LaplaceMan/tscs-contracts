@@ -20,7 +20,7 @@ contract PlatformManager is Ownable, EntityManager {
     /**
      * @notice Platform 地址与相应结构体的映射
      */
-    mapping(address => Platform) platforms;
+    mapping(address => Platform) public platforms;
     /**
      * @notice 记录每个 Platform 的基本信息
      * @param name Platform名称
@@ -111,23 +111,23 @@ contract PlatformManager is Ownable, EntityManager {
      * @param platform 欲查询的 Platform 区块链地址
      * @return 平台platform的名称、符号、ID、播放量稳定币比率、审核分成比例
      */
-    function getPlatformBaseInfo(address platform)
-        external
-        view
-        returns (
-            string memory,
-            string memory,
-            uint256,
-            uint16,
-            uint16
-        )
-    {
-        return (
-            platforms[platform].name,
-            platforms[platform].symbol,
-            platforms[platform].platformId,
-            platforms[platform].rateCountsToProfit,
-            platforms[platform].rateAuditorDivide
-        );
-    }
+    // function getPlatformBaseInfo(address platform)
+    //     external
+    //     view
+    //     returns (
+    //         string memory,
+    //         string memory,
+    //         uint256,
+    //         uint16,
+    //         uint16
+    //     )
+    // {
+    //     return (
+    //         platforms[platform].name,
+    //         platforms[platform].symbol,
+    //         platforms[platform].platformId,
+    //         platforms[platform].rateCountsToProfit,
+    //         platforms[platform].rateAuditorDivide
+    //     );
+    // }
 }

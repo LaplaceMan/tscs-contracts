@@ -46,7 +46,7 @@ contract StrategyManager is PlatformManager {
     /**
      * @notice 结算策略 ID 与 SettlementStruct 的映射, 在 TSCS 内用 ID 唯一标识结算策略, 从0开始
      */
-    mapping(uint8 => SettlementStruct) settlementStrategy;
+    mapping(uint8 => SettlementStruct) public settlementStrategy;
 
     /**
      * @notice 修改当前 TSCS 内的审核策略, 仅能由管理员调用
@@ -103,14 +103,14 @@ contract StrategyManager is PlatformManager {
      * @param strategyId 策略 ID
      * @return 结算策略合约地址和注释说明
      */
-    function getSettlementStrategyBaseInfo(uint8 strategyId)
-        external
-        view
-        returns (address, string memory)
-    {
-        return (
-            settlementStrategy[strategyId].strategy,
-            settlementStrategy[strategyId].notes
-        );
-    }
+    // function getSettlementStrategyBaseInfo(uint8 strategyId)
+    //     external
+    //     view
+    //     returns (address, string memory)
+    // {
+    //     return (
+    //         settlementStrategy[strategyId].strategy,
+    //         settlementStrategy[strategyId].notes
+    //     );
+    // }
 }

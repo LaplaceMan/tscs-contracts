@@ -16,10 +16,6 @@ contract VaultManager {
      * @notice TSCS内产生的罚款总数（以Zimu计价）
      */
     uint256 public penalty;
-    /**
-     * @notice 未调用功能而直接发送到合约的 ETH
-     */
-    uint256 public donationETH;
 
     /**
      * @notice 更改 TSCS 内质押的 Zimu 数量
@@ -38,12 +34,5 @@ contract VaultManager {
     function _changePenalty(uint256 amount) internal {
         penalty += amount;
         _changeDespoit(int256(amount) * -1);
-    }
-
-    /**
-     * @notice 接收直接发给合约而未调用任何功能的 ETH
-     */
-    receive() external payable {
-        donationETH += msg.value;
     }
 }

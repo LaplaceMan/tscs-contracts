@@ -16,7 +16,7 @@ contract VideoManager {
     /**
      * @notice 每个视频都有相应的 Video 结构, 记录其信息, 每个视频有两个 ID, 一个是在 TSCS 内创建时的顺位 ID, 它在 TSCS 内用来唯一标识视频; 另一个是视频在 Platform 中的 ID, 主要与 symbol 结合来区分不同的视频
      */
-    mapping(uint256 => Video) videos;
+    mapping(uint256 => Video) public videos;
 
     /**
      * @notice TSCS 内顺位 ID 和 相应 Platform 内 ID 的映射, Platform 区块链地址 => 视频在 Platform 内的 ID => 视频在 TSCS 内的 ID

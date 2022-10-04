@@ -38,7 +38,7 @@ contract SubtitleManager is ERC721 {
     /**
      * @notice 与传统 ERC721 代币相比 每个 ST（Subtitle Token）都有相应的 Subtitle 结构记录字幕的详细信息, 因为观众评价（审核）机制的引入, ST 是动态的 NFT
      */
-    mapping(uint256 => Subtitle) subtitleNFT;
+    mapping(uint256 => Subtitle) public subtitleNFT;
 
     /**
      * @notice 限制每个用户只能对每个字幕评价一次, 用户区块链地址 => ST ID => 是否评价（true 为已参与评价）
@@ -127,23 +127,23 @@ contract SubtitleManager is ERC721 {
      * @param subtitleId 欲查询 ST（Subtitle Token） ID
      * @return 字幕代币 ST 所属申请的ID、所属语种的ID、指纹、当前状态、状态改变时间
      */
-    function getSTBaseInfo(uint256 subtitleId)
-        external
-        view
-        returns (
-            uint256,
-            uint16,
-            uint256,
-            uint8,
-            uint256
-        )
-    {
-        return (
-            subtitleNFT[subtitleId].applyId,
-            subtitleNFT[subtitleId].languageId,
-            subtitleNFT[subtitleId].fingerprint,
-            subtitleNFT[subtitleId].state,
-            subtitleNFT[subtitleId].stateChangeTime
-        );
-    }
+    // function getSTBaseInfo(uint256 subtitleId)
+    //     external
+    //     view
+    //     returns (
+    //         uint256,
+    //         uint16,
+    //         uint256,
+    //         uint8,
+    //         uint256
+    //     )
+    // {
+    //     return (
+    //         subtitleNFT[subtitleId].applyId,
+    //         subtitleNFT[subtitleId].languageId,
+    //         subtitleNFT[subtitleId].fingerprint,
+    //         subtitleNFT[subtitleId].state,
+    //         subtitleNFT[subtitleId].stateChangeTime
+    //     );
+    // }
 }
