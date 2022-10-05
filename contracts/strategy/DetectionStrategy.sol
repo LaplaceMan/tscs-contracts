@@ -19,7 +19,7 @@ contract DetectionStrategy is IDetectionStrategy {
      */
     address public opeator;
 
-    modifier auth() {
+    modifier onlyOwner() {
         require(msg.sender == opeator, "ER5");
         _;
     }
@@ -98,12 +98,15 @@ contract DetectionStrategy is IDetectionStrategy {
      * @notice 由操作员修改策略中的阈值参数
      * @param newDistanceThreshold 新的汉明距离阈值
      */
-    function setDistanceThreshold(uint8 newDistanceThreshold) external auth {
+    function setDistanceThreshold(uint8 newDistanceThreshold)
+        external
+        onlyOwner
+    {
         distanceThreshold = newDistanceThreshold;
         emit SystemSetDistanceThreshold(newDistanceThreshold);
     }
 
-    function changeOpeator(address newOpeator) external auth {
+    function changeOpeator(address newOpeator) external onlyOwner {
         opeator = newOpeator;
         emit SystemChangeOpeator(newOpeator);
     }

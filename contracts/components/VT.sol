@@ -112,28 +112,20 @@ contract VideoToken is ERC1155, IVT {
         require(platform[platformId] != address(0), "ER2");
         _burn(from, platformId, amount);
     }
-
     /**
-     * @notice 更改 TSCS 主合约地址
-     * @param newSS 新的 TSCS 主合约地址
+     * @notice 由操作员调用 safeTransferFrom 功能逻辑, 实现代币在不同地址间的转移
+     * @param platformId 台 Platform 在 TSCS 内的 ID
+     * @param from 稳定币发出方
+     * @param to 稳定接收方
+     * @param amount 稳定币数量
      */
-    function changeTSCS(address newSS) public auth {
-        subtitleSystem = newSS;
-    }
+    // function divide(
+    //     uint256 platformId,
+    //     address from,
+    //     address to,
+    //     uint256 amount
+    // ) external override auth {
+    //     require(platform[platformId] == address(0), "Already Joined");
+    //     _safeTransferFrom(from, to, platformId, amount, "");
+    // }
 }
-/**
- * @notice 由操作员调用 safeTransferFrom 功能逻辑, 实现代币在不同地址间的转移
- * @param platformId 台 Platform 在 TSCS 内的 ID
- * @param from 稳定币发出方
- * @param to 稳定接收方
- * @param amount 稳定币数量
- */
-// function divide(
-//     uint256 platformId,
-//     address from,
-//     address to,
-//     uint256 amount
-// ) external override auth {
-//     require(platform[platformId] == address(0), "Already Joined");
-//     _safeTransferFrom(from, to, platformId, amount, "");
-// }

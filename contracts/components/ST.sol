@@ -11,7 +11,7 @@ contract SubtitleToken is ERC721, IST {
     /**
      * @notice TSCS 主合约地址
      */
-    address subtitleSystem;
+    address public subtitleSystem;
     /**
      * @notice 每个字幕 ST 在生成时都会初始化相应的 Subtitle 结构
      * @param maker 字幕制作者
@@ -89,13 +89,5 @@ contract SubtitleToken is ERC721, IST {
         returns (uint256)
     {
         return subtitleNFT[tokenId].fingerprint;
-    }
-
-    /**
-     * @notice 更改 TSCS 主合约地址
-     * @param newSS 新的 TSCS 主合约地址
-     */
-    function changeTSCS(address newSS) public auth {
-        subtitleSystem = newSS;
     }
 }

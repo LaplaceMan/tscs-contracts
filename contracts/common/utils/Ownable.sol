@@ -19,7 +19,7 @@ abstract contract Ownable {
     }
 
     modifier auth() {
-        require(msg.sender == _owner || opeators[msg.sender] == true);
+        require(opeators[msg.sender] == true);
         _;
     }
 

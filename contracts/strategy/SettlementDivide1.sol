@@ -104,12 +104,4 @@ contract SettlementDivide1 is ISettlementStrategy {
         uint256 unpaidToken1 = (unpaidToken0 * amount) / RATE_BASE;
         settlements[applyId].unsettled += unpaidToken1;
     }
-
-    /**
-     * @notice 修改 TSCS 主合约调用地址
-     * @param newSS 新的 TSCS 主合约地址
-     */
-    function changeTSCS(address newSS) external auth {
-        subtitleSystem = newSS;
-    }
 }

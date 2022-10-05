@@ -62,7 +62,7 @@ contract PlatformManager is Ownable, EntityManager {
         string memory symbol,
         uint16 rate1,
         uint16 rate2
-    ) external auth returns (uint256) {
+    ) external onlyOwner returns (uint256) {
         require(platforms[platfrom].rateCountsToProfit == 0, "ER0");
         require(rate1 > 0 && rate2 > 0, "ER1");
         totalPlatforms++;

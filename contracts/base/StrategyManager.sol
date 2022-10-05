@@ -64,7 +64,10 @@ contract StrategyManager is PlatformManager, SubtitleManager {
      * @notice 修改当前 TSCS 内的审核策略, 仅能由管理员调用
      * @param newAudit 新的审核策略合约地址
      */
-    function setDefaultAuditStrategy(IAuditStrategy newAudit) external auth {
+    function setDefaultAuditStrategy(IAuditStrategy newAudit)
+        external
+        onlyOwner
+    {
         require(address(newAudit) != address(0), "ER1");
         auditStrategy = newAudit;
         emit SystemSetAudit(address(newAudit));
@@ -74,7 +77,10 @@ contract StrategyManager is PlatformManager, SubtitleManager {
      * @notice 修改当前 TSCS 内的访问策略, 仅能由管理员调用
      * @param newAccess 新的访问策略合约地址
      */
-    function setDefaultAccessStrategy(IAccessStrategy newAccess) external auth {
+    function setDefaultAccessStrategy(IAccessStrategy newAccess)
+        external
+        onlyOwner
+    {
         require(address(newAccess) != address(0), "ER1");
         accessStrategy = newAccess;
         emit SystemSetAccess(address(newAccess));
@@ -86,7 +92,7 @@ contract StrategyManager is PlatformManager, SubtitleManager {
      */
     function setDefaultDetectionStrategy(IDetectionStrategy newDetection)
         external
-        auth
+        onlyOwner
     {
         require(address(newDetection) != address(0), "ER1");
         detectionStrategy = newDetection;
@@ -103,7 +109,7 @@ contract StrategyManager is PlatformManager, SubtitleManager {
         uint8 strategyId,
         address strategy,
         string memory notes
-    ) external auth {
+    ) external onlyOwner {
         require(strategy != address(0), "ER1");
         settlementStrategy[strategyId].strategy = strategy;
         settlementStrategy[strategyId].notes = notes;
@@ -114,7 +120,7 @@ contract StrategyManager is PlatformManager, SubtitleManager {
      * @notice 设置/修改平台币合约地址
      * @param token 新的 ERC20 TSCS 平台币合约地址
      */
-    function setZimuToken(address token) external auth {
+    function setZimuToken(address token) external onlyOwner {
         require(token != address(0), "ER1");
         zimuToken = token;
         emit SystemSetZimuToken(token);
@@ -124,7 +130,7 @@ contract StrategyManager is PlatformManager, SubtitleManager {
      * @notice 设置/修改稳定币合约地址
      * @param token 新的 ERC1155 稳定币合约地址
      */
-    function setVideoToken(address token) external auth {
+    function setVideoToken(address token) external onlyOwner {
         require(token != address(0), "ER1");
         videoToken = token;
         emit SystemSetVideoToken(token);
@@ -134,7 +140,7 @@ contract StrategyManager is PlatformManager, SubtitleManager {
      * @notice 设置/修改字幕代币 NFT 合约地址
      * @param token 新的 ERC1155 稳定币合约地址
      */
-    function setSubtitleToken(address token) external auth {
+    function setSubtitleToken(address token) external onlyOwner {
         require(token != address(0), "ER1");
         subtitleToken = token;
         emit SystemSetSubtitleToken(token);
@@ -144,7 +150,7 @@ contract StrategyManager is PlatformManager, SubtitleManager {
      * @notice 设置/修改锁定期（审核期）
      * @param time 新的锁定时间（审核期）
      */
-    function setLockUpTime(uint256 time) external auth {
+    function setLockUpTime(uint256 time) external onlyOwner {
         require(time > 0, "ER1");
         lockUpTime = time;
         emit SystemSetLockUpTime(time);

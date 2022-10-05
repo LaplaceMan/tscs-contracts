@@ -58,7 +58,7 @@ contract AccessStrategy is IAccessStrategy {
     event SystemSetMultiplier(uint8 newMultiplier);
     event SystemChangeOpeator(address newOpeator);
 
-    modifier auth() {
+    modifier onlyOwner() {
         require(msg.sender == opeator, "ER5");
         _;
     }
@@ -146,42 +146,45 @@ contract AccessStrategy is IAccessStrategy {
     /**
      * @notice 以下均为对策略内关键参数的修改功能, 一般将 opeator 设置为 DAO 合约
      */
-    function setBaseRatio(uint16 newRatio) external auth {
+    function setBaseRatio(uint16 newRatio) external onlyOwner {
         baseRatio = newRatio;
         emit SystemSetBaseRatio(newRatio);
     }
 
-    function setDepoitThreshold(uint8 newDepoitThreshold) external auth {
+    function setDepoitThreshold(uint8 newDepoitThreshold) external onlyOwner {
         depoitThreshold = newDepoitThreshold;
         emit SystemSetDepoitThreshold(newDepoitThreshold);
     }
 
-    function setBlacklistThreshold(uint8 newBlacklistThreshold) external auth {
+    function setBlacklistThreshold(uint8 newBlacklistThreshold)
+        external
+        onlyOwner
+    {
         blacklistThreshold = newBlacklistThreshold;
         emit SystemSetBlacklistThreshold(newBlacklistThreshold);
     }
 
-    function setMinDeposit(uint256 newMinDeposit) external auth {
+    function setMinDeposit(uint256 newMinDeposit) external onlyOwner {
         minDeposit = newMinDeposit;
         emit SystemSetMinDeposit(newMinDeposit);
     }
 
-    function setRewardToken(uint256 newRewardToken) external auth {
+    function setRewardToken(uint256 newRewardToken) external onlyOwner {
         rewardToken = newRewardToken;
         emit SystemSetRewardToken(newRewardToken);
     }
 
-    function setPunishmentToken(uint256 newPunishmentToken) external auth {
+    function setPunishmentToken(uint256 newPunishmentToken) external onlyOwner {
         punishmentToken = newPunishmentToken;
         emit SystemSetPunishmentToken(newPunishmentToken);
     }
 
-    function setMultiplier(uint8 newMultiplier) external auth {
+    function setMultiplier(uint8 newMultiplier) external onlyOwner {
         multiplier = newMultiplier;
         emit SystemSetMultiplier(newMultiplier);
     }
 
-    function changeOpeator(address newOpeator) external auth {
+    function changeOpeator(address newOpeator) external onlyOwner {
         opeator = newOpeator;
         emit SystemChangeOpeator(newOpeator);
     }

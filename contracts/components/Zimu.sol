@@ -16,6 +16,25 @@ contract ZMToken is ERC20, IZimu {
      */
     address public subtitleSystem;
     /**
+     * @notice 用户每天最多能获得的 Zimu 代币数
+     */
+    uint256 public dayRewrdLimit;
+
+    /**
+     * @notice 拥有特殊权限的地址，一般为 DAO 合约
+     */
+    address public opeator;
+
+    mapping(address => Reward) rewards;
+
+    struct Reward {
+        uint256 lastGetRewardTime;
+        uint256 todayGetReward;
+    }
+
+    event SystemChangeDayRewardLimit(uint256 number);
+    event SystemChangeOpeator(address newOpeator);
+    /**
      * @notice 仅能由 TSCS 调用
      */
     modifier auth() {
@@ -28,24 +47,35 @@ contract ZMToken is ERC20, IZimu {
      */
     constructor(
         address ss,
+        address op,
         uint256 preMint,
         address tokenOwnerAddress
     ) ERC20("Zimu Token", "ZM") {
         subtitleSystem = ss;
+        opeator = op;
         _mint(tokenOwnerAddress, preMint);
     }
 
     /**
-     * @notice 为用户铸造一定数目的平台币, 当仍剩余奖励代币数时
+     * @notice 为用户铸造一定数目的平台币
      * @param to 平台币接收方
      * @param amount 铸造平台币数目
      */
     function mintReward(address to, uint256 amount) public override auth {
-        _mint(to, amount);
+        if (rewards[to].lastGetRewardTime + 1 days > block.timestamp) {
+            if (rewards[to].todayGetReward < dayRewrdLimit) {
+                rewards[to].todayGetReward += amount;
+                _mint(to, amount);
+            }
+        } else {
+            rewards[to].lastGetRewardTime = block.timestamp;
+            rewards[to].todayGetReward = amount;
+            _mint(to, amount);
+        }
     }
 
     /**
-     * @notice 为用户铸造一定数目的平台币, 当仍剩余奖励代币数时
+     * @notice 为用户销毁一定数目的平台币
      * @param owner 平台币持有方
      * @param amount 销毁平台币数目
      */
@@ -57,10 +87,18 @@ contract ZMToken is ERC20, IZimu {
     }
 
     /**
-     * @notice 更改 TSCS 主合约地址
-     * @param newSS 新的 TSCS 主合约地址
+     * @notice 修改每日奖励限额
+     * @param number 新的每日奖励限额
      */
-    function changeTSCS(address newSS) public auth {
-        subtitleSystem = newSS;
+    function setDayRewardLimit(uint256 number) public {
+        require(msg.sender == opeator, "ER5");
+        dayRewrdLimit = number;
+        emit SystemChangeDayRewardLimit(number);
+    }
+
+    function changeOpeator(address newOpeator) external {
+        require(msg.sender == opeator, "ER5");
+        opeator = newOpeator;
+        emit SystemChangeOpeator(newOpeator);
     }
 }

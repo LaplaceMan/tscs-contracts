@@ -97,12 +97,4 @@ contract SettlementOneTime2 is ISettlementStrategy {
     ) external auth {
         settlements[applyId].unsettled += amount;
     }
-
-    /**
-     * @notice 修改 TSCS 主合约调用地址
-     * @param newSS 新的 TSCS 主合约地址
-     */
-    function changeTSCS(address newSS) external auth {
-        subtitleSystem = newSS;
-    }
 }
