@@ -40,13 +40,13 @@
 
 ## Next Update
 
-- [ ] 添加制作字幕手续费（手续费收取逻辑的模块化）
 - [ ] 使用 Zimu 代币兑换 NFT，NFT 的差异化设计
 - [ ] Zimu 代币的经济模型（使用途径）
 - [ ] DAO 管理
 - [ ] 仲裁（法庭）机制
 - [ ] 字幕组 DAO
 - [ ] 粉丝空投奖励
+- [ ] SBT
 
 ## Test Function Task
 

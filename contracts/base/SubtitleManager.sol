@@ -6,20 +6,15 @@
  */
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.0;
+import "../interfaces/IST.sol";
 
-import "../common/token/ERC721/ERC721.sol";
-
-contract SubtitleManager is ERC721 {
+contract SubtitleManager {
     /**
-     * @notice ERC721 代币 ID 顺位
+     * @notice ST 合约地址
      */
-    uint256 private _tokenIdTracker;
-
+    address public subtitleToken;
     /**
      * @notice 每个字幕 ST 在生成时都会初始化相应的 Subtitle 结构
-     * @param applyId 字幕所属申请的 ID
-     * @param languageId 字幕所属语种的 ID
-     * @param fingerprint 字幕指纹信息, 此处暂定为 Simhash
      * @param state 字幕当前状态, 0 为默认状态, 1 为被确认, 2 为被认定为恶意字幕
      * @param stateChangeTime 字幕状态改变时的时间戳, 用于利益相关者稳定币锁定期判断, 在申请未确认前, 指的是字幕上传时间
      * @param supporters 支持该字幕被采纳的观众（审核员）地址集合
@@ -27,8 +22,6 @@ contract SubtitleManager is ERC721 {
      */
     struct Subtitle {
         uint256 applyId;
-        uint16 languageId;
-        uint256 fingerprint;
         uint8 state;
         uint256 stateChangeTime;
         address[] supporters;
@@ -45,13 +38,6 @@ contract SubtitleManager is ERC721 {
      */
     mapping(address => mapping(uint256 => bool)) evaluated;
 
-    event SubtitleUpload(
-        address maker,
-        uint256 applyId,
-        uint256 subtitleId,
-        uint16 languageId,
-        uint256 fingerprint
-    );
     event SubtilteStateChange(uint256 subtitleId, uint8 state, uint256 time);
     event SubitlteGetEvaluation(
         uint256 subtitleId,
@@ -73,20 +59,15 @@ contract SubtitleManager is ERC721 {
         uint16 languageId,
         uint256 fingerprint
     ) internal returns (uint256) {
-        _tokenIdTracker++;
-        _mint(maker, _tokenIdTracker);
-        subtitleNFT[_tokenIdTracker].applyId = applyId;
-        subtitleNFT[_tokenIdTracker].languageId = languageId;
-        subtitleNFT[_tokenIdTracker].fingerprint = fingerprint;
-        subtitleNFT[_tokenIdTracker].stateChangeTime = block.timestamp;
-        emit SubtitleUpload(
+        uint256 id = IST(subtitleToken).mintST(
             maker,
             applyId,
-            _tokenIdTracker,
             languageId,
             fingerprint
         );
-        return _tokenIdTracker;
+        subtitleNFT[id].applyId = applyId;
+        subtitleNFT[id].stateChangeTime = block.timestamp;
+        return id;
     }
 
     /**
@@ -121,29 +102,4 @@ contract SubtitleManager is ERC721 {
         evaluated[evaluator][subtitleId] = true;
         emit SubitlteGetEvaluation(subtitleId, evaluator, attitude);
     }
-
-    /**
-     * @notice 获得 ST 基本信息
-     * @param subtitleId 欲查询 ST（Subtitle Token） ID
-     * @return 字幕代币 ST 所属申请的ID、所属语种的ID、指纹、当前状态、状态改变时间
-     */
-    // function getSTBaseInfo(uint256 subtitleId)
-    //     external
-    //     view
-    //     returns (
-    //         uint256,
-    //         uint16,
-    //         uint256,
-    //         uint8,
-    //         uint256
-    //     )
-    // {
-    //     return (
-    //         subtitleNFT[subtitleId].applyId,
-    //         subtitleNFT[subtitleId].languageId,
-    //         subtitleNFT[subtitleId].fingerprint,
-    //         subtitleNFT[subtitleId].state,
-    //         subtitleNFT[subtitleId].stateChangeTime
-    //     );
-    // }
 }

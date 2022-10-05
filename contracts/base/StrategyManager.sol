@@ -7,13 +7,14 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.0;
 
+import "./SubtitleManager.sol";
 import "./PlatformManager.sol";
 import "../interfaces/IAccessStrategy.sol";
 import "../interfaces/IAuditStrategy.sol";
 import "../interfaces/IDetectionStrategy.sol";
 import "../interfaces/ISettlementStrategy.sol";
 
-contract StrategyManager is PlatformManager {
+contract StrategyManager is PlatformManager, SubtitleManager {
     /**
      * @notice 审核策略合约, 根据观众（审核员）评价信息判断字幕状态是否产生变化, 即无变化、被采用或被删除
      */
@@ -27,7 +28,14 @@ contract StrategyManager is PlatformManager {
      * @notice 检测策略合约, 字幕上传时携带了额外的指纹字段, 目前的设想是其为字幕的 Simhash 值, 该策略是根据已上传字幕的指纹信息判断新上传字幕是否抄袭
      */
     IDetectionStrategy public detectionStrategy;
-
+    /**
+     * @notice 结算相关时的除数
+     */
+    uint16 constant RATE_BASE = 65535;
+    /**
+     * @notice 锁定期（审核期）
+     */
+    uint256 public lockUpTime;
     /**
      * @notice 记录每个结算策略的信息
      * @param strategy 结算策略合约地址
@@ -43,6 +51,10 @@ contract StrategyManager is PlatformManager {
     event SystemSetDetection(address newDetection);
     event SystemSetSettlement(uint8 strategyId, address strategy, string notes);
 
+    event SystemSetZimuToken(address token);
+    event SystemSetVideoToken(address token);
+    event SystemSetSubtitleToken(address token);
+    event SystemSetLockUpTime(uint256 time);
     /**
      * @notice 结算策略 ID 与 SettlementStruct 的映射, 在 TSCS 内用 ID 唯一标识结算策略, 从0开始
      */
@@ -98,6 +110,45 @@ contract StrategyManager is PlatformManager {
         emit SystemSetSettlement(strategyId, strategy, notes);
     }
 
+    /**
+     * @notice 设置/修改平台币合约地址
+     * @param token 新的 ERC20 TSCS 平台币合约地址
+     */
+    function setZimuToken(address token) external auth {
+        require(token != address(0), "ER1");
+        zimuToken = token;
+        emit SystemSetZimuToken(token);
+    }
+
+    /**
+     * @notice 设置/修改稳定币合约地址
+     * @param token 新的 ERC1155 稳定币合约地址
+     */
+    function setVideoToken(address token) external auth {
+        require(token != address(0), "ER1");
+        videoToken = token;
+        emit SystemSetVideoToken(token);
+    }
+
+    /**
+     * @notice 设置/修改字幕代币 NFT 合约地址
+     * @param token 新的 ERC1155 稳定币合约地址
+     */
+    function setSubtitleToken(address token) external auth {
+        require(token != address(0), "ER1");
+        subtitleToken = token;
+        emit SystemSetSubtitleToken(token);
+    }
+
+    /**
+     * @notice 设置/修改锁定期（审核期）
+     * @param time 新的锁定时间（审核期）
+     */
+    function setLockUpTime(uint256 time) external auth {
+        require(time > 0, "ER1");
+        lockUpTime = time;
+        emit SystemSetLockUpTime(time);
+    }
     /**
      * @notice 返回指定结算策略的基本信息
      * @param strategyId 策略 ID

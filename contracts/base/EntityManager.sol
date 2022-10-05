@@ -229,4 +229,19 @@ contract EntityManager is VaultManager {
     ) public view returns (uint256) {
         return users[usr].lock[platform][day];
     }
+
+    /**
+     * @notice 提取质押的 Zimu 代币
+     * @param amount 欲提取 Zimu 代币数
+     * @return 实际提取质押 Zimu 代币数
+     */
+    function withdrawDeposit(uint256 amount) public returns (uint256) {
+        require(users[msg.sender].deposit > 0, "ER1");
+        if (amount > uint256(users[msg.sender].deposit)) {
+            amount = uint256(users[msg.sender].deposit);
+        }
+        users[msg.sender].deposit -= int256(amount);
+        IZimu(zimuToken).transferFrom(address(this), msg.sender, amount);
+        return amount;
+    }
 }

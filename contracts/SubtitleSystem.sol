@@ -9,23 +9,14 @@ pragma solidity ^0.8.0;
 
 import "./interfaces/ISettlementStrategy.sol";
 import "./base/StrategyManager.sol";
-import "./base/SubtitleManager.sol";
 import "./base/VideoManager.sol";
 import "./interfaces/IVT.sol";
 
-contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
+contract SubtitleSystem is StrategyManager, VideoManager {
     /**
      * @notice TSCS 内已经发出的申请总数
      */
     uint256 public totalApplyNumber;
-    /**
-     * @notice 结算相关时的除数
-     */
-    uint16 constant RATE_BASE = 65535;
-    /**
-     * @notice 锁定期（审核期）
-     */
-    uint256 public lockUpTime;
 
     /**
      * @notice 每个申请都有一个相应的 Application 结构记录申请信息
@@ -83,9 +74,6 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
         uint256[] day,
         uint256 all
     );
-    event SystemSetZimuToken(address token);
-    event SystemSetVideoToken(address token);
-    event SystemSetLockUpTime(uint256 time);
     event VideoPreExtract(uint256 videoId, uint256 unsettled, uint256 surplus);
 
     /**
@@ -236,8 +224,9 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
             totalApplys[applyId].subtitles.length
         );
         for (uint256 i = 0; i < totalApplys[applyId].subtitles.length; i++) {
-            history[i] = subtitleNFT[totalApplys[applyId].subtitles[i]]
-                .fingerprint;
+            history[i] = IST(subtitleToken).getSTFingerprint(
+                totalApplys[applyId].subtitles[i]
+            );
         }
         return history;
     }
@@ -370,7 +359,7 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
         if (flag == 2) newFlag = -1;
         // 更新字幕制作者信誉度和 Zimu 质押数信息
         _updateUser(
-            ownerOf(subtitleId),
+            IST(subtitleToken).ownerOf(subtitleId),
             int256((reputionSpread * multiplier) / 100) * newFlag,
             int256((tokenSpread * multiplier) / 100) * newFlag
         );
@@ -466,7 +455,7 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
         ISettlementStrategy(settlementStrategy[0].strategy).settlement(
             applyId,
             platform,
-            ownerOf(totalApplys[applyId].adopted),
+            IST(subtitleToken).ownerOf(totalApplys[applyId].adopted),
             platforms[platform].rateCountsToProfit,
             platforms[platform].rateAuditorDivide,
             subtitleNFT[totalApplys[applyId].adopted].supporters
@@ -493,7 +482,9 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
                 ).settlement(
                         applyId,
                         platform,
-                        ownerOf(totalApplys[applyId].adopted),
+                        IST(subtitleToken).ownerOf(
+                            totalApplys[applyId].adopted
+                        ),
                         unsettled,
                         platforms[platform].rateAuditorDivide,
                         subtitleNFT[totalApplys[applyId].adopted].supporters
@@ -527,36 +518,6 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
         videos[videoId].unsettled = 0;
         emit VideoPreExtract(videoId, unsettled, surplus);
         return unsettled;
-    }
-
-    /**
-     * @notice 设置/修改平台币合约地址
-     * @param token 新的 ERC20 TSCS 平台币合约地址
-     */
-    function setZimuToken(address token) external auth {
-        require(token != address(0), "ER1");
-        zimuToken = token;
-        emit SystemSetZimuToken(token);
-    }
-
-    /**
-     * @notice 设置/修改稳定币合约地址
-     * @param token 新的 ERC1155 稳定币合约地址
-     */
-    function setVideoToken(address token) external auth {
-        require(token != address(0), "ER1");
-        videoToken = token;
-        emit SystemSetVideoToken(token);
-    }
-
-    /**
-     * @notice 设置/修改锁定期（审核期）
-     * @param time 新的锁定时间（审核期）
-     */
-    function setLockUpTime(uint256 time) external auth {
-        require(time > 0, "ER1");
-        lockUpTime = time;
-        emit SystemSetLockUpTime(time);
     }
 
     /**
@@ -608,6 +569,16 @@ contract SubtitleSystem is StrategyManager, SubtitleManager, VideoManager {
             }
         }
         if (all > 0) {
+            if (fee > 0) {
+                uint256 thisFee = (all * fee) / BASE_FEE_RATE;
+                all -= thisFee;
+                IVT(videoToken).mintStableToken(
+                    platforms[platform].platformId,
+                    address(this),
+                    thisFee
+                );
+                _addFee(platforms[platform].platformId, thisFee);
+            }
             IVT(videoToken).mintStableToken(
                 platforms[platform].platformId,
                 msg.sender,

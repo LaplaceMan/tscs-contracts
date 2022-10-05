@@ -7,8 +7,8 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.0;
 
-import "../../interfaces/ISubtitleSystem.sol";
-import "../../interfaces/ISettlementStrategy.sol";
+import "../interfaces/ISubtitleSystem.sol";
+import "../interfaces/ISettlementStrategy.sol";
 
 contract SettlementDivide1 is ISettlementStrategy {
     uint16 constant RATE_BASE = 65535;
