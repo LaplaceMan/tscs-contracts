@@ -1,7 +1,8 @@
 /** @type import('hardhat/config').HardhatUserConfig */
+require("@nomiclabs/hardhat-ethers");
 require('hardhat-contract-sizer');
 module.exports = {
-  defaultNetwork: "hardhat",
+  defaultNetwork: "localhost",
   solidity: {
     version: "0.8.9",
     settings: {
@@ -15,7 +16,7 @@ module.exports = {
     hardhat: {
     }, // npx hardhat node
     localhost: {
-      url: "http://127.0.0.1:8545" 
+      url: "http://10.201.1.235:8545" 
     }, // ganache ...
     goerli: {
       chainId: 5,

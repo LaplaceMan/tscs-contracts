@@ -9,7 +9,7 @@ pragma solidity ^0.8.0;
 
 import "../interfaces/IAuditStrategy.sol";
 
-contract GeneralStrategy is IAuditStrategy {
+contract AuditStrategy is IAuditStrategy {
     /**
      * @notice 根据观众（审核员）对字幕的评价数据判断字幕是否被采纳, 内部功能
      * @param uploaded 已上传的字幕数目

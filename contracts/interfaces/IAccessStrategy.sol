@@ -18,7 +18,7 @@ interface IAccessStrategy {
 
     function baseRatio() external view returns (uint16);
 
-    function depoitThreshold() external view returns (uint8);
+    function depositThreshold() external view returns (uint16);
 
     function blacklistThreshold() external view returns (uint8);
 

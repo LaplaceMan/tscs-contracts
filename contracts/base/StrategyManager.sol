@@ -64,10 +64,7 @@ contract StrategyManager is PlatformManager, SubtitleManager {
      * @notice 修改当前 TSCS 内的审核策略, 仅能由管理员调用
      * @param newAudit 新的审核策略合约地址
      */
-    function setDefaultAuditStrategy(IAuditStrategy newAudit)
-        external
-        onlyOwner
-    {
+    function setAuditStrategy(IAuditStrategy newAudit) external onlyOwner {
         require(address(newAudit) != address(0), "ER1");
         auditStrategy = newAudit;
         emit SystemSetAudit(address(newAudit));
@@ -77,10 +74,7 @@ contract StrategyManager is PlatformManager, SubtitleManager {
      * @notice 修改当前 TSCS 内的访问策略, 仅能由管理员调用
      * @param newAccess 新的访问策略合约地址
      */
-    function setDefaultAccessStrategy(IAccessStrategy newAccess)
-        external
-        onlyOwner
-    {
+    function setAccessStrategy(IAccessStrategy newAccess) external onlyOwner {
         require(address(newAccess) != address(0), "ER1");
         accessStrategy = newAccess;
         emit SystemSetAccess(address(newAccess));
@@ -90,7 +84,7 @@ contract StrategyManager is PlatformManager, SubtitleManager {
      * @notice 修改当前 TSCS 内的检测策略, 仅能由管理员调用
      * @param newDetection 新的检测策略合约地址
      */
-    function setDefaultDetectionStrategy(IDetectionStrategy newDetection)
+    function setDetectionStrategy(IDetectionStrategy newDetection)
         external
         onlyOwner
     {

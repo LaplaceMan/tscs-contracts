@@ -204,7 +204,7 @@ contract EntityManager is VaultManager {
 
     /**
      * @notice 获得特定用户当前信誉度分数和质押 Zimu 数量
-     * @param {usr} 欲查询用户的区块链地址
+     * @param usr 欲查询用户的区块链地址
      * @return 信誉度分数, 质押 Zimu 数
      */
     function getUserBaseInfo(address usr)
@@ -217,9 +217,9 @@ contract EntityManager is VaultManager {
 
     /**
      * @notice 获取用户在指定平台指定日子锁定的稳定币数量
-     * @param {usr} 欲查询用户的区块链地址
-     * @param {platform} 特定Platform地址
-     * @param {day} 指定天
+     * @param usr 欲查询用户的区块链地址
+     * @param platform 特定Platform地址
+     * @param day 指定天
      * @return 锁定稳定币数量
      */
     function getUserLockReward(

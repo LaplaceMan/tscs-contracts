@@ -21,7 +21,7 @@ contract AccessStrategy is IAccessStrategy {
     /**
      * @notice 需要质押 Zimu 的信誉度分数阈值
      */
-    uint8 public depoitThreshold;
+    uint16 public depositThreshold;
 
     /**
      * @notice 被禁止使用 TSCS 提供服务的信誉度阈值
@@ -70,6 +70,7 @@ contract AccessStrategy is IAccessStrategy {
         punishmentToken = 1**17;
         multiplier = 150; //表示字幕制作者扣除的信誉度是支持者的 1.5 倍
         blacklistThreshold = 1;
+        depositThreshold = 500; //50.0
         opeator = dao;
     }
 
@@ -89,6 +90,20 @@ contract AccessStrategy is IAccessStrategy {
      */
     function _punishment(uint256 repution) internal view returns (uint256) {
         return (baseRatio / repution);
+    }
+
+    /**
+     * @notice 当信誉度过低时，需要质押一定数目的 Zimu 代币，且信誉度越低需要质押的数目越多
+     * @param repution 用户当前信誉度分数
+     * @return 应（最少）质押 Zimu 代币数
+     */
+    function _deposit(uint256 repution) internal view returns (uint256) {
+        if (repution > depositThreshold) {
+            return 0;
+        } else {
+            uint256 baseRate = (depositThreshold - repution) / 100;
+            return minDeposit * (2**baseRate);
+        }
     }
 
     /**
@@ -112,7 +127,7 @@ contract AccessStrategy is IAccessStrategy {
             return (_reward(repution), rewardToken, multiplier);
         } else if (flag == 2) {
             //当信誉度分数低于 depoitThreshold 时, 每次惩罚都会扣除 Zimu, 此处对用户的区分逻辑为: （优秀）正常、危险、恶意
-            if (repution - _punishment(repution) < depoitThreshold) {
+            if (repution - _punishment(repution) < depositThreshold) {
                 return (_punishment(repution), punishmentToken, multiplier);
             }
             return (_punishment(repution), 0, multiplier);
@@ -134,7 +149,8 @@ contract AccessStrategy is IAccessStrategy {
         returns (bool)
     {
         if (
-            (repution <= depoitThreshold && deposit <= int256(minDeposit)) ||
+            (repution <= depositThreshold &&
+                deposit <= int256(_deposit(repution))) ||
             repution <= blacklistThreshold
         ) {
             return false;
@@ -152,7 +168,7 @@ contract AccessStrategy is IAccessStrategy {
     }
 
     function setDepoitThreshold(uint8 newDepoitThreshold) external onlyOwner {
-        depoitThreshold = newDepoitThreshold;
+        depositThreshold = newDepoitThreshold;
         emit SystemSetDepoitThreshold(newDepoitThreshold);
     }
 
