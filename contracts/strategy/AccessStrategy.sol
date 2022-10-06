@@ -116,23 +116,19 @@ contract AccessStrategy is IAccessStrategy {
         external
         view
         override
-        returns (
-            uint256,
-            uint256,
-            uint8
-        )
+        returns (uint256, uint256)
     {
         if (flag == 1) {
             //rewardToken 为 0, 代币奖励策略仍在设计中
-            return (_reward(repution), rewardToken, multiplier);
+            return (_reward(repution), rewardToken);
         } else if (flag == 2) {
             //当信誉度分数低于 depoitThreshold 时, 每次惩罚都会扣除 Zimu, 此处对用户的区分逻辑为: （优秀）正常、危险、恶意
             if (repution - _punishment(repution) < depositThreshold) {
-                return (_punishment(repution), punishmentToken, multiplier);
+                return (_punishment(repution), punishmentToken);
             }
-            return (_punishment(repution), 0, multiplier);
+            return (_punishment(repution), 0);
         } else {
-            return (0, 0, 0);
+            return (0, 0);
         }
     }
 

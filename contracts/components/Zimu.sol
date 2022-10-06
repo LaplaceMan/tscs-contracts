@@ -16,21 +16,13 @@ contract ZMToken is ERC20, IZimu {
      */
     address public subtitleSystem;
     /**
-     * @notice 用户每天最多能获得的 Zimu 代币数
+     * @notice 总供应量
      */
-    uint256 public dayRewrdLimit;
-
+    uint256 immutable TOTAL_SUPPLY;
     /**
      * @notice 拥有特殊权限的地址，一般为 DAO 合约
      */
     address public opeator;
-
-    mapping(address => Reward) rewards;
-
-    struct Reward {
-        uint256 lastGetRewardTime;
-        uint256 todayGetReward;
-    }
 
     event SystemChangeDayRewardLimit(uint256 number);
     event SystemChangeOpeator(address newOpeator);
@@ -48,11 +40,13 @@ contract ZMToken is ERC20, IZimu {
     constructor(
         address ss,
         address op,
-        uint256 preMint,
+        uint256 total,
         address tokenOwnerAddress
     ) ERC20("Zimu Token", "ZM") {
         subtitleSystem = ss;
         opeator = op;
+        TOTAL_SUPPLY = total;
+        uint256 preMint = (total * 4) / 5;
         _mint(tokenOwnerAddress, preMint);
     }
 
@@ -62,14 +56,7 @@ contract ZMToken is ERC20, IZimu {
      * @param amount 铸造平台币数目
      */
     function mintReward(address to, uint256 amount) public override auth {
-        if (rewards[to].lastGetRewardTime + 1 days > block.timestamp) {
-            if (rewards[to].todayGetReward < dayRewrdLimit) {
-                rewards[to].todayGetReward += amount;
-                _mint(to, amount);
-            }
-        } else {
-            rewards[to].lastGetRewardTime = block.timestamp;
-            rewards[to].todayGetReward = amount;
+        if (TOTAL_SUPPLY - totalSupply() - amount >= 0) {
             _mint(to, amount);
         }
     }
@@ -87,15 +74,9 @@ contract ZMToken is ERC20, IZimu {
     }
 
     /**
-     * @notice 修改每日奖励限额
-     * @param number 新的每日奖励限额
+     * @notice 更改拥有特殊权限的操作员地址
+     * @param newOpeator 更换 DAO 合约地址
      */
-    function setDayRewardLimit(uint256 number) public {
-        require(msg.sender == opeator, "ER5");
-        dayRewrdLimit = number;
-        emit SystemChangeDayRewardLimit(number);
-    }
-
     function changeOpeator(address newOpeator) external {
         require(msg.sender == opeator, "ER5");
         opeator = newOpeator;

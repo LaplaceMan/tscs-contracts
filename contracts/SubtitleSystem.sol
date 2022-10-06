@@ -134,12 +134,8 @@ contract SubtitleSystem is StrategyManager, VideoManager {
         // 当平台地址为 0, 意味着使用默认结算策略
         if (platform == address(0)) {
             require(strategy == 0, "ER7");
-            // 一次性结算策略下, 使用先销毁申请人奖励代币, 后给字幕制作者和支持者铸造代币的方案
-            IVT(videoToken).burnStableToken(
-                platforms[platform].platformId,
-                msg.sender,
-                amount
-            );
+            // 一次性结算策略下, 需要用户提前授权主合约额度且只能使用 Zimu 代币支付
+            IZimu(zimuToken).transferFrom(msg.sender, address(this), amount);
         } else {
             // 当结算策略非一次性时, 与视频收益相关, 需要由视频创作者主动提起
             require(videos[videoId].creator == msg.sender, "ER5");
@@ -167,6 +163,12 @@ contract SubtitleSystem is StrategyManager, VideoManager {
         totalApplys[totalApplyNumber].amount = amount;
         totalApplys[totalApplyNumber].language = language;
         totalApplys[totalApplyNumber].deadline = deadline;
+        // 奖励措施
+        IVT(videoToken).mintStableToken(
+            0,
+            msg.sender,
+            users[msg.sender].repution
+        );
         emit ApplicationSubmit(
             msg.sender,
             platform,
@@ -343,32 +345,36 @@ contract SubtitleSystem is StrategyManager, VideoManager {
      * @notice 批量更新用户信誉度和质押信息, 字幕状态发生变化时被调用
      * @param subtitleId 字幕 ID
      * @param flag 1 表示字幕被采用（奖励）, 2 表示字幕被认定为恶意字幕（惩罚）
-     * @param reputionSpread 信誉度变化值
-     * @param tokenSpread Zimu 变化值
-     * @param multiplier 字幕制作者受到的奖励/惩罚倍数
      */
-    function _updateUsers(
-        uint256 subtitleId,
-        uint8 flag,
-        uint256 reputionSpread,
-        uint256 tokenSpread,
-        uint8 multiplier
-    ) internal {
+    function _updateUsers(uint256 subtitleId, uint8 flag) internal {
         int8 newFlag = 1;
+        uint8 multiplier = accessStrategy.multiplier();
         // 2 表示字幕被认定为恶意字幕, 对字幕制作者和支持者进行惩罚, 所以标志位为 负
         if (flag == 2) newFlag = -1;
         // 更新字幕制作者信誉度和 Zimu 质押数信息
-        _updateUser(
-            IST(subtitleToken).ownerOf(subtitleId),
-            int256((reputionSpread * multiplier) / 100) * newFlag,
-            int256((tokenSpread * multiplier) / 100) * newFlag
-        );
+        {
+            (uint256 reputionSpread, uint256 tokenSpread) = accessStrategy
+                .spread(
+                    users[IST(subtitleToken).ownerOf(subtitleId)].repution,
+                    flag
+                );
+            _updateUser(
+                IST(subtitleToken).ownerOf(subtitleId),
+                int256((reputionSpread * multiplier) / 100) * newFlag,
+                int256((tokenSpread * multiplier) / 100) * newFlag
+            );
+        }
         // 更新审核员信息, 支持者和反对者受到的待遇相反
         for (
             uint256 i = 0;
             i < subtitleNFT[subtitleId].supporters.length;
             i++
         ) {
+            (uint256 reputionSpread, uint256 tokenSpread) = accessStrategy
+                .spread(
+                    users[subtitleNFT[subtitleId].supporters[i]].repution,
+                    flag
+                );
             _updateUser(
                 subtitleNFT[subtitleId].supporters[i],
                 int256(reputionSpread) * newFlag,
@@ -376,6 +382,11 @@ contract SubtitleSystem is StrategyManager, VideoManager {
             );
         }
         for (uint256 i = 0; i < subtitleNFT[subtitleId].dissenter.length; i++) {
+            (uint256 reputionSpread, uint256 tokenSpread) = accessStrategy
+                .spread(
+                    users[subtitleNFT[subtitleId].dissenter[i]].repution,
+                    flag
+                );
             _updateUser(
                 subtitleNFT[subtitleId].dissenter[i],
                 int256(reputionSpread) * newFlag * (-1),
@@ -425,18 +436,7 @@ contract SubtitleSystem is StrategyManager, VideoManager {
         if (flag != 0) {
             // 改变 ST 状态, 以及利益相关者信誉度和质押 Zimu 信息
             _changeST(subtitleId, flag);
-            (
-                uint256 reputionSpread,
-                uint256 tokenSpread,
-                uint8 multiplier
-            ) = accessStrategy.spread(users[msg.sender].repution, flag);
-            _updateUsers(
-                subtitleId,
-                flag,
-                reputionSpread,
-                tokenSpread,
-                multiplier
-            );
+            _updateUsers(subtitleId, flag);
             // 字幕被采用, 更新相应申请的状态
             if (flag == 1) {
                 totalApplys[subtitleNFT[subtitleId].applyId]
@@ -572,18 +572,24 @@ contract SubtitleSystem is StrategyManager, VideoManager {
             if (fee > 0) {
                 uint256 thisFee = (all * fee) / BASE_FEE_RATE;
                 all -= thisFee;
-                IVT(videoToken).mintStableToken(
-                    platforms[platform].platformId,
-                    address(this),
-                    thisFee
-                );
+                if (platform != address(0)) {
+                    IVT(videoToken).mintStableToken(
+                        platforms[platform].platformId,
+                        address(this),
+                        thisFee
+                    );
+                }
                 _addFee(platforms[platform].platformId, thisFee);
             }
-            IVT(videoToken).mintStableToken(
-                platforms[platform].platformId,
-                msg.sender,
-                all
-            );
+            if (platform != address(0)) {
+                IVT(videoToken).mintStableToken(
+                    platforms[platform].platformId,
+                    msg.sender,
+                    all
+                );
+            } else {
+                IZimu(zimuToken).transferFrom(address(this), msg.sender, all);
+            }
         }
         emit UserWithdraw(msg.sender, platform, day, all);
         return all;

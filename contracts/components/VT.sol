@@ -108,8 +108,11 @@ contract VideoToken is ERC1155, IVT {
         uint256 platformId,
         address from,
         uint256 amount
-    ) external override auth {
+    ) external override {
         require(platform[platformId] != address(0), "ER2");
+        if (msg.sender != subtitleSystem) {
+            require(msg.sender == from, "ER5");
+        }
         _burn(from, platformId, amount);
     }
     /**

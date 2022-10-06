@@ -5,11 +5,7 @@ interface IAccessStrategy {
     function spread(uint256 repution, uint8 flag)
         external
         view
-        returns (
-            uint256,
-            uint256,
-            uint8
-        );
+        returns (uint256, uint256);
 
     function access(uint256 repution, int256 deposit)
         external
