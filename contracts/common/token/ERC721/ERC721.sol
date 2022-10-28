@@ -8,7 +8,6 @@ import "./IERC721Receiver.sol";
 import "./extensions/IERC721Metadata.sol";
 import "../../utils/Address.sol";
 import "../../utils/Context.sol";
-import "../../utils/Strings.sol";
 import "../../utils/introspection/ERC165.sol";
 
 /***
@@ -18,15 +17,12 @@ import "../../utils/introspection/ERC165.sol";
  */
 contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
     using Address for address;
-    using Strings for uint256;
 
     // Token name
     string private constant _name = "Subtitle Token";
 
     // Token symbol
     string private constant _symbol = "ST";
-
-    string private _baseFileURI;
 
     // Mapping from token ID to owner address
     mapping(uint256 => address) private _owners;
@@ -91,14 +87,14 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
     /***
      * @dev See {IERC721Metadata-name}.
      */
-    function name() public view virtual override returns (string memory) {
+    function name() public view virtual returns (string memory) {
         return _name;
     }
 
     /***
      * @dev See {IERC721Metadata-symbol}.
      */
-    function symbol() public view virtual override returns (string memory) {
+    function symbol() public view virtual returns (string memory) {
         return _symbol;
     }
 
@@ -113,21 +109,7 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
         returns (string memory)
     {
         _requireMinted(tokenId);
-
-        string memory baseURI = _baseURI();
-        return
-            bytes(baseURI).length > 0
-                ? string(abi.encodePacked(baseURI, tokenId.toString()))
-                : "";
-    }
-
-    /***
-     * @dev Base URI for computing {tokenURI}. If set, the resulting URI for each
-     * token will be the concatenation of the `baseURI` and the `tokenId`. Empty
-     * by default, can be overridden in child contracts.
-     */
-    function _baseURI() internal view virtual returns (string memory) {
-        return _baseFileURI;
+        return "";
     }
 
     /***

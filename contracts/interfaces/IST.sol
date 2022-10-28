@@ -6,6 +6,7 @@ interface IST is IERC721 {
     function mintST(
         address maker,
         uint256 applyId,
+        string memory cid,
         uint16 languageId,
         uint256 fingerprint
     ) external returns (uint256);

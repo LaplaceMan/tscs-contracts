@@ -13,6 +13,24 @@ contract SubtitleToken is ERC721, IST {
      */
     address public subtitleSystem;
     /**
+     * @notice Mapping from token ID to storage address
+     */
+    mapping(uint256 => string) private _tokenURI;
+
+    /***
+     * @dev See {IERC721Metadata-tokenURI}.
+     */
+    function tokenURI(uint256 tokenId)
+        public
+        view
+        override
+        returns (string memory)
+    {
+        _requireMinted(tokenId);
+        return _tokenURI[tokenId];
+    }
+
+    /**
      * @notice 每个字幕 ST 在生成时都会初始化相应的 Subtitle 结构
      * @param maker 字幕制作者
      * @param applyId 该字幕所属的申请
@@ -43,6 +61,7 @@ contract SubtitleToken is ERC721, IST {
         address maker,
         uint256 applyId,
         uint256 subtitleId,
+        string cid,
         uint16 languageId,
         uint256 fingerprint
     );
@@ -51,6 +70,7 @@ contract SubtitleToken is ERC721, IST {
      * @notice 创建 ST, 内部功能
      * @param maker 字幕制作者区块链地址
      * @param applyId 字幕所属申请的 ID
+     * @param cid 字幕存储在 IPFS 获得的 CID
      * @param languageId 字幕所属语种的 ID
      * @param fingerprint 字幕指纹, 此处暂定为 Simhash
      * @return 字幕代币 ST（Subtitle Token） ID
@@ -58,11 +78,13 @@ contract SubtitleToken is ERC721, IST {
     function mintST(
         address maker,
         uint256 applyId,
+        string memory cid,
         uint16 languageId,
         uint256 fingerprint
     ) external override auth returns (uint256) {
         _tokenIdTracker++;
         _mint(maker, _tokenIdTracker);
+        _tokenURI[_tokenIdTracker] = cid;
         subtitleNFT[_tokenIdTracker].maker = maker;
         subtitleNFT[_tokenIdTracker].applyId = applyId;
         subtitleNFT[_tokenIdTracker].languageId = languageId;
@@ -71,6 +93,7 @@ contract SubtitleToken is ERC721, IST {
             maker,
             applyId,
             _tokenIdTracker,
+            cid,
             languageId,
             fingerprint
         );

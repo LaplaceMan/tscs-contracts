@@ -56,12 +56,14 @@ contract SubtitleManager {
     function _createST(
         address maker,
         uint256 applyId,
+        string memory cid,
         uint16 languageId,
         uint256 fingerprint
     ) internal returns (uint256) {
         uint256 id = IST(subtitleToken).mintST(
             maker,
             applyId,
+            cid,
             languageId,
             fingerprint
         );

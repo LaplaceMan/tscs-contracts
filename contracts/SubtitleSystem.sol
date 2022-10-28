@@ -56,7 +56,8 @@ contract SubtitleSystem is StrategyManager, VideoManager {
         uint8 strategy,
         uint256 amount,
         uint16 language,
-        uint256 deadline
+        uint256 deadline,
+        string src
     );
     event SubtitleCountsUpdate(
         address platform,
@@ -116,7 +117,8 @@ contract SubtitleSystem is StrategyManager, VideoManager {
         uint8 strategy,
         uint256 amount,
         uint16 language,
-        uint256 deadline
+        uint256 deadline,
+        string memory src
     ) external returns (uint256) {
         // 若调用者未主动加入 TSCS, 则自动初始化用户的信誉度和质押数（质押数自动设置为 0）
         _userInitialization(msg.sender, 0);
@@ -134,8 +136,10 @@ contract SubtitleSystem is StrategyManager, VideoManager {
         // 当平台地址为 0, 意味着使用默认结算策略
         if (platform == address(0)) {
             require(strategy == 0, "ER7");
+            require(bytes(src).length > 0, "ER1-7");
             // 一次性结算策略下, 需要用户提前授权主合约额度且只能使用 Zimu 代币支付
             IZimu(zimuToken).transferFrom(msg.sender, address(this), amount);
+            _addDefaultSrc(totalApplyNumber, src);
         } else {
             // 当结算策略非一次性时, 与视频收益相关, 需要由视频创作者主动提起
             require(videos[videoId].creator == msg.sender, "ER5");
@@ -176,7 +180,8 @@ contract SubtitleSystem is StrategyManager, VideoManager {
             strategy,
             amount,
             language,
-            deadline
+            deadline,
+            src
         );
         return totalApplyNumber;
     }
@@ -236,12 +241,14 @@ contract SubtitleSystem is StrategyManager, VideoManager {
     /**
      * @notice 上传制作的字幕
      * @param applyId 字幕所属申请在 TSCS 内的顺位 ID
+     * @param cid 字幕存储在 IPFS 获得的 CID
      * @param languageId 字幕所属语种的 ID
      * @param fingerprint 字幕指纹值, 暂定为 Simhash
      * @return 字幕 ST ID
      */
     function uploadSubtitle(
         uint256 applyId,
+        string memory cid,
         uint16 languageId,
         uint256 fingerprint
     ) external returns (uint256) {
@@ -275,6 +282,7 @@ contract SubtitleSystem is StrategyManager, VideoManager {
         uint256 subtitleId = _createST(
             msg.sender,
             applyId,
+            cid,
             languageId,
             fingerprint
         );
