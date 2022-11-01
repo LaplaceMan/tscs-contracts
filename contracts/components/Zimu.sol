@@ -10,7 +10,7 @@ pragma solidity ^0.8.0;
 import "../common/token/ERC20/ERC20.sol";
 import "../interfaces/IZimu.sol";
 
-contract ZMToken is ERC20, IZimu {
+contract ZimuToken is ERC20, IZimu {
     /**
      * @notice TSCS 合约地址
      */
