@@ -2,12 +2,12 @@
 pragma solidity ^0.8.0;
 
 interface IAccessStrategy {
-    function spread(uint256 repution, uint8 flag)
+    function spread(uint256 reputation, uint8 flag)
         external
         view
         returns (uint256, uint256);
 
-    function access(uint256 repution, int256 deposit)
+    function access(uint256 reputation, int256 deposit)
         external
         view
         returns (bool);

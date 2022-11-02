@@ -24,6 +24,10 @@ contract EntityManager is VaultManager {
      */
     uint16 public languageTypes;
     /**
+     * @notice TSCS 内用户初始化时的信誉度分数, 精度为 1 即 100.0
+     */
+    uint16 constant basereputation = 1000;
+    /**
      * @notice 语言名称与对应ID（注册顺序）的映射, 从1开始（ISO 3166-1 alpha-2 code）
      */
     mapping(string => uint16) languages;
@@ -33,18 +37,18 @@ contract EntityManager is VaultManager {
     mapping(address => User) users;
     /**
      * @notice 每个用户在TSCS内的行为记录
-     * @param repution 信誉度分数
+     * @param reputation 信誉度分数
      * @param deposit 已质押以太数, 为负表示负债
      * @param lock 平台区块链地址 => 天（Unix）=> 锁定稳定币数量，Default 为 0x0
      */
     struct User {
-        uint256 repution;
+        uint256 reputation;
         int256 deposit;
         mapping(address => mapping(uint256 => uint256)) lock;
     }
 
     event RegisterLanguage(string language, uint16 id);
-    event UserJoin(address user, uint256 repution, int256 deposit);
+    event UserJoin(address user, uint256 reputation, int256 deposit);
     event UserLockRewardUpdate(
         address user,
         address platform,
@@ -53,7 +57,7 @@ contract EntityManager is VaultManager {
     );
     event UserInfoUpdate(
         address usr,
-        int256 reputionSpread,
+        int256 reputationSpread,
         int256 tokenSpread
     );
 
@@ -95,11 +99,11 @@ contract EntityManager is VaultManager {
      * @param amount 质押代币数
      */
     function _userInitialization(address usr, int256 amount) internal {
-        if (users[usr].repution == 0) {
-            users[usr].repution = 100;
+        if (users[usr].reputation == 0) {
+            users[usr].reputation = basereputation;
             users[usr].deposit = amount;
+            emit UserJoin(usr, users[usr].reputation, users[usr].deposit);
         }
-        emit UserJoin(usr, users[usr].repution, users[usr].deposit);
     }
 
     /**
@@ -107,8 +111,8 @@ contract EntityManager is VaultManager {
      * @param usr 用户区块链地址
      */
     function userJoin(address usr, uint256 despoit) external {
-        IZimu(zimuToken).transferFrom(usr, address(this), despoit);
-        if (users[usr].repution == 0) {
+        IZimu(zimuToken).transferFrom(msg.sender, address(this), despoit);
+        if (users[usr].reputation == 0) {
             _changeDespoit(int256(despoit));
             _userInitialization(usr, int256(despoit));
         } else {
@@ -132,7 +136,7 @@ contract EntityManager is VaultManager {
         int256 amount,
         address usr
     ) internal {
-        require(users[usr].repution == 0, "ER0");
+        require(users[usr].reputation == 0, "ER0");
         uint256 current = users[usr].lock[platform][day];
         users[usr].lock[platform][day] = uint256(int256(current) + amount);
         emit UserLockRewardUpdate(usr, platform, day, amount);
@@ -141,16 +145,16 @@ contract EntityManager is VaultManager {
     /**
      * @notice 更新用户信誉度分数和质押 Zimu 数
      * @param usr 用户区块链地址
-     * @param reputionSpread 有正负（增加或扣除）的信誉度分数
+     * @param reputationSpread 有正负（增加或扣除）的信誉度分数
      * @param tokenSpread 有正负的（增加或扣除）Zimu 数量
      */
     function _updateUser(
         address usr,
-        int256 reputionSpread,
+        int256 reputationSpread,
         int256 tokenSpread
     ) internal {
-        users[usr].repution = uint256(
-            int256(users[usr].repution) + reputionSpread
+        users[usr].reputation = uint256(
+            int256(users[usr].reputation) + reputationSpread
         );
         if (tokenSpread < 0) {
             //小于0意味着惩罚操作, 扣除质押Zimu数
@@ -161,10 +165,10 @@ contract EntityManager is VaultManager {
             IZimu(zimuToken).mintReward(usr, uint256(tokenSpread));
         }
         //用户的最小信誉度为1, 这样是为了便于判断用户是否已加入系统（User结构已经初始化过）
-        if (users[usr].repution == 0) {
-            users[usr].repution = 1;
+        if (users[usr].reputation == 0) {
+            users[usr].reputation = 1;
         }
-        emit UserInfoUpdate(usr, reputionSpread, tokenSpread);
+        emit UserInfoUpdate(usr, reputationSpread, tokenSpread);
     }
 
     /**
@@ -212,7 +216,7 @@ contract EntityManager is VaultManager {
         view
         returns (uint256, int256)
     {
-        return (users[usr].repution, users[usr].deposit);
+        return (users[usr].reputation, users[usr].deposit);
     }
 
     /**

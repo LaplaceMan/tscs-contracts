@@ -57,6 +57,7 @@ contract SubtitleSystem is StrategyManager, VideoManager {
         uint256 amount,
         uint16 language,
         uint256 deadline,
+        uint256 applyId,
         string src
     );
     event SubtitleCountsUpdate(
@@ -125,7 +126,7 @@ contract SubtitleSystem is StrategyManager, VideoManager {
         // 根据信誉度和质押 Zimu 数判断用户是否有权限使用 TSCS 提供的服务
         require(
             accessStrategy.access(
-                users[msg.sender].repution,
+                users[msg.sender].reputation,
                 users[msg.sender].deposit
             ),
             "ER5"
@@ -171,7 +172,7 @@ contract SubtitleSystem is StrategyManager, VideoManager {
         IVT(videoToken).mintStableToken(
             0,
             msg.sender,
-            users[msg.sender].repution
+            users[msg.sender].reputation
         );
         emit ApplicationSubmit(
             msg.sender,
@@ -181,6 +182,7 @@ contract SubtitleSystem is StrategyManager, VideoManager {
             amount,
             language,
             deadline,
+            totalApplyNumber,
             src
         );
         return totalApplyNumber;
@@ -265,7 +267,7 @@ contract SubtitleSystem is StrategyManager, VideoManager {
         // 根据信誉度和质押 Zimu 数判断用户是否有权限使用 TSCS 提供的服务
         require(
             accessStrategy.access(
-                users[msg.sender].repution,
+                users[msg.sender].reputation,
                 users[msg.sender].deposit
             ),
             "ER5"
@@ -361,14 +363,14 @@ contract SubtitleSystem is StrategyManager, VideoManager {
         if (flag == 2) newFlag = -1;
         // 更新字幕制作者信誉度和 Zimu 质押数信息
         {
-            (uint256 reputionSpread, uint256 tokenSpread) = accessStrategy
+            (uint256 reputationSpread, uint256 tokenSpread) = accessStrategy
                 .spread(
-                    users[IST(subtitleToken).ownerOf(subtitleId)].repution,
+                    users[IST(subtitleToken).ownerOf(subtitleId)].reputation,
                     flag
                 );
             _updateUser(
                 IST(subtitleToken).ownerOf(subtitleId),
-                int256((reputionSpread * multiplier) / 100) * newFlag,
+                int256((reputationSpread * multiplier) / 100) * newFlag,
                 int256((tokenSpread * multiplier) / 100) * newFlag
             );
         }
@@ -378,26 +380,26 @@ contract SubtitleSystem is StrategyManager, VideoManager {
             i < subtitleNFT[subtitleId].supporters.length;
             i++
         ) {
-            (uint256 reputionSpread, uint256 tokenSpread) = accessStrategy
+            (uint256 reputationSpread, uint256 tokenSpread) = accessStrategy
                 .spread(
-                    users[subtitleNFT[subtitleId].supporters[i]].repution,
+                    users[subtitleNFT[subtitleId].supporters[i]].reputation,
                     flag
                 );
             _updateUser(
                 subtitleNFT[subtitleId].supporters[i],
-                int256(reputionSpread) * newFlag,
+                int256(reputationSpread) * newFlag,
                 int256(tokenSpread) * newFlag
             );
         }
         for (uint256 i = 0; i < subtitleNFT[subtitleId].dissenter.length; i++) {
-            (uint256 reputionSpread, uint256 tokenSpread) = accessStrategy
+            (uint256 reputationSpread, uint256 tokenSpread) = accessStrategy
                 .spread(
-                    users[subtitleNFT[subtitleId].dissenter[i]].repution,
+                    users[subtitleNFT[subtitleId].dissenter[i]].reputation,
                     flag
                 );
             _updateUser(
                 subtitleNFT[subtitleId].dissenter[i],
-                int256(reputionSpread) * newFlag * (-1),
+                int256(reputationSpread) * newFlag * (-1),
                 int256(tokenSpread) * newFlag * (-1)
             );
         }
@@ -419,7 +421,7 @@ contract SubtitleSystem is StrategyManager, VideoManager {
         // 根据信誉度和质押 ETH 数判断用户是否有权限使用 TSCS 提供的服务
         require(
             accessStrategy.access(
-                users[msg.sender].repution,
+                users[msg.sender].reputation,
                 users[msg.sender].deposit
             ),
             "ER5"

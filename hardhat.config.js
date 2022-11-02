@@ -1,6 +1,6 @@
 /** @type import('hardhat/config').HardhatUserConfig */
-require("@nomiclabs/hardhat-ethers");
-require('hardhat-contract-sizer');
+require("@nomiclabs/hardhat-waffle");
+require("hardhat-contract-sizer");
 module.exports = {
   defaultNetwork: "localhost",
   solidity: {
@@ -8,25 +8,26 @@ module.exports = {
     settings: {
       optimizer: {
         enabled: true,
-        runs: 20
-      }
-    }
+        runs: 20,
+      },
+    },
   },
   networks: {
-    hardhat: {
-    }, // npx hardhat node
+    hardhat: {}, // npx hardhat node
     localhost: {
-      url: "http://10.201.1.235:8545" 
+      url: "http://10.201.1.235:8545",
     }, // ganache ...
     goerli: {
       chainId: 5,
-      url: "https://eth-mainnet.alchemyapi.io/v2/123abc123abc123abc123abc123abcde", // your network rpc 
-      accounts: ['44bd43a04bab193e258d1e29d267a74fe3b4ced6060db617fd210b26be6d9618'] //your private key
-    }
+      url: "https://eth-mainnet.alchemyapi.io/v2/123abc123abc123abc123abc123abcde", // your network rpc
+      accounts: [
+        "44bd43a04bab193e258d1e29d267a74fe3b4ced6060db617fd210b26be6d9618",
+      ], //your private key
+    },
   },
   contractSizer: {
     alphaSort: true,
     runOnCompile: true,
     disambiguatePaths: false,
-  }
+  },
 };

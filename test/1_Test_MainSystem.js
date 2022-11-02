@@ -1,20 +1,24 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-
-let tscs, zimu, vt, st, access, audit, detection, divide1, onetime0, onetime2;
-let tscsAsDeployer;
-let owner, user1, user2;
-
+const { AddressZero } = require("@ethersproject/constants");
 describe("MainSystem_Test", function () {
-  beforEach(async function () {
+  let tscs, zimu, vt, st, access, audit, detection, divide1, onetime0, onetime2;
+  let tscsAsDeployer;
+  let owner, user1, user2, user3;
+  const baseEthAmount = ethers.utils.parseUnits("60", "ether");
+  const unitEthAmount = ethers.utils.parseUnits("20", "ether");
+  it("Deploy contracts", async function () {
+    // beforeEach(async function () {
     // 获得区块链网络提供的测试账号
-    const [deployer, addr1, addr2] = await ethers.getSigners();
+    const [deployer, addr1, addr2, addr3] = await ethers.getSigners();
     deployerAddress = deployer.address;
     owner = deployer;
     user1 = addr1;
     user2 = addr2;
+    user3 = addr3;
+
     // 部署合约的工厂方法
-    const TSCS = await ethers.getContractFactory("MainSystem");
+    const TSCS = await ethers.getContractFactory("SubtitleSystem");
     const ZIMU = await ethers.getContractFactory("ZimuToken");
     const VT = await ethers.getContractFactory("VideoToken");
     const ST = await ethers.getContractFactory("SubtitleToken");
@@ -51,6 +55,7 @@ describe("MainSystem_Test", function () {
     const onetime0Address = onetime0.address;
     onetime2 = await ONETIME2.deploy(tscsAddress);
     const onetime2Address = onetime2.address;
+    await tscs.deployed();
     const tx1 = await tscsAsDeployer.setAuditStrategy(auditAddress);
     const tx2 = await tscsAsDeployer.setAccessStrategy(accessAddress);
     const tx3 = await tscsAsDeployer.setDetectionStrategy(detectionAddress);
@@ -72,25 +77,72 @@ describe("MainSystem_Test", function () {
     const tx7 = await tscsAsDeployer.setZimuToken(zimuAddress);
     const tx8 = await tscsAsDeployer.setVideoToken(vtAddress);
     const tx9 = await tscsAsDeployer.setSubtitleToken(stAddress);
-    console.log("\n");
-    console.log("setAuditStrategy", tx1);
-    console.log("setAccessStrategy", tx2);
-    console.log("setDetectionStrategy", tx3);
-    console.log("setSettlementStrategy0", tx4);
-    console.log("setSettlementStrategy1", tx5);
-    console.log("setSettlementStrategy2", tx6);
-    console.log("setZimuToken", tx7);
-    console.log("setVideoToken", tx8);
-    console.log("setSubtitleToken", tx9);
+    // console.log("\n");
+    // console.log("setAuditStrategy", tx1);
+    // console.log("setAccessStrategy", tx2);
+    // console.log("setDetectionStrategy", tx3);
+    // console.log("setSettlementStrategy0", tx4);
+    // console.log("setSettlementStrategy1", tx5);
+    // console.log("setSettlementStrategy2", tx6);
+    // console.log("setZimuToken", tx7);
+    // console.log("setVideoToken", tx8);
+    // console.log("setSubtitleToken", tx9);
   });
+
   it("Test Zimu transfer", async function () {
-    let balanceUser1old = await zimu.balanceOf(user1.address);
-    console.log("Zimu balance before transfer is", balanceUser1old);
-    await zimu
-      .connect(deployer)
-      .transfer(addr1.address, ethers.utils.parseUnits("10", "ether"));
+    await zimu.deployed();
+    const balanceUser1old = await zimu.connect(user1).balanceOf(user1.address);
+    console.log("User1 Zimu balance before transfer is", balanceUser1old);
+    await zimu.connect(owner).transfer(user1.address, baseEthAmount);
+    const balanceUser1new = await zimu.connect(user1).balanceOf(user1.address);
+    console.log("User1 Zimu balance after transfer is", balanceUser1new);
+    expect(balanceUser1new).to.equal(baseEthAmount);
   });
+
   it("Test user join", async function () {
-    await tscsAsDeployer.userJoin;
+    await zimu.connect(user1).approve(tscs.address, baseEthAmount);
+    const user1Approved = await zimu
+      .connect(user1)
+      .allowance(user1.address, tscs.address);
+    console.log("User1-TSCS Zimu approved amount:", user1Approved);
+    expect(user1Approved).to.equal(baseEthAmount);
+    await expect(tscs.connect(user1).userJoin(user1.address, unitEthAmount))
+      .to.emit(tscs, "UserJoin")
+      .withArgs(user1.address, ethers.BigNumber.from("1000"), unitEthAmount);
+    let user1JoinInfo = await tscs
+      .connect(user1)
+      .getUserBaseInfo(user1.address);
+    console.log("User joined info:", user1JoinInfo);
+  });
+
+  it("Test add language", async function () {
+    await tscsAsDeployer.registerLanguage(["cn", "en", "jp"]);
+    let cnIndex = await tscsAsDeployer.getLanguageId("cn");
+    let enIndex = await tscsAsDeployer.getLanguageId("en");
+    let jpIndex = await tscsAsDeployer.getLanguageId("jp");
+    expect(cnIndex).to.equal(1);
+    expect(enIndex).to.equal(2);
+    expect(jpIndex).to.equal(3);
+  });
+
+  it("Test submit application", async function () {
+    const date = "0x" + (parseInt(Date.now() / 1000) + 15778800).toString(16);
+    let tx = await tscs
+      .connect(user1)
+      .submitApplication(AddressZero, 0, 0, unitEthAmount, 1, date, "test");
+    let receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+    expect(receipt.status).to.equal(1);
+  });
+
+  it("Test upload subtitle", async function () {
+    let tx = await tscs.connect(user2).uploadSubtitle(1, "test", 1, "0x1a2b");
+    let receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+    expect(receipt.status).to.equal(1);
+  });
+
+  it("Test evaluate (audit) subtitle", async function () {
+    let tx = await tscs.connect(user3).evaluateSubtitle(1, 0);
+    let receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+    expect(receipt.status).to.equal(1);
   });
 });

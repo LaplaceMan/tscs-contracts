@@ -17,7 +17,7 @@ contract AccessStrategy is IAccessStrategy {
     /**
      * @notice TSCS 内用户初始化时的信誉度分数, 精度为 1 即 100.0
      */
-    uint16 constant baseRepution = 100;
+    uint16 constant basereputation = 100;
     /**
      * @notice 需要质押 Zimu 的信誉度分数阈值
      */
@@ -76,43 +76,43 @@ contract AccessStrategy is IAccessStrategy {
 
     /**
      * @notice 基于用户当前信誉度, 获得奖励时新增的数值, 信誉度越高获得的奖励越多
-     * @param repution 当前信誉度分数
+     * @param reputation 当前信誉度分数
      * @return 可获得的奖励数值
      */
-    function _reward(uint256 repution) internal pure returns (uint256) {
-        return (repution / baseRepution);
+    function _reward(uint256 reputation) internal pure returns (uint256) {
+        return (reputation / basereputation);
     }
 
     /**
      * @notice 基于用户当前信誉度, 获得惩罚时扣除的数值, 信誉度越低惩罚的力度越大
-     * @param repution 当前信誉度分数
+     * @param reputation 当前信誉度分数
      * @return 被扣除的惩罚数值
      */
-    function _punishment(uint256 repution) internal view returns (uint256) {
-        return (baseRatio / repution);
+    function _punishment(uint256 reputation) internal view returns (uint256) {
+        return (baseRatio / reputation);
     }
 
     /**
      * @notice 当信誉度过低时，需要质押一定数目的 Zimu 代币，且信誉度越低需要质押的数目越多
-     * @param repution 用户当前信誉度分数
+     * @param reputation 用户当前信誉度分数
      * @return 应（最少）质押 Zimu 代币数
      */
-    function _deposit(uint256 repution) internal view returns (uint256) {
-        if (repution > depositThreshold) {
+    function _deposit(uint256 reputation) internal view returns (uint256) {
+        if (reputation > depositThreshold) {
             return 0;
         } else {
-            uint256 baseRate = (depositThreshold - repution) / 100;
+            uint256 baseRate = (depositThreshold - reputation) / 100;
             return minDeposit * (2**baseRate);
         }
     }
 
     /**
      * @notice 根据用户当前信誉度分数获得奖励或惩罚的力度
-     * @param repution 用户当前信誉度分数
+     * @param reputation 用户当前信誉度分数
      * @param flag 奖惩标志位, 1 为奖励, 2 为惩罚
      * @return 奖励/扣除信誉度分数, 奖励/扣除 Zimu 数目, 字幕制作者受到的奖励/惩罚力度放大倍数
      */
-    function spread(uint256 repution, uint8 flag)
+    function spread(uint256 reputation, uint8 flag)
         external
         view
         override
@@ -120,13 +120,13 @@ contract AccessStrategy is IAccessStrategy {
     {
         if (flag == 1) {
             //rewardToken 为 0, 代币奖励策略仍在设计中
-            return (_reward(repution), rewardToken);
+            return (_reward(reputation), rewardToken);
         } else if (flag == 2) {
             //当信誉度分数低于 depoitThreshold 时, 每次惩罚都会扣除 Zimu, 此处对用户的区分逻辑为: （优秀）正常、危险、恶意
-            if (repution - _punishment(repution) < depositThreshold) {
-                return (_punishment(repution), punishmentToken);
+            if (reputation - _punishment(reputation) < depositThreshold) {
+                return (_punishment(reputation), punishmentToken);
             }
-            return (_punishment(repution), 0);
+            return (_punishment(reputation), 0);
         } else {
             return (0, 0);
         }
@@ -134,20 +134,20 @@ contract AccessStrategy is IAccessStrategy {
 
     /**
      * @notice 根据信誉度分数和质押 Zimu 数判断当前用户是否有使用 TSCS 提供的服务的资格
-     * @param repution 用户当前信誉度分数
+     * @param reputation 用户当前信誉度分数
      * @param deposit 用户当前质押 Zimu 数
      * @return 返回 false 表示用户被禁止使用 TSCS 提供的服务, 反之可以继续使用
      */
-    function access(uint256 repution, int256 deposit)
+    function access(uint256 reputation, int256 deposit)
         external
         view
         override
         returns (bool)
     {
         if (
-            (repution <= depositThreshold &&
-                deposit <= int256(_deposit(repution))) ||
-            repution <= blacklistThreshold
+            (reputation <= depositThreshold &&
+                deposit <= int256(_deposit(reputation))) ||
+            reputation <= blacklistThreshold
         ) {
             return false;
         } else {
