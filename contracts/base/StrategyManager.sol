@@ -107,6 +107,10 @@ contract StrategyManager is PlatformManager, SubtitleManager {
         require(strategy != address(0), "ER1");
         settlementStrategy[strategyId].strategy = strategy;
         settlementStrategy[strategyId].notes = notes;
+        if (settlementStrategy[strategyId].strategy != address(0)) {
+            opeators[settlementStrategy[strategyId].strategy] = false;
+        }
+        opeators[strategy] = true;
         emit SystemSetSettlement(strategyId, strategy, notes);
     }
 

@@ -51,11 +51,11 @@
 
 ### Function In **SubtitleSystem.sol**
 
-- [ ] submitApplication
-- [ ] createVideo
-- [ ] uploadSubtitle
+- [×] submitApplication
+- [×] createVideo
+- [×] uploadSubtitle
 - [ ] updateUsageCounts
-- [ ] evaluateSubtitle
+- [×] evaluateSubtitle
 - [ ] preExtractMode0
 - [ ] preExtract
 - [ ] withdraw
@@ -64,17 +64,17 @@
 
 ### Function In **EntityManager.sol**
 
-- [ ] registerLanguage
-- [ ] userJoin
+- [×] registerLanguage
+- [×] userJoin
 
 ### Function In **PlatformManager.sol**
 
-- [ ] platfromJoin
+- [×] platfromJoin
 - [ ] platformRate
 
 ### Function In **VideoManager.sol**
 
-- [ ] updateViewCounts
+- [×] updateViewCounts
 
 # Token Economics
 

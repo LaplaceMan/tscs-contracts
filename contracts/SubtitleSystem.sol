@@ -80,7 +80,6 @@ contract SubtitleSystem is StrategyManager, VideoManager {
 
     /**
      * @notice 由平台 Platform 注册视频, 此后该视频支持链上结算（意味着更多结算策略的支持）
-     * @param platform 平台 Platform 区块链地址
      * @param id 视频在 Platform 内部的 ID
      * @param symbol 视频的 symbol
      * @param creator 视频创作者区块链地址
@@ -88,18 +87,13 @@ contract SubtitleSystem is StrategyManager, VideoManager {
      * @return 视频在 TSCS 内的 ID
      */
     function createVideo(
-        address platform,
         uint256 id,
         string memory symbol,
         address creator,
         uint256 total
     ) external returns (uint256) {
-        require(
-            platform != address(0) &&
-                platforms[platform].rateCountsToProfit > 0,
-            "Platform Invaild"
-        );
-        uint256 videoId = _createVideo(platform, id, symbol, creator, total);
+        require(platforms[msg.sender].rateCountsToProfit > 0, "ER1");
+        uint256 videoId = _createVideo(msg.sender, id, symbol, creator, total);
         return videoId;
     }
 
@@ -201,6 +195,10 @@ contract SubtitleSystem is StrategyManager, VideoManager {
         uint256 id
     ) internal view returns (uint256[] memory) {
         uint256[] memory newArr = new uint256[](arr.length + 1);
+        if (newArr.length == 1) {
+            newArr[0] = id;
+            return newArr;
+        }
         uint256 flag;
         for (flag = arr.length - 1; flag >= 0; flag--) {
             if (spot >= totalApplys[arr[flag]].strategy) {

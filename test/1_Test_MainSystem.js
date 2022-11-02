@@ -125,7 +125,7 @@ describe("MainSystem_Test", function () {
     expect(jpIndex).to.equal(3);
   });
 
-  it("Test submit application", async function () {
+  it("Test submit application (OT0)", async function () {
     const date = "0x" + (parseInt(Date.now() / 1000) + 15778800).toString(16);
     let tx = await tscs
       .connect(user1)
@@ -144,5 +144,64 @@ describe("MainSystem_Test", function () {
     let tx = await tscs.connect(user3).evaluateSubtitle(1, 0);
     let receipt = await ethers.provider.getTransactionReceipt(tx.hash);
     expect(receipt.status).to.equal(1);
+  });
+
+  it("Test add platform", async function () {
+    await expect(
+      tscsAsDeployer.platfromJoin(owner.address, "test", "test", 655, 655)
+    )
+      .to.emit(tscs, "PlatformJoin")
+      .withArgs(
+        owner.address,
+        ethers.BigNumber.from("1"),
+        "test",
+        "test",
+        ethers.BigNumber.from("655"),
+        ethers.BigNumber.from("655")
+      );
+  });
+
+  it("Test platform add (create) video", async function () {
+    await expect(tscsAsDeployer.createVideo(1, "test", user1.address, 0))
+      .to.emit(tscs, "VideoCreate")
+      .withArgs(
+        owner.address,
+        ethers.BigNumber.from("1"),
+        ethers.BigNumber.from("1"),
+        "test",
+        user1.address,
+        ethers.BigNumber.from("0")
+      );
+  });
+
+  it("Test platform update counts", async function () {
+    await expect(tscsAsDeployer.updateViewCounts([1], [10000]))
+      .to.emit(tscs, "VideoCountsUpdate")
+      .withArgs(
+        owner.address,
+        [ethers.BigNumber.from("1")],
+        [ethers.BigNumber.from("10000")]
+      );
+  });
+
+  it("Test submit application (other)", async function () {
+    const date = "0x" + (parseInt(Date.now() / 1000) + 15778800).toString(16);
+    await expect(
+      tscs
+        .connect(user1)
+        .submitApplication(owner.address, 1, 1, 655, 1, date, "test")
+    )
+      .to.emit(tscs, "ApplicationSubmit")
+      .withArgs(
+        user1.address,
+        owner.address,
+        ethers.BigNumber.from("1"),
+        ethers.BigNumber.from("1"),
+        ethers.BigNumber.from("655"),
+        ethers.BigNumber.from("1"),
+        ethers.BigNumber.from(date),
+        ethers.BigNumber.from("2"),
+        "test"
+      );
   });
 });

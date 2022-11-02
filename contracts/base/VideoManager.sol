@@ -75,13 +75,13 @@ contract VideoManager {
         uint256 total
     ) internal returns (uint256) {
         totalVideoNumber++;
-        require(idReal2System[msg.sender][id] == 0, "ER0");
+        require(idReal2System[platform][id] == 0, "ER0");
         videos[totalVideoNumber].platform = platform;
         videos[totalVideoNumber].id = id;
         videos[totalVideoNumber].symbol = symbol;
         videos[totalVideoNumber].creator = creator;
         videos[totalVideoNumber].totalViewCouts = total;
-        idReal2System[msg.sender][id] = totalVideoNumber;
+        idReal2System[platform][id] = totalVideoNumber;
         emit VideoCreate(
             platform,
             id,
