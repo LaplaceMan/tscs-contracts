@@ -100,7 +100,8 @@ contract SettlementDivide1 is ISettlementStrategy {
         uint256 amount,
         uint16 rateCountsToProfit
     ) external auth {
-        uint256 unpaidToken0 = (rateCountsToProfit * number) / RATE_BASE;
+        uint256 unpaidToken0 = (rateCountsToProfit * number * (10**6)) /
+            RATE_BASE;
         uint256 unpaidToken1 = (unpaidToken0 * amount) / RATE_BASE;
         settlements[applyId].unsettled += unpaidToken1;
     }

@@ -42,6 +42,8 @@ contract SubtitleSystem is StrategyManager, VideoManager {
 
     constructor(address owner) {
         _setOwner(owner);
+        // 当结算类型为一次性结算时, 默认字幕支持者分成 1/100
+        platforms[address(0)].rateAuditorDivide = 655;
     }
 
     /**
@@ -143,12 +145,12 @@ contract SubtitleSystem is StrategyManager, VideoManager {
                 uint256 applyId = videos[videoId].applys[i];
                 require(totalApplys[applyId].language != language, "ER0");
             }
-            uint256[] memory newApplyArr = _sortStrategyPriority(
-                videos[videoId].applys,
-                strategy,
-                totalApplyNumber
-            );
-            videos[videoId].applys = newApplyArr;
+            // uint256[] memory newApplyArr = _sortStrategyPriority(
+            //     videos[videoId].applys,
+            //     strategy,
+            //     totalApplyNumber
+            // );
+            // videos[videoId].applys = newApplyArr;
         }
         if (strategy == 2 || strategy == 0) {
             // 更新未结算稳定币数目
@@ -303,7 +305,11 @@ contract SubtitleSystem is StrategyManager, VideoManager {
             if (totalApplys[id[i]].adopted > 0) {
                 address platform = videos[totalApplys[id[i]].videoId].platform;
                 require(msg.sender == platform, "ER5");
-                require(totalApplys[id[i]].strategy != 0, "ER1");
+                require(
+                    totalApplys[id[i]].strategy != 0 &&
+                        totalApplys[id[i]].strategy != 2,
+                    "ER1"
+                );
                 ISettlementStrategy(
                     settlementStrategy[totalApplys[id[i]].strategy].strategy
                 ).updateDebtOrReward(
@@ -322,8 +328,8 @@ contract SubtitleSystem is StrategyManager, VideoManager {
      * @param subtitleId 字幕 ID
      * @return 同一申请下已上传字幕数, 该字幕获得的支持数, 该字幕获得的反对数, 同一申请下已上传字幕获得支持数的和
      */
-    function _getSubtitleAuditInfo(uint256 subtitleId)
-        internal
+    function getSubtitleAuditInfo(uint256 subtitleId)
+        public
         view
         returns (
             uint256,
@@ -432,7 +438,7 @@ contract SubtitleSystem is StrategyManager, VideoManager {
             uint256 against,
             uint256 allSupport,
             uint256 uploadTime
-        ) = _getSubtitleAuditInfo(subtitleId);
+        ) = getSubtitleAuditInfo(subtitleId);
         uint8 flag = auditStrategy.auditResult(
             uploaded,
             support,
@@ -464,7 +470,7 @@ contract SubtitleSystem is StrategyManager, VideoManager {
             applyId,
             platform,
             IST(subtitleToken).ownerOf(totalApplys[applyId].adopted),
-            platforms[platform].rateCountsToProfit,
+            0,
             platforms[platform].rateAuditorDivide,
             subtitleNFT[totalApplys[applyId].adopted].supporters
         );
@@ -483,7 +489,11 @@ contract SubtitleSystem is StrategyManager, VideoManager {
         // 结算策略 strategy 拥有优先度, 根据id（小的优先级高）划分
         for (uint256 i = 0; i < videos[videoId].applys.length; i++) {
             uint256 applyId = videos[videoId].applys[i];
-            if (totalApplys[applyId].adopted > 0 && unsettled > 0) {
+            if (
+                totalApplys[applyId].strategy != 0 &&
+                totalApplys[applyId].adopted > 0 &&
+                unsettled > 0
+            ) {
                 address platform = videos[videoId].platform;
                 uint256 subtitleGet = ISettlementStrategy(
                     settlementStrategy[totalApplys[applyId].strategy].strategy
@@ -512,7 +522,9 @@ contract SubtitleSystem is StrategyManager, VideoManager {
         require(videos[videoId].unsettled > 0, "ER11");
         // 获得相应的代币计价
         uint256 unsettled = (platforms[videos[videoId].platform]
-            .rateCountsToProfit * videos[videoId].unsettled) / RATE_BASE;
+            .rateCountsToProfit *
+            videos[videoId].unsettled *
+            (10**6)) / RATE_BASE;
         uint256 surplus = _ergodic(videoId, unsettled);
         // 若支付完字幕制作费用后仍有剩余, 则直接将收益以稳定币的形式发送给视频创作者
         if (surplus > 0) {
@@ -596,7 +608,7 @@ contract SubtitleSystem is StrategyManager, VideoManager {
                     all
                 );
             } else {
-                IZimu(zimuToken).transferFrom(address(this), msg.sender, all);
+                IZimu(zimuToken).transfer(msg.sender, all);
             }
         }
         emit UserWithdraw(msg.sender, platform, day, all);

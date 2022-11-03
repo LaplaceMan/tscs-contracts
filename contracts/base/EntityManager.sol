@@ -26,7 +26,7 @@ contract EntityManager is VaultManager {
     /**
      * @notice TSCS 内用户初始化时的信誉度分数, 精度为 1 即 100.0
      */
-    uint16 constant basereputation = 1000;
+    uint16 constant baseReputation = 1000;
     /**
      * @notice 语言名称与对应ID（注册顺序）的映射, 从1开始（ISO 3166-1 alpha-2 code）
      */
@@ -100,7 +100,7 @@ contract EntityManager is VaultManager {
      */
     function _userInitialization(address usr, int256 amount) internal {
         if (users[usr].reputation == 0) {
-            users[usr].reputation = basereputation;
+            users[usr].reputation = baseReputation;
             users[usr].deposit = amount;
             emit UserJoin(usr, users[usr].reputation, users[usr].deposit);
         }
@@ -136,7 +136,7 @@ contract EntityManager is VaultManager {
         int256 amount,
         address usr
     ) internal {
-        require(users[usr].reputation == 0, "ER0");
+        require(users[usr].reputation != 0, "ER0");
         uint256 current = users[usr].lock[platform][day];
         users[usr].lock[platform][day] = uint256(int256(current) + amount);
         emit UserLockRewardUpdate(usr, platform, day, amount);

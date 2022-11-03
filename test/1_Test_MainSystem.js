@@ -1,5 +1,6 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
+const { BigNumber } = require("ethers");
 const { AddressZero } = require("@ethersproject/constants");
 describe("MainSystem_Test", function () {
   let tscs, zimu, vt, st, access, audit, detection, divide1, onetime0, onetime2;
@@ -8,7 +9,6 @@ describe("MainSystem_Test", function () {
   const baseEthAmount = ethers.utils.parseUnits("60", "ether");
   const unitEthAmount = ethers.utils.parseUnits("20", "ether");
   it("Deploy contracts", async function () {
-    // beforeEach(async function () {
     // 获得区块链网络提供的测试账号
     const [deployer, addr1, addr2, addr3] = await ethers.getSigners();
     deployerAddress = deployer.address;
@@ -56,51 +56,41 @@ describe("MainSystem_Test", function () {
     onetime2 = await ONETIME2.deploy(tscsAddress);
     const onetime2Address = onetime2.address;
     await tscs.deployed();
-    const tx1 = await tscsAsDeployer.setAuditStrategy(auditAddress);
-    const tx2 = await tscsAsDeployer.setAccessStrategy(accessAddress);
-    const tx3 = await tscsAsDeployer.setDetectionStrategy(detectionAddress);
-    const tx4 = await tscsAsDeployer.setSettlementStrategy(
-      0,
-      onetime0Address,
-      "OT0"
-    );
-    const tx5 = await tscsAsDeployer.setSettlementStrategy(
-      1,
-      divide1Address,
-      "DI1"
-    );
-    const tx6 = await tscsAsDeployer.setSettlementStrategy(
-      2,
-      onetime2Address,
-      "OTM2"
-    );
-    const tx7 = await tscsAsDeployer.setZimuToken(zimuAddress);
-    const tx8 = await tscsAsDeployer.setVideoToken(vtAddress);
-    const tx9 = await tscsAsDeployer.setSubtitleToken(stAddress);
-    // console.log("\n");
-    // console.log("setAuditStrategy", tx1);
-    // console.log("setAccessStrategy", tx2);
-    // console.log("setDetectionStrategy", tx3);
-    // console.log("setSettlementStrategy0", tx4);
-    // console.log("setSettlementStrategy1", tx5);
-    // console.log("setSettlementStrategy2", tx6);
-    // console.log("setZimuToken", tx7);
-    // console.log("setVideoToken", tx8);
-    // console.log("setSubtitleToken", tx9);
+    let tx;
+    tx = await tscsAsDeployer.setAuditStrategy(auditAddress);
+    await tx.wait();
+    tx = await tscsAsDeployer.setAccessStrategy(accessAddress);
+    await tx.wait();
+    tx = await tscsAsDeployer.setDetectionStrategy(detectionAddress);
+    await tx.wait();
+    tx = await tscsAsDeployer.setSettlementStrategy(0, onetime0Address, "OT0");
+    await tx.wait();
+    tx = await tscsAsDeployer.setSettlementStrategy(1, divide1Address, "DI1");
+    await tx.wait();
+    tx = await tscsAsDeployer.setSettlementStrategy(2, onetime2Address, "OTM2");
+    await tx.wait();
+    tx = await tscsAsDeployer.setZimuToken(zimuAddress);
+    await tx.wait();
+    tx = await tscsAsDeployer.setVideoToken(vtAddress);
+    await tx.wait();
+    tx = await tscsAsDeployer.setSubtitleToken(stAddress);
+    await tx.wait();
   });
 
   it("Test Zimu transfer", async function () {
     await zimu.deployed();
     const balanceUser1old = await zimu.connect(user1).balanceOf(user1.address);
     console.log("User1 Zimu balance before transfer is", balanceUser1old);
-    await zimu.connect(owner).transfer(user1.address, baseEthAmount);
+    let tx = await zimu.connect(owner).transfer(user1.address, baseEthAmount);
+    await tx.wait();
     const balanceUser1new = await zimu.connect(user1).balanceOf(user1.address);
     console.log("User1 Zimu balance after transfer is", balanceUser1new);
     expect(balanceUser1new).to.equal(baseEthAmount);
   });
 
   it("Test user join", async function () {
-    await zimu.connect(user1).approve(tscs.address, baseEthAmount);
+    let tx = await zimu.connect(user1).approve(tscs.address, baseEthAmount);
+    await tx.wait();
     const user1Approved = await zimu
       .connect(user1)
       .allowance(user1.address, tscs.address);
@@ -108,15 +98,16 @@ describe("MainSystem_Test", function () {
     expect(user1Approved).to.equal(baseEthAmount);
     await expect(tscs.connect(user1).userJoin(user1.address, unitEthAmount))
       .to.emit(tscs, "UserJoin")
-      .withArgs(user1.address, ethers.BigNumber.from("1000"), unitEthAmount);
+      .withArgs(user1.address, BigNumber.from("1000"), unitEthAmount);
     let user1JoinInfo = await tscs
       .connect(user1)
       .getUserBaseInfo(user1.address);
     console.log("User joined info:", user1JoinInfo);
   });
-
+  // 测试时将 AuditStrategy 中的审核次数从 10 => 2, 且 AuditTime = 0
   it("Test add language", async function () {
-    await tscsAsDeployer.registerLanguage(["cn", "en", "jp"]);
+    let tx = await tscsAsDeployer.registerLanguage(["cn", "en", "jp"]);
+    await tx.wait();
     let cnIndex = await tscsAsDeployer.getLanguageId("cn");
     let enIndex = await tscsAsDeployer.getLanguageId("en");
     let jpIndex = await tscsAsDeployer.getLanguageId("jp");
@@ -130,18 +121,21 @@ describe("MainSystem_Test", function () {
     let tx = await tscs
       .connect(user1)
       .submitApplication(AddressZero, 0, 0, unitEthAmount, 1, date, "test");
+    await tx.wait();
     let receipt = await ethers.provider.getTransactionReceipt(tx.hash);
     expect(receipt.status).to.equal(1);
   });
 
   it("Test upload subtitle", async function () {
     let tx = await tscs.connect(user2).uploadSubtitle(1, "test", 1, "0x1a2b");
+    await tx.wait();
     let receipt = await ethers.provider.getTransactionReceipt(tx.hash);
     expect(receipt.status).to.equal(1);
   });
 
   it("Test evaluate (audit) subtitle", async function () {
     let tx = await tscs.connect(user3).evaluateSubtitle(1, 0);
+    await tx.wait();
     let receipt = await ethers.provider.getTransactionReceipt(tx.hash);
     expect(receipt.status).to.equal(1);
   });
@@ -153,11 +147,11 @@ describe("MainSystem_Test", function () {
       .to.emit(tscs, "PlatformJoin")
       .withArgs(
         owner.address,
-        ethers.BigNumber.from("1"),
+        BigNumber.from("1"),
         "test",
         "test",
-        ethers.BigNumber.from("655"),
-        ethers.BigNumber.from("655")
+        BigNumber.from("655"),
+        BigNumber.from("655")
       );
   });
 
@@ -166,11 +160,11 @@ describe("MainSystem_Test", function () {
       .to.emit(tscs, "VideoCreate")
       .withArgs(
         owner.address,
-        ethers.BigNumber.from("1"),
-        ethers.BigNumber.from("1"),
+        BigNumber.from("1"),
+        BigNumber.from("1"),
         "test",
         user1.address,
-        ethers.BigNumber.from("0")
+        BigNumber.from("0")
       );
   });
 
@@ -179,8 +173,8 @@ describe("MainSystem_Test", function () {
       .to.emit(tscs, "VideoCountsUpdate")
       .withArgs(
         owner.address,
-        [ethers.BigNumber.from("1")],
-        [ethers.BigNumber.from("10000")]
+        [BigNumber.from("1")],
+        [BigNumber.from("10000")]
       );
   });
 
@@ -195,12 +189,12 @@ describe("MainSystem_Test", function () {
       .withArgs(
         user1.address,
         owner.address,
-        ethers.BigNumber.from("1"),
-        ethers.BigNumber.from("1"),
-        ethers.BigNumber.from("655"),
-        ethers.BigNumber.from("1"),
-        ethers.BigNumber.from(date),
-        ethers.BigNumber.from("2"),
+        BigNumber.from("1"),
+        BigNumber.from("1"),
+        BigNumber.from("655"),
+        BigNumber.from("1"),
+        BigNumber.from(date),
+        BigNumber.from("2"),
         "test"
       );
   });

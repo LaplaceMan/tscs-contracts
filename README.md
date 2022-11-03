@@ -47,35 +47,6 @@
 - [ ] 粉丝空投奖励
 - [ ] SBT 设计
 
-## Test Function Task
-
-### Function In **SubtitleSystem.sol**
-
-- [x] submitApplication
-- [x] createVideo
-- [x] uploadSubtitle
-- [ ] updateUsageCounts
-- [x] evaluateSubtitle
-- [ ] preExtractMode0
-- [ ] preExtract
-- [ ] withdraw
-- [ ] cancel
-- [ ] recover
-
-### Function In **EntityManager.sol**
-
-- [x] registerLanguage
-- [x] userJoin
-
-### Function In **PlatformManager.sol**
-
-- [×] platfromJoin
-- [ ] platformRate
-
-### Function In **VideoManager.sol**
-
-- [x] updateViewCounts
-
 # Token Economics
 
 1. **VT(Video Token)**

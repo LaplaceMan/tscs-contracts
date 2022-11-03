@@ -27,13 +27,14 @@ contract AuditStrategy is IAuditStrategy {
         uint8 flag;
         if (uploaded > 1) {
             if (
-                support > 1 && ((support - against) > (allSupport / uploaded))
+                support > 10 && ((support - against) > (allSupport / uploaded))
             ) {
                 flag = 1;
             }
         } else {
+            // 在测试时将其修改为 1, 默认为 10
             if (
-                support > 10 &&
+                support > 1 &&
                 (((support - against) * 10) / (support + against) >= 6)
             ) {
                 flag = 1;
@@ -59,7 +60,7 @@ contract AuditStrategy is IAuditStrategy {
                 flag = 2;
             }
         } else {
-            if (against >= 10) {
+            if (against >= 2) {
                 flag = 2;
             }
         }

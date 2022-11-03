@@ -61,7 +61,7 @@ contract SettlementOneTime2 is ISettlementStrategy {
     ) external override auth returns (uint256) {
         uint256 subtitleGet;
         if (settlements[applyId].unsettled > 0) {
-            if (unsettled > settlements[applyId].unsettled) {
+            if (unsettled >= settlements[applyId].unsettled) {
                 subtitleGet = settlements[applyId].unsettled;
             } else {
                 subtitleGet = unsettled;

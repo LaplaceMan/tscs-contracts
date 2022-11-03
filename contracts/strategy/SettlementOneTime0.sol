@@ -46,7 +46,6 @@ contract SettlementOneTime0 is ISettlementStrategy {
      * @param applyId 结算策略为一次性结算（策略 ID 为 0）的申请 ID
      * @param platform 平台 Platform 的区块链地址
      * @param maker 字幕制作者（所有者）区块链地址
-     * @param unsettled 视频收益结算剩余量
      * @param auditorDivide 该 Platform 设置的审核员分成字幕制作者收益的比例
      * @param supporters 申请下被采纳字幕的支持者们
      * @return 本次结算所支付的字幕制作费用
@@ -55,20 +54,15 @@ contract SettlementOneTime0 is ISettlementStrategy {
         uint256 applyId,
         address platform,
         address maker,
-        uint256 unsettled,
+        uint256,
         uint16 auditorDivide,
         address[] memory supporters
     ) external override auth returns (uint256) {
         uint256 subtitleGet;
         if (settlements[applyId].unsettled > 0) {
-            if (unsettled > settlements[applyId].unsettled) {
-                subtitleGet = settlements[applyId].unsettled;
-            } else {
-                subtitleGet = unsettled;
-            }
+            subtitleGet = settlements[applyId].unsettled;
             uint256 supporterGet = (subtitleGet * auditorDivide) / 65535;
             uint256 divide = supporterGet / supporters.length;
-
             ISubtitleSystem(subtitleSystem).preDivide(
                 platform,
                 maker,
