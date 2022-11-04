@@ -145,12 +145,12 @@ contract SubtitleSystem is StrategyManager, VideoManager {
                 uint256 applyId = videos[videoId].applys[i];
                 require(totalApplys[applyId].language != language, "ER0");
             }
-            // uint256[] memory newApplyArr = _sortStrategyPriority(
-            //     videos[videoId].applys,
-            //     strategy,
-            //     totalApplyNumber
-            // );
-            // videos[videoId].applys = newApplyArr;
+            uint256[] memory newApplyArr = _sortStrategyPriority(
+                videos[videoId].applys,
+                strategy,
+                totalApplyNumber
+            );
+            videos[videoId].applys = newApplyArr;
         }
         if (strategy == 2 || strategy == 0) {
             // 更新未结算稳定币数目
@@ -202,12 +202,12 @@ contract SubtitleSystem is StrategyManager, VideoManager {
             return newArr;
         }
         uint256 flag;
-        for (flag = arr.length - 1; flag >= 0; flag--) {
+        for (flag = arr.length - 1; flag > 0; flag--) {
             if (spot >= totalApplys[arr[flag]].strategy) {
                 break;
             }
         }
-        for (uint256 i; i < arr.length + 1; i++) {
+        for (uint256 i; i < newArr.length; i++) {
             if (i <= flag) {
                 newArr[i] = arr[i];
             } else if (i == flag + 1) {
@@ -447,7 +447,7 @@ contract SubtitleSystem is StrategyManager, VideoManager {
             uploadTime,
             lockUpTime
         );
-        if (flag != 0) {
+        if (flag != 0 && subtitleNFT[subtitleId].state == 0) {
             // 改变 ST 状态, 以及利益相关者信誉度和质押 Zimu 信息
             _changeST(subtitleId, flag);
             _updateUsers(subtitleId, flag);

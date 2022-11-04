@@ -37,6 +37,10 @@ contract SubtitleManager {
      * @notice 限制每个用户只能对每个字幕评价一次, 用户区块链地址 => ST ID => 是否评价（true 为已参与评价）
      */
     mapping(address => mapping(uint256 => bool)) evaluated;
+    /**
+     * @notice 限制每个用户只能给每个申请下已上传字幕中的一个好评, 用户区块链地址 => apply ID => 支持的 ST ID
+     */
+    mapping(address => mapping(uint256 => uint256)) adopted;
 
     event SubtilteStateChange(uint256 subtitleId, uint8 state, uint256 time);
     event SubitlteGetEvaluation(
@@ -97,11 +101,17 @@ contract SubtitleManager {
         require(subtitleNFT[subtitleId].state == 0, "ER3");
         require(evaluated[evaluator][subtitleId] == false, "ER4");
         if (attitude == 0) {
+            require(
+                adopted[evaluator][subtitleNFT[subtitleId].applyId] == 0,
+                "ER4"
+            );
             subtitleNFT[subtitleId].supporters.push(evaluator);
+            adopted[evaluator][subtitleNFT[subtitleId].applyId] = subtitleId;
         } else {
             subtitleNFT[subtitleId].dissenter.push(evaluator);
         }
         evaluated[evaluator][subtitleId] = true;
+        adopted[evaluator][subtitleNFT[subtitleId].applyId] = subtitleId;
         emit SubitlteGetEvaluation(subtitleId, evaluator, attitude);
     }
 }

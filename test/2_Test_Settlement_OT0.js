@@ -8,6 +8,7 @@ describe("Settlement_OT0_Test", function () {
   let owner, user1, user2, user3, user4;
   const baseEthAmount = ethers.utils.parseUnits("60", "ether");
   const unitEthAmount = ethers.utils.parseUnits("20", "ether");
+  const now = parseInt(Date.now() / 1000 / 86400);
   it("Prepare", async function () {
     // 获得区块链网络提供的测试账号
     const [deployer, addr1, addr2, addr3, addr4] = await ethers.getSigners();
@@ -119,34 +120,34 @@ describe("Settlement_OT0_Test", function () {
     let user2PreRewardState = await tscsAsDeployer.getUserLockReward(
       user2.address,
       AddressZero,
-      19299
+      now
     );
     console.log("User2 pre reward state:", user2PreRewardState);
     let user3PreRewardState = await tscsAsDeployer.getUserLockReward(
       user3.address,
       AddressZero,
-      19299
+      now
     );
     console.log("User3 pre reward state:", user3PreRewardState);
     let user4PreRewardState = await tscsAsDeployer.getUserLockReward(
       user4.address,
       AddressZero,
-      19299
+      now
     );
     console.log("User4 pre reward state:", user4PreRewardState);
   });
 
   it("Test extract reward:", async function () {
     let tx;
-    tx = await tscs.connect(user2).withdraw(AddressZero, [19299]);
+    tx = await tscs.connect(user2).withdraw(AddressZero, [now]);
     await tx.wait();
     let user2BalanceNow = await zimu.connect(user2).balanceOf(user2.address);
     console.log("User2 get reward:", user2BalanceNow);
-    tx = await tscs.connect(user3).withdraw(AddressZero, [19299]);
+    tx = await tscs.connect(user3).withdraw(AddressZero, [now]);
     await tx.wait();
     let user3BalanceNow = await zimu.connect(user3).balanceOf(user3.address);
     console.log("User3 get reward:", user3BalanceNow);
-    tx = await tscs.connect(user4).withdraw(AddressZero, [19299]);
+    tx = await tscs.connect(user4).withdraw(AddressZero, [now]);
     await tx.wait();
     let user4BalanceNow = await zimu.connect(user4).balanceOf(user4.address);
     console.log("User4 get reward:", user4BalanceNow);

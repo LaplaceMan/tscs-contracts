@@ -1,11 +1,12 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { BigNumber } = require("ethers");
-describe("Settlement_OT2_Test", function () {
+describe("Settlement_MIX_Test", function () {
   let tscs, zimu, vt, st, access, audit, detection, divide1, onetime0, onetime2;
   let tscsAsDeployer;
   let owner, user1, user2, user3, user4;
   const unitVTAmount = ethers.utils.parseUnits("20", "6");
+  const now = parseInt(Date.now() / 1000 / 86400);
   it("Prepare", async function () {
     // 获得区块链网络提供的测试账号
     const [deployer, addr1, addr2, addr3, addr4] = await ethers.getSigners();
@@ -101,7 +102,7 @@ describe("Settlement_OT2_Test", function () {
         user1.address,
         ethers.BigNumber.from("0")
       );
-    // 提交第一个申请
+    // 提交第一个申请( OT2 )
     const date = "0x" + (parseInt(Date.now() / 1000) + 15778800).toString(16);
     await expect(
       tscs
@@ -120,109 +121,106 @@ describe("Settlement_OT2_Test", function () {
         ethers.BigNumber.from("1"),
         "test"
       );
-    // 提交第二个申请
-    await tscs
-      .connect(user1)
-      .submitApplication(owner.address, 1, 1, 655, 2, date, "test");
-    // await expect(
-    //   tscs
-    //     .connect(user1)
-    //     .submitApplication(owner.address, 1, 1, 655, 2, date, "test")
-    // )
-    //   .to.emit(tscs, "ApplicationSubmit")
-    //   .withArgs(
-    //     user1.address,
-    //     owner.address,
-    //     ethers.BigNumber.from("1"),
-    //     ethers.BigNumber.from("1"),
-    //     ethers.BigNumber.from("655"),
-    //     ethers.BigNumber.from("2"),
-    //     ethers.BigNumber.from(date),
-    //     ethers.BigNumber.from("2"),
-    //     "test"
-    //   );
-    // // 给第一个申请上传字幕
-    // tx = await tscs.connect(user2).uploadSubtitle(1, "test", 1, "0x1a2b");
-    // await tx.wait();
-    // // 给第二个申请上传字幕
-    // tx = await tscs.connect(user2).uploadSubtitle(2, "test", 2, "0x2a3b");
-    // await tx.wait();
+    // 提交第二个申请 (DR1)
+    await expect(
+      tscs
+        .connect(user1)
+        .submitApplication(owner.address, 1, 1, 655, 2, date, "test")
+    )
+      .to.emit(tscs, "ApplicationSubmit")
+      .withArgs(
+        user1.address,
+        owner.address,
+        ethers.BigNumber.from("1"),
+        ethers.BigNumber.from("1"),
+        ethers.BigNumber.from("655"),
+        ethers.BigNumber.from("2"),
+        ethers.BigNumber.from(date),
+        ethers.BigNumber.from("2"),
+        "test"
+      );
+    // 给第一个申请上传字幕
+    tx = await tscs.connect(user2).uploadSubtitle(1, "test", 1, "0x1a2b");
+    await tx.wait();
+    // 给第二个申请上传字幕
+    tx = await tscs.connect(user2).uploadSubtitle(2, "test", 2, "0x2a3b");
+    await tx.wait();
   });
 
-  //   it("Test adopt subtitle", async function () {
-  //     // 评价后第一个字幕被采纳
-  //     await expect(tscs.connect(user3).evaluateSubtitle(1, 0))
-  //       .to.emit(tscs, "SubitlteGetEvaluation")
-  //       .withArgs(BigNumber.from("1"), user3.address, 0);
-  //     await expect(tscs.connect(user4).evaluateSubtitle(1, 0))
-  //       .to.emit(tscs, "SubitlteGetEvaluation")
-  //       .withArgs(BigNumber.from("1"), user4.address, 0);
-  //     // 评价后第二个字幕被采纳
-  //     await expect(tscs.connect(user3).evaluateSubtitle(2, 0))
-  //       .to.emit(tscs, "SubitlteGetEvaluation")
-  //       .withArgs(BigNumber.from("2"), user3.address, 0);
-  //     await expect(tscs.connect(user4).evaluateSubtitle(2, 0))
-  //       .to.emit(tscs, "SubitlteGetEvaluation")
-  //       .withArgs(BigNumber.from("2"), user4.address, 0);
-  //   });
+  it("Test adopt subtitle", async function () {
+    // 评价后第一个字幕被采纳
+    await expect(tscs.connect(user3).evaluateSubtitle(1, 0))
+      .to.emit(tscs, "SubitlteGetEvaluation")
+      .withArgs(BigNumber.from("1"), user3.address, 0);
+    await expect(tscs.connect(user4).evaluateSubtitle(1, 0))
+      .to.emit(tscs, "SubitlteGetEvaluation")
+      .withArgs(BigNumber.from("1"), user4.address, 0);
+    // 评价后第二个字幕被采纳
+    await expect(tscs.connect(user3).evaluateSubtitle(2, 0))
+      .to.emit(tscs, "SubitlteGetEvaluation")
+      .withArgs(BigNumber.from("2"), user3.address, 0);
+    await expect(tscs.connect(user4).evaluateSubtitle(2, 0))
+      .to.emit(tscs, "SubitlteGetEvaluation")
+      .withArgs(BigNumber.from("2"), user4.address, 0);
+  });
 
-  //   it("Test update counts", async function () {
-  //     // 更新视频播放量
-  //     await expect(tscsAsDeployer.updateViewCounts([1], [100000]))
-  //       .to.emit(tscs, "VideoCountsUpdate")
-  //       .withArgs(
-  //         owner.address,
-  //         [ethers.BigNumber.from("1")],
-  //         [ethers.BigNumber.from("100000")]
-  //       );
-  //     // 更新字幕使用量
-  //     await expect(tscsAsDeployer.updateUsageCounts([2], [10000]))
-  //       .to.emit(tscs, "SubtitleCountsUpdate")
-  //       .withArgs(
-  //         owner.address,
-  //         [BigNumber.from("2")],
-  //         [BigNumber.from("10000")]
-  //       );
-  //   });
+  it("Test update counts", async function () {
+    // 更新视频播放量
+    await expect(tscsAsDeployer.updateViewCounts([1], [100000]))
+      .to.emit(tscs, "VideoCountsUpdate")
+      .withArgs(
+        owner.address,
+        [ethers.BigNumber.from("1")],
+        [ethers.BigNumber.from("100000")]
+      );
+    // 更新字幕使用量
+    await expect(tscsAsDeployer.updateUsageCounts([2], [10000]))
+      .to.emit(tscs, "SubtitleCountsUpdate")
+      .withArgs(
+        owner.address,
+        [BigNumber.from("2")],
+        [BigNumber.from("10000")]
+      );
+  });
 
-  //   it("Test pre-extract reward:", async function () {
-  //     let tx = await tscs.connect(user2).preExtractOther("1");
-  //     await tx.wait();
-  //     let user1Reward = await vt.connect(user1).balanceOf(user1.address, 1);
-  //     console.log("User1 get reward:", user1Reward);
-  //     let user2PreRewardState = await tscsAsDeployer.getUserLockReward(
-  //       user2.address,
-  //       owner.address,
-  //       19299
-  //     );
-  //     console.log("User2 pre reward state:", user2PreRewardState);
-  //     let user3PreRewardState = await tscsAsDeployer.getUserLockReward(
-  //       user3.address,
-  //       owner.address,
-  //       19299
-  //     );
-  //     console.log("User3 pre reward state:", user3PreRewardState);
-  //     let user4PreRewardState = await tscsAsDeployer.getUserLockReward(
-  //       user4.address,
-  //       owner.address,
-  //       19299
-  //     );
-  //     console.log("User4 pre reward state:", user4PreRewardState);
-  //   });
+  it("Test pre-extract reward:", async function () {
+    let tx = await tscs.connect(user2).preExtractOther("1");
+    await tx.wait();
+    let user1Reward = await vt.connect(user1).balanceOf(user1.address, 1);
+    console.log("User1 get reward:", user1Reward);
+    let user2PreRewardState = await tscsAsDeployer.getUserLockReward(
+      user2.address,
+      owner.address,
+      now
+    );
+    console.log("User2 pre reward state:", user2PreRewardState);
+    let user3PreRewardState = await tscsAsDeployer.getUserLockReward(
+      user3.address,
+      owner.address,
+      now
+    );
+    console.log("User3 pre reward state:", user3PreRewardState);
+    let user4PreRewardState = await tscsAsDeployer.getUserLockReward(
+      user4.address,
+      owner.address,
+      now
+    );
+    console.log("User4 pre reward state:", user4PreRewardState);
+  });
 
-  //   it("Test extract reward:", async function () {
-  //     let tx;
-  //     tx = await tscs.connect(user2).withdraw(owner.address, [19299]);
-  //     await tx.wait();
-  //     let user2BalanceNow = await vt.connect(user2).balanceOf(user2.address, 1);
-  //     console.log("User2 get reward:", user2BalanceNow);
-  //     tx = await tscs.connect(user3).withdraw(owner.address, [19299]);
-  //     await tx.wait();
-  //     let user3BalanceNow = await vt.connect(user3).balanceOf(user3.address, 1);
-  //     console.log("User3 get reward:", user3BalanceNow);
-  //     tx = await tscs.connect(user4).withdraw(owner.address, [19299]);
-  //     await tx.wait();
-  //     let user4BalanceNow = await vt.connect(user4).balanceOf(user4.address, 1);
-  //     console.log("User4 get reward:", user4BalanceNow);
-  //   });
+  it("Test extract reward:", async function () {
+    let tx;
+    tx = await tscs.connect(user2).withdraw(owner.address, [now]);
+    await tx.wait();
+    let user2BalanceNow = await vt.connect(user2).balanceOf(user2.address, 1);
+    console.log("User2 get reward:", user2BalanceNow);
+    tx = await tscs.connect(user3).withdraw(owner.address, [now]);
+    await tx.wait();
+    let user3BalanceNow = await vt.connect(user3).balanceOf(user3.address, 1);
+    console.log("User3 get reward:", user3BalanceNow);
+    tx = await tscs.connect(user4).withdraw(owner.address, [now]);
+    await tx.wait();
+    let user4BalanceNow = await vt.connect(user4).balanceOf(user4.address, 1);
+    console.log("User4 get reward:", user4BalanceNow);
+  });
 });

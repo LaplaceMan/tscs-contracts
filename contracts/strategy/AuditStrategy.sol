@@ -86,7 +86,7 @@ contract AuditStrategy is IAuditStrategy {
         uint256 lockUpTime
     ) external view override returns (uint8) {
         uint8 flag1;
-        if (uploadTime + lockUpTime >= block.timestamp) {
+        if (block.timestamp >= uploadTime + lockUpTime) {
             flag1 = _adopt(uploaded, support, against, allSupport);
         }
         uint8 flag2 = _delete(support, against);
