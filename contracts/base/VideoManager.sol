@@ -22,10 +22,6 @@ contract VideoManager {
      * @notice TSCS 内顺位 ID 和 相应 Platform 内 ID 的映射, Platform 区块链地址 => 视频在 Platform 内的 ID => 视频在 TSCS 内的 ID
      */
     mapping(address => mapping(uint256 => uint256)) idReal2System;
-    /**
-     * @notice appplyId 与视频链接的映射
-     */
-    mapping(uint256 => string) defaultSrc;
 
     /**
      * @notice 用于存储视频信息
@@ -97,28 +93,5 @@ contract VideoManager {
             videos[id[i]].unsettled += vs[i];
         }
         emit VideoCountsUpdate(videos[id[0]].platform, id, vs);
-    }
-
-    /**
-     * @notice 设置视频源链接，适用于最普遍的申请情况
-     * @param applyId 申请的唯一 ID
-     * @param src 视频源链接
-     */
-    function _addDefaultSrc(uint256 applyId, string memory src) internal {
-        defaultSrc[applyId] = src;
-    }
-
-    /**
-     * @notice 当视频所属平台未加入生态或视频未被平台注册时，需要辅助字段即视频链接来唯一确定
-     * @param applyId 申请的唯一 ID
-     * @return 视频链接
-     */
-    function getDefaultVideoSrc(uint256 applyId)
-        public
-        view
-        returns (string memory)
-    {
-        require(bytes(defaultSrc[applyId]).length > 0, "ER1");
-        return defaultSrc[applyId];
     }
 }

@@ -20,17 +20,17 @@ contract EntityManager is VaultManager {
      */
     address public videoToken;
     /**
-     * @notice 已注册的语言总数
-     */
-    uint16 public languageTypes;
-    /**
      * @notice TSCS 内用户初始化时的信誉度分数, 精度为 1 即 100.0
      */
     uint16 constant baseReputation = 1000;
     /**
      * @notice 语言名称与对应ID（注册顺序）的映射, 从1开始（ISO 3166-1 alpha-2 code）
      */
-    mapping(string => uint16) languages;
+    mapping(string => uint16) public languages;
+    /**
+     * @notice 根据语言 ID 获得语言类型
+     */
+    string[] languageTypes;
     /**
      * @notice 每个区块链地址与 User 结构的映射
      */
@@ -71,26 +71,25 @@ contract EntityManager is VaultManager {
         returns (uint16)
     {
         for (uint256 i; i < language.length; i++) {
-            languageTypes++;
+            languageTypes.push(language[i]);
             require(languages[language[i]] == 0, "ER0");
-            languages[language[i]] = languageTypes;
-            emit RegisterLanguage(language[i], languageTypes);
+            languages[language[i]] = uint16(languageTypes.length - 1);
+            emit RegisterLanguage(language[i], uint16(languageTypes.length - 1));
         }
-
-        return languageTypes;
+        return uint16(languageTypes.length - 1);
     }
 
     /**
-     * @notice 获得特定语言的ID
-     * @param language 欲查询语言文本
-     * @return 语言ID, 注册顺位
+     * @notice 根据 ID 获得相应语言的文字类型
+     * @param languageId 欲查询语言 Id
+     * @return 语言类型
      */
-    function getLanguageId(string memory language)
+    function getLanguageType(uint16 languageId)
         external
         view
-        returns (uint16)
+        returns (string memory)
     {
-        return languages[language];
+        return languageTypes[languageId];
     }
 
     /**

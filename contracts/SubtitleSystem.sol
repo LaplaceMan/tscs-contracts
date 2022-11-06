@@ -32,6 +32,7 @@ contract SubtitleSystem is StrategyManager, VideoManager {
     struct Application {
         address applicant;
         uint256 videoId;
+        string source;
         uint8 strategy;
         uint256 amount;
         uint16 language;
@@ -44,6 +45,7 @@ contract SubtitleSystem is StrategyManager, VideoManager {
         _setOwner(owner);
         // 当结算类型为一次性结算时, 默认字幕支持者分成 1/100
         platforms[address(0)].rateAuditorDivide = 655;
+        languageTypes.push("Default");
     }
 
     /**
@@ -134,7 +136,7 @@ contract SubtitleSystem is StrategyManager, VideoManager {
             require(bytes(src).length > 0, "ER1-7");
             // 一次性结算策略下, 需要用户提前授权主合约额度且只能使用 Zimu 代币支付
             IZimu(zimuToken).transferFrom(msg.sender, address(this), amount);
-            _addDefaultSrc(totalApplyNumber, src);
+            totalApplys[totalApplyNumber].source = src;
         } else {
             // 当结算策略非一次性时, 与视频收益相关, 需要由视频创作者主动提起
             require(videos[videoId].creator == msg.sender, "ER5");

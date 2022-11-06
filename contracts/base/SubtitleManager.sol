@@ -42,7 +42,7 @@ contract SubtitleManager {
      */
     mapping(address => mapping(uint256 => uint256)) adopted;
 
-    event SubtilteStateChange(uint256 subtitleId, uint8 state, uint256 time);
+    event SubtilteStateChange(uint256 subtitleId, uint8 state, uint256 applyId);
     event SubitlteGetEvaluation(
         uint256 subtitleId,
         address evaluator,
@@ -84,7 +84,7 @@ contract SubtitleManager {
     function _changeST(uint256 id, uint8 state) internal {
         subtitleNFT[id].state = state;
         subtitleNFT[id].stateChangeTime = block.timestamp;
-        emit SubtilteStateChange(id, state, block.timestamp);
+        emit SubtilteStateChange(id, state, subtitleNFT[id].applyId);
     }
 
     /**
