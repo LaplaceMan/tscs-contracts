@@ -85,17 +85,15 @@ contract SubtitleSystem is StrategyManager, VideoManager {
      * @param id 视频在 Platform 内部的 ID
      * @param symbol 视频的 symbol
      * @param creator 视频创作者区块链地址
-     * @param total 视频当前的总播放量（已结算）
      * @return 视频在 TSCS 内的 ID
      */
     function createVideo(
         uint256 id,
         string memory symbol,
-        address creator,
-        uint256 total
+        address creator
     ) external returns (uint256) {
         require(platforms[msg.sender].rateCountsToProfit > 0, "ER1");
-        uint256 videoId = _createVideo(msg.sender, id, symbol, creator, total);
+        uint256 videoId = _createVideo(msg.sender, id, symbol, creator);
         return videoId;
     }
 

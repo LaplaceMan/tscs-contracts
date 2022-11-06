@@ -49,11 +49,10 @@ contract VideoManager {
 
     event VideoCreate(
         address platform,
-        uint256 reealId,
+        uint256 realId,
         uint256 id,
         string symbol,
-        address creator,
-        uint256 counts
+        address creator
     );
 
     event VideoCountsUpdate(address platform, uint256[] id, uint256[] counts);
@@ -64,15 +63,13 @@ contract VideoManager {
      * @param id 视频在 Platform 内的 ID
      * @param symbol 标识视频的符号
      * @param creator 视频创作者地址
-     * @param total 视频当前总播放量
      * @return 视频在 TSCS 内的顺位 ID
      */
     function _createVideo(
         address platform,
         uint256 id,
         string memory symbol,
-        address creator,
-        uint256 total
+        address creator
     ) internal returns (uint256) {
         totalVideoNumber++;
         require(idReal2System[platform][id] == 0, "ER0");
@@ -80,16 +77,8 @@ contract VideoManager {
         videos[totalVideoNumber].id = id;
         videos[totalVideoNumber].symbol = symbol;
         videos[totalVideoNumber].creator = creator;
-        videos[totalVideoNumber].totalViewCouts = total;
         idReal2System[platform][id] = totalVideoNumber;
-        emit VideoCreate(
-            platform,
-            id,
-            totalVideoNumber,
-            symbol,
-            creator,
-            total
-        );
+        emit VideoCreate(platform, id, totalVideoNumber, symbol, creator);
         return totalVideoNumber;
     }
 
