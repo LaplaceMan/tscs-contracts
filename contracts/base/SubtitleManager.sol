@@ -111,7 +111,6 @@ contract SubtitleManager {
             subtitleNFT[subtitleId].dissenter.push(evaluator);
         }
         evaluated[evaluator][subtitleId] = true;
-        adopted[evaluator][subtitleNFT[subtitleId].applyId] = subtitleId;
         emit SubitlteGetEvaluation(subtitleId, evaluator, attitude);
     }
 }

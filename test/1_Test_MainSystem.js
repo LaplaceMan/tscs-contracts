@@ -156,15 +156,14 @@ describe("MainSystem_Test", function() {
     });
 
     it("Test platform add (create) video", async function() {
-        await expect(tscsAsDeployer.createVideo(1, "test", user1.address, 0))
+        await expect(tscsAsDeployer.createVideo(1, "test", user1.address))
             .to.emit(tscs, "VideoCreate")
             .withArgs(
                 owner.address,
                 BigNumber.from("1"),
                 BigNumber.from("1"),
                 "test",
-                user1.address,
-                BigNumber.from("0")
+                user1.address
             );
     });
 
