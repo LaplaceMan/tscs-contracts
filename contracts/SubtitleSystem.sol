@@ -31,6 +31,7 @@ contract SubtitleSystem is StrategyManager, VideoManager {
      */
     struct Application {
         address applicant;
+        address platform;
         uint256 videoId;
         string source;
         uint8 strategy;
@@ -115,7 +116,7 @@ contract SubtitleSystem is StrategyManager, VideoManager {
         uint256 amount,
         uint16 language,
         uint256 deadline,
-        string memory src
+        string memory source
     ) external returns (uint256) {
         // 若调用者未主动加入 TSCS, 则自动初始化用户的信誉度和质押数（质押数自动设置为 0）
         _userInitialization(msg.sender, 0);
@@ -133,10 +134,9 @@ contract SubtitleSystem is StrategyManager, VideoManager {
         // 当平台地址为 0, 意味着使用默认结算策略
         if (platform == address(0)) {
             require(strategy == 0, "ER7");
-            require(bytes(src).length > 0, "ER1-7");
+            require(bytes(source).length > 0, "ER1-7");
             // 一次性结算策略下, 需要用户提前授权主合约额度且只能使用 Zimu 代币支付
             IZimu(zimuToken).transferFrom(msg.sender, address(this), amount);
-            totalApplys[totalApplyNumber].source = src;
         } else {
             // 当结算策略非一次性时, 与视频收益相关, 需要由视频创作者主动提起
             require(videos[videoId].creator == msg.sender, "ER5");
@@ -164,6 +164,8 @@ contract SubtitleSystem is StrategyManager, VideoManager {
         totalApplys[totalApplyNumber].amount = amount;
         totalApplys[totalApplyNumber].language = language;
         totalApplys[totalApplyNumber].deadline = deadline;
+        totalApplys[totalApplyNumber].platform = platform;
+        totalApplys[totalApplyNumber].source = source;
         // 奖励措施
         IVT(videoToken).mintStableToken(
             0,
@@ -179,7 +181,7 @@ contract SubtitleSystem is StrategyManager, VideoManager {
             language,
             deadline,
             totalApplyNumber,
-            src
+            source
         );
         return totalApplyNumber;
     }
