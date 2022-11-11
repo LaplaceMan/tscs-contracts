@@ -46,6 +46,8 @@ contract SubtitleSystem is StrategyManager, VideoManager {
         _setOwner(owner);
         // 当结算类型为一次性结算时, 默认字幕支持者分成 1/100
         platforms[address(0)].rateAuditorDivide = 655;
+        platforms[address(0)].name = "Default";
+        platforms[address(0)].symbol = "Default";
         languageTypes.push("Default");
     }
 

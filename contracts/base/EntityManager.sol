@@ -74,7 +74,10 @@ contract EntityManager is VaultManager {
             languageTypes.push(language[i]);
             require(languages[language[i]] == 0, "ER0");
             languages[language[i]] = uint16(languageTypes.length - 1);
-            emit RegisterLanguage(language[i], uint16(languageTypes.length - 1));
+            emit RegisterLanguage(
+                language[i],
+                uint16(languageTypes.length - 1)
+            );
         }
         return uint16(languageTypes.length - 1);
     }
@@ -118,7 +121,11 @@ contract EntityManager is VaultManager {
             //当已加入时, 仍可调用此功能增加质押 Zimu 数
             users[usr].deposit += int256(despoit);
             _changeDespoit(int256(despoit));
-            emit UserInfoUpdate(usr, 0, int256(despoit));
+            emit UserInfoUpdate(
+                usr,
+                int256(users[usr].reputation),
+                users[usr].deposit
+            );
         }
     }
 

@@ -79,6 +79,7 @@ const main = async () => {
   const tx7 = await tscsExemple.setZimuToken(zimuAddress);
   const tx8 = await tscsExemple.setVideoToken(vtAddress);
   const tx9 = await tscsExemple.setSubtitleToken(stAddress);
+  const tx10 = await tscsExemple.registerLanguage(['cn', 'en', 'jp', 'kr'])
   console.log("\n");
   console.log("setAuditStrategy", tx1);
   console.log("setAccessStrategy", tx2);
@@ -89,6 +90,7 @@ const main = async () => {
   console.log("setZimuToken", tx7);
   console.log("setVideoToken", tx8);
   console.log("setSubtitleToken", tx9);
+  console.log("registerLanguage", tx10);
 };
 
 main()

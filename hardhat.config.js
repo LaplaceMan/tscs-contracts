@@ -13,16 +13,21 @@ module.exports = {
     },
   },
   networks: {
-    hardhat: {}, // npx hardhat node
     localhost: {
       url: "http://10.201.1.235:8545",
-    }, // ganache ...
+    },
+    quorum: {
+      url: "http://10.201.1.237:8545",
+      accounts: [
+        "8f2a55949038a9610f50fb23b5883af3b4ecb3c3bb792cbcefbd1542c692be63"
+      ]
+    },
     goerli: {
       chainId: 5,
       url: "https://eth-mainnet.alchemyapi.io/v2/123abc123abc123abc123abc123abcde", // your network rpc
       accounts: [
-        "44bd43a04bab193e258d1e29d267a74fe3b4ced6060db617fd210b26be6d9618",
-      ], //your private key
+        "8f2a55949038a9610f50fb23b5883af3b4ecb3c3bb792cbcefbd1542c692be63",
+      ],
     },
   },
   contractSizer: {
