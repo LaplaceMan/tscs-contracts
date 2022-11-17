@@ -76,7 +76,7 @@ describe("Settlement_MIX_Test", function () {
     tx = await tscsAsDeployer.setSubtitleToken(stAddress);
     await tx.wait();
     // 注册语言
-    tx = await tscsAsDeployer.registerLanguage(["cn", "en", "jp"]);
+    tx = await tscsAsDeployer.registerLanguage(["cn", "us", "jp"]);
     await tx.wait();
     // 添加平台
     await expect(

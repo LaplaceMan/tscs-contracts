@@ -2,13 +2,13 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { BigNumber } = require("ethers");
 const { AddressZero } = require("@ethersproject/constants");
-describe("MainSystem_Test", function() {
+describe("MainSystem_Test", function () {
     let tscs, zimu, vt, st, access, audit, detection, divide1, onetime0, onetime2;
     let tscsAsDeployer;
     let owner, user1, user2, user3;
     const baseEthAmount = ethers.utils.parseUnits("60", "ether");
     const unitEthAmount = ethers.utils.parseUnits("20", "ether");
-    it("Deploy contracts", async function() {
+    it("Deploy contracts", async function () {
         // 获得区块链网络提供的测试账号
         const [deployer, addr1, addr2, addr3] = await ethers.getSigners();
         deployerAddress = deployer.address;
@@ -77,7 +77,7 @@ describe("MainSystem_Test", function() {
         await tx.wait();
     });
 
-    it("Test Zimu transfer", async function() {
+    it("Test Zimu transfer", async function () {
         await zimu.deployed();
         const balanceUser1old = await zimu.connect(user1).balanceOf(user1.address);
         console.log("User1 Zimu balance before transfer is", balanceUser1old);
@@ -88,7 +88,7 @@ describe("MainSystem_Test", function() {
         expect(balanceUser1new).to.equal(baseEthAmount);
     });
 
-    it("Test user join", async function() {
+    it("Test user join", async function () {
         let tx = await zimu.connect(user1).approve(tscs.address, baseEthAmount);
         await tx.wait();
         const user1Approved = await zimu
@@ -105,18 +105,18 @@ describe("MainSystem_Test", function() {
         console.log("User joined info:", user1JoinInfo);
     });
     // 测试时将 AuditStrategy 中的审核次数从 10 => 2, 且 AuditTime = 0
-    it("Test add language", async function() {
-        let tx = await tscsAsDeployer.registerLanguage(["cn", "en", "jp"]);
+    it("Test add language", async function () {
+        let tx = await tscsAsDeployer.registerLanguage(["cn", "us", "jp"]);
         await tx.wait();
         let cnIndex = await tscsAsDeployer.languages("cn");
-        let enIndex = await tscsAsDeployer.languages("en");
+        let enIndex = await tscsAsDeployer.languages("us");
         let jpIndex = await tscsAsDeployer.languages("jp");
         expect(cnIndex).to.equal(1);
         expect(enIndex).to.equal(2);
         expect(jpIndex).to.equal(3);
     });
 
-    it("Test submit application (OT0)", async function() {
+    it("Test submit application (OT0)", async function () {
         const date = "0x" + (parseInt(Date.now() / 1000) + 15778800).toString(16);
         let tx = await tscs
             .connect(user1)
@@ -126,24 +126,24 @@ describe("MainSystem_Test", function() {
         expect(receipt.status).to.equal(1);
     });
 
-    it("Test upload subtitle", async function() {
+    it("Test upload subtitle", async function () {
         let tx = await tscs.connect(user2).uploadSubtitle(1, "test", 1, "0x1a2b");
         await tx.wait();
         let receipt = await ethers.provider.getTransactionReceipt(tx.hash);
         expect(receipt.status).to.equal(1);
     });
 
-    it("Test evaluate (audit) subtitle", async function() {
+    it("Test evaluate (audit) subtitle", async function () {
         let tx = await tscs.connect(user3).evaluateSubtitle(1, 0);
         await tx.wait();
         let receipt = await ethers.provider.getTransactionReceipt(tx.hash);
         expect(receipt.status).to.equal(1);
     });
 
-    it("Test add platform", async function() {
+    it("Test add platform", async function () {
         await expect(
-                tscsAsDeployer.platfromJoin(owner.address, "test", "test", 655, 655)
-            )
+            tscsAsDeployer.platfromJoin(owner.address, "test", "test", 655, 655)
+        )
             .to.emit(tscs, "PlatformJoin")
             .withArgs(
                 owner.address,
@@ -155,7 +155,7 @@ describe("MainSystem_Test", function() {
             );
     });
 
-    it("Test platform add (create) video", async function() {
+    it("Test platform add (create) video", async function () {
         await expect(tscsAsDeployer.createVideo(1, "test", user1.address))
             .to.emit(tscs, "VideoCreate")
             .withArgs(
@@ -167,7 +167,7 @@ describe("MainSystem_Test", function() {
             );
     });
 
-    it("Test platform update counts", async function() {
+    it("Test platform update counts", async function () {
         await expect(tscsAsDeployer.updateViewCounts([1], [10000]))
             .to.emit(tscs, "VideoCountsUpdate")
             .withArgs(
@@ -175,13 +175,13 @@ describe("MainSystem_Test", function() {
             );
     });
 
-    it("Test submit application (other)", async function() {
+    it("Test submit application (other)", async function () {
         const date = "0x" + (parseInt(Date.now() / 1000) + 15778800).toString(16);
         await expect(
-                tscs
+            tscs
                 .connect(user1)
                 .submitApplication(owner.address, 1, 1, 655, 1, date, "test")
-            )
+        )
             .to.emit(tscs, "ApplicationSubmit")
             .withArgs(
                 user1.address,

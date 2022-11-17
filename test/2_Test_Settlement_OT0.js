@@ -82,7 +82,7 @@ describe("Settlement_OT0_Test", function () {
     tx = await zimu.connect(owner).transfer(user1.address, baseEthAmount);
     await tx.wait();
     //注册语言
-    tx = await tscsAsDeployer.registerLanguage(["cn", "en", "jp"]);
+    tx = await tscsAsDeployer.registerLanguage(["cn", "us", "jp"]);
     await tx.wait();
     // 提交申请
     tx = await zimu.connect(user1).approve(tscs.address, baseEthAmount);

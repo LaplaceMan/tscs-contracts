@@ -74,8 +74,13 @@ contract SubtitleSystem is StrategyManager, VideoManager {
     );
 
     event ApplicationCancel(uint256 applyId);
-
     event ApplicationRecover(uint256 applyId, uint256 amount, uint256 deadline);
+    event ApplicationUpdate(
+        uint256 applyId,
+        uint256 newAmount,
+        uint256 newDeadline
+    );
+    event ApplicationReset(uint256 applyId);
 
     event UserWithdraw(
         address user,
@@ -629,7 +634,7 @@ contract SubtitleSystem is StrategyManager, VideoManager {
             totalApplys[applyId].adopted == 0 &&
                 totalApplys[applyId].subtitles.length == 0 &&
                 totalApplys[applyId].deadline <= block.timestamp,
-            "Cannot Cancel"
+            "ER1-5"
         );
         require(totalApplys[applyId].strategy == 0, "ER6");
         uint256 platformId = platforms[
@@ -659,12 +664,44 @@ contract SubtitleSystem is StrategyManager, VideoManager {
             totalApplys[applyId].adopted == 0 &&
                 totalApplys[applyId].subtitles.length == 0 &&
                 totalApplys[applyId].deadline <= block.timestamp,
-            "Cannot Cancel"
+            "ER1-5"
         );
         require(totalApplys[applyId].strategy != 0, "ER6");
         require(deadline > block.timestamp, "ER1");
         totalApplys[applyId].deadline = deadline;
         totalApplys[applyId].amount = amount;
         emit ApplicationRecover(applyId, amount, deadline);
+    }
+
+    /**
+     * @notice 更新（增加）申请中的额度和（延长）到期时间
+     * @param applyId 申请顺位 ID
+     * @param plusAmount 增加支付额度
+     * @param plusTime 延长到期时间
+     */
+    function updateApplication(
+        uint256 applyId,
+        uint256 plusAmount,
+        uint256 plusTime
+    ) public {
+        require(msg.sender == totalApplys[applyId].applicant, "ER5");
+        require(totalApplys[applyId].adopted == 0, "ER6");
+        totalApplys[applyId].amount += plusAmount;
+        totalApplys[applyId].deadline += plusTime;
+        emit ApplicationUpdate(
+            applyId,
+            totalApplys[applyId].amount,
+            totalApplys[applyId].deadline
+        );
+    }
+
+    /**
+     * @notice 该功能服务于后续的仲裁法庭，取消被确认的恶意字幕，相当于重新发出申请
+     * @param applyId 被重置的申请 ID
+     */
+    function resetApplication(uint256 applyId) public auth {
+        delete totalApplys[applyId].adopted;
+        totalApplys[applyId].deadline = block.timestamp + 365 days;
+        emit ApplicationReset(applyId);
     }
 }

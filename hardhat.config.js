@@ -16,18 +16,12 @@ module.exports = {
     localhost: {
       url: "http://10.201.1.235:8545",
     },
-    quorum: {
-      url: "http://10.201.1.237:8545",
-      accounts: [
-        "8f2a55949038a9610f50fb23b5883af3b4ecb3c3bb792cbcefbd1542c692be63"
-      ]
-    },
     goerli: {
       chainId: 5,
-      url: "https://eth-mainnet.alchemyapi.io/v2/123abc123abc123abc123abc123abcde", // your network rpc
+      url: "http://10.201.1.236:8545",
       accounts: [
-        "8f2a55949038a9610f50fb23b5883af3b4ecb3c3bb792cbcefbd1542c692be63",
-      ],
+        "2be9c8ef318c921eb89cc4cdfed1e1c72003e476f0f90f5d288a320513008064",
+      ]
     },
   },
   contractSizer: {

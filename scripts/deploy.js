@@ -13,7 +13,7 @@ const main = async () => {
   const zimu = await ZIMU.deploy(
     tscsAddress,
     deployerAddress,
-    "0x21e19e0c9bab2400000",
+    "0x33b2e3c9fd0804000000000",
     deployerAddress
   );
   const zimuAddress = zimu.address;
@@ -79,7 +79,7 @@ const main = async () => {
   const tx7 = await tscsExemple.setZimuToken(zimuAddress);
   const tx8 = await tscsExemple.setVideoToken(vtAddress);
   const tx9 = await tscsExemple.setSubtitleToken(stAddress);
-  const tx10 = await tscsExemple.registerLanguage(['cn', 'en', 'jp', 'kr'])
+  const tx10 = await tscsExemple.registerLanguage(['cn', 'us', 'jp', 'kr', 'de', 'fr', 'in', 'gb', 'ru', 'es', 'my', 'pt', 'th', 'bd', 'sa'])
   console.log("\n");
   console.log("setAuditStrategy", tx1);
   console.log("setAccessStrategy", tx2);
