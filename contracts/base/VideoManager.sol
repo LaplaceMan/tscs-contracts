@@ -50,7 +50,6 @@ contract VideoManager {
         string symbol,
         address creator
     );
-
     event VideoCountsUpdate(address platform, uint256[] id, uint256[] counts);
 
     /**

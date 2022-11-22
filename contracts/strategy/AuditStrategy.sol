@@ -11,6 +11,28 @@ import "../interfaces/IAuditStrategy.sol";
 
 contract AuditStrategy is IAuditStrategy {
     /**
+     * @notice 判断状态改变所需审核数量的基本单元，测试时为 2，正常时为 10
+     */
+    uint256 auditUnit;
+    /**
+     * @notice 操作员地址, 有权修改该策略中的关键参数
+     */
+    address public opeator;
+
+    event SystemChangeOpeator(address newOpeator);
+    event SystemChangeAuditUnit(uint256 now);
+
+    constructor(address dao, uint256 unit) {
+        opeator = dao;
+        auditUnit = unit;
+    }
+
+    modifier onlyOwner() {
+        require(msg.sender == opeator, "ER5");
+        _;
+    }
+
+    /**
      * @notice 根据观众（审核员）对字幕的评价数据判断字幕是否被采纳, 内部功能
      * @param uploaded 已上传的字幕数目
      * @param support 单个字幕获得的支持数
@@ -23,18 +45,19 @@ contract AuditStrategy is IAuditStrategy {
         uint256 support,
         uint256 against,
         uint256 allSupport
-    ) internal pure returns (uint8) {
+    ) internal view returns (uint8) {
         uint8 flag;
         if (uploaded > 1) {
             if (
-                support > 10 && ((support - against) > (allSupport / uploaded))
+                support > auditUnit &&
+                ((support - against) > (allSupport / uploaded))
             ) {
                 flag = 1;
             }
         } else {
             // 在测试时将其修改为 1, 默认为 10
             if (
-                support > 1 &&
+                support > auditUnit &&
                 (((support - against) * 10) / (support + against) >= 6)
             ) {
                 flag = 1;
@@ -51,16 +74,16 @@ contract AuditStrategy is IAuditStrategy {
      */
     function _delete(uint256 support, uint256 against)
         internal
-        pure
+        view
         returns (uint8)
     {
         uint8 flag;
         if (support > 1) {
-            if (against >= 10 * support) {
+            if (against >= auditUnit * support) {
                 flag = 2;
             }
         } else {
-            if (against >= 2) {
+            if (against >= auditUnit) {
                 flag = 2;
             }
         }
@@ -97,5 +120,15 @@ contract AuditStrategy is IAuditStrategy {
         } else {
             return 0;
         }
+    }
+
+    function changeOpeator(address newOpeator) external onlyOwner {
+        opeator = newOpeator;
+        emit SystemChangeOpeator(newOpeator);
+    }
+
+    function changeAuditUnit(uint256 newAuditUnit) external onlyOwner {
+        auditUnit = newAuditUnit;
+        emit SystemChangeAuditUnit(newAuditUnit);
     }
 }

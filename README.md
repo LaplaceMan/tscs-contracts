@@ -18,6 +18,16 @@
 > 然后部署代币合约 VT.sol 、Zimu.sol、ST.sol ，构造函数输入参数为主合约地址（和 DAO 合约地址）
 > 最后部署策略合约 AccessStrategy.sol（访问权限策略）、AuditStrategy.sol（审核策略）、DetectionStrategy.sol（相似度检测策略）和三个结算策略合约。其中，结算策略合约构造函数输入参数为主合约地址，其余为 DAO 合约地址
 
+## Test Contracts
+
+`npx hardhat test .\scripts\<Test script>.js --network <Network name>`
+
+## Verify Contracts
+
+`npx hardhat verify --constructor-args .\scripts\<constructor arguments>.js --network goerli <On-chain contract address>`
+
+> 将代码上传到 ehterscan 或其它区块链浏览器，即使在翻墙的情况下也可能出现超时或无法连接的情况，可参考 [文章](https://learnblockchain.cn/question/2939)。
+
 ## Error Explain
 
 | Label | Explain                |

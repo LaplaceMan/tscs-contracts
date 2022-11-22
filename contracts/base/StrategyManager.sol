@@ -54,6 +54,7 @@ contract StrategyManager is PlatformManager, SubtitleManager {
     event SystemSetZimuToken(address token);
     event SystemSetVideoToken(address token);
     event SystemSetSubtitleToken(address token);
+    event SystemSetVault(address vault);
     event SystemSetLockUpTime(uint256 time);
     /**
      * @notice 结算策略 ID 与 SettlementStruct 的映射, 在 TSCS 内用 ID 唯一标识结算策略, 从0开始
@@ -135,6 +136,16 @@ contract StrategyManager is PlatformManager, SubtitleManager {
     }
 
     /**
+     * @notice 设置/修改金库合约地址
+     * @param vault_ 新的金库合约地址
+     */
+    function setVault(address vault_) external onlyOwner {
+        require(vault_ != address(0), "ER1");
+        vault = vault_;
+        emit SystemSetVault(vault_);
+    }
+
+    /**
      * @notice 设置/修改字幕代币 NFT 合约地址
      * @param token 新的 ERC1155 稳定币合约地址
      */
@@ -153,6 +164,7 @@ contract StrategyManager is PlatformManager, SubtitleManager {
         lockUpTime = time;
         emit SystemSetLockUpTime(time);
     }
+
     /**
      * @notice 返回指定结算策略的基本信息
      * @param strategyId 策略 ID

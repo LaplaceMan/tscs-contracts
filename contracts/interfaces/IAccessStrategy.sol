@@ -27,4 +27,8 @@ interface IAccessStrategy {
     function multiplier() external view returns (uint8);
 
     function opeator() external view returns (address);
+
+    function reward(uint256 reputation) external pure returns (uint256);
+
+    function punishment(uint256 reputation) external view returns (uint256);
 }

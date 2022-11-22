@@ -23,11 +23,16 @@ const main = async () => {
   const vt = await VT.deploy(tscsAddress);
   const vtAddress = vt.address;
   console.log("vtAddress", vtAddress);
-  // 部署字幕嗲比 ST 合约（ERC721）
+  // 部署字幕代币 ST 合约（ERC721）
   const ST = await ethers.getContractFactory("SubtitleToken");
   const st = await ST.deploy(tscsAddress);
   const stAddress = st.address;
   console.log("stAddress", stAddress);
+  //部署金库合约
+  const VAULT = await ethers.getContractFactory("Vault");
+  const vault = await VAULT.deploy(deployerAddress, tscsAddress);
+  const vaultAddress = vault.address;
+  console.log("vaultAddress", vaultAddress);
   // 部署策略合约
   // 访问策略
   const ACCESS = await ethers.getContractFactory("AccessStrategy");
@@ -36,7 +41,7 @@ const main = async () => {
   console.log("accessAddress", accessAddress);
   // 审核策略
   const AUDIT = await ethers.getContractFactory("AuditStrategy");
-  const audit = await AUDIT.deploy();
+  const audit = await AUDIT.deploy(deployerAddress, 2);
   const auditAddress = audit.address;
   console.log("auditAddress", auditAddress);
   // 相似度检测策略
@@ -79,7 +84,8 @@ const main = async () => {
   const tx7 = await tscsExemple.setZimuToken(zimuAddress);
   const tx8 = await tscsExemple.setVideoToken(vtAddress);
   const tx9 = await tscsExemple.setSubtitleToken(stAddress);
-  const tx10 = await tscsExemple.registerLanguage(['cn', 'us', 'jp', 'kr', 'de', 'fr', 'in', 'gb', 'ru', 'es', 'my', 'pt', 'th', 'bd', 'sa'])
+  const tx10 = await tscsExemple.setVault(vaultAddress);
+  const tx11 = await tscsExemple.registerLanguage(['cn', 'us', 'jp', 'kr', 'de', 'fr', 'in', 'gb', 'ru', 'es', 'my', 'pt', 'th', 'bd', 'sa'])
   console.log("\n");
   console.log("setAuditStrategy", tx1);
   console.log("setAccessStrategy", tx2);
@@ -90,7 +96,8 @@ const main = async () => {
   console.log("setZimuToken", tx7);
   console.log("setVideoToken", tx8);
   console.log("setSubtitleToken", tx9);
-  console.log("registerLanguage", tx10);
+  console.log("setVault", tx10);
+  console.log("registerLanguage", tx11);
 };
 
 main()

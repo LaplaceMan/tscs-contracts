@@ -7,10 +7,10 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.0;
 
+import "../interfaces/IVault.sol";
 import "../interfaces/IZimu.sol";
-import "./VaultManager.sol";
 
-contract EntityManager is VaultManager {
+contract EntityManager {
     /**
      * @notice TSCS代币 ERC20合约地址
      */
@@ -20,9 +20,28 @@ contract EntityManager is VaultManager {
      */
     address public videoToken;
     /**
+     * @notice Platform稳定币 ERC1155合约地址
+     */
+    address public vault;
+    /**
      * @notice TSCS 内用户初始化时的信誉度分数, 精度为 1 即 100.0
      */
     uint16 constant baseReputation = 1000;
+    /**
+     * @notice 用户加入生态时在 TSCS 内质押的 Zimu 数
+     */
+    uint256 public Despoit;
+
+    /**
+     * @notice 手续费用比率
+     */
+    uint256 fee;
+
+    /**
+     * @notice 计算费用时的除数
+     */
+    uint256 constant BASE_FEE_RATE = 10000;
+
     /**
      * @notice 语言名称与对应ID（注册顺序）的映射, 从1开始（ISO 3166-1 alpha-2 code）
      */
@@ -60,6 +79,7 @@ contract EntityManager is VaultManager {
         int256 reputationSpread,
         int256 tokenSpread
     );
+    event UserWithdrawDespoit(address user, uint256 amount, uint256 balance);
 
     /**
      * @notice 为了节省存储成本, 使用ID（uint16）代替语言文本（string）, 同时任何人可调用, 保证适用性
@@ -113,7 +133,7 @@ contract EntityManager is VaultManager {
      * @param usr 用户区块链地址
      */
     function userJoin(address usr, uint256 despoit) external {
-        IZimu(zimuToken).transferFrom(msg.sender, address(this), despoit);
+        IZimu(zimuToken).transferFrom(msg.sender, vault, despoit);
         if (users[usr].reputation == 0) {
             _changeDespoit(int256(despoit));
             _userInitialization(usr, int256(despoit));
@@ -165,7 +185,8 @@ contract EntityManager is VaultManager {
         if (tokenSpread < 0) {
             //小于0意味着惩罚操作, 扣除质押Zimu数
             users[usr].deposit = users[usr].deposit + tokenSpread;
-            _changePenalty(uint256(tokenSpread));
+            IVault(vault).changePenalty(uint256(tokenSpread));
+            _changeDespoit(tokenSpread);
         } else {
             //此处待定, 临时设计为奖励操作时, 给与特定数目的平台币Zimu Token
             IZimu(zimuToken).mintReward(usr, uint256(tokenSpread));
@@ -213,6 +234,16 @@ contract EntityManager is VaultManager {
     }
 
     /**
+     * @notice 更改 TSCS 内质押的 Zimu 数量
+     * @param amount 变化数量
+     */
+    function _changeDespoit(int256 amount) internal {
+        if (amount != 0) {
+            Despoit = uint256(int256(Despoit) + amount);
+        }
+    }
+
+    /**
      * @notice 获得特定用户当前信誉度分数和质押 Zimu 数量
      * @param usr 欲查询用户的区块链地址
      * @return 信誉度分数, 质押 Zimu 数
@@ -243,15 +274,18 @@ contract EntityManager is VaultManager {
     /**
      * @notice 提取质押的 Zimu 代币
      * @param amount 欲提取 Zimu 代币数
-     * @return 实际提取质押 Zimu 代币数
      */
-    function withdrawDeposit(uint256 amount) public returns (uint256) {
+    function withdrawDeposit(uint256 amount) public {
         require(users[msg.sender].deposit > 0, "ER1");
         if (amount > uint256(users[msg.sender].deposit)) {
             amount = uint256(users[msg.sender].deposit);
         }
         users[msg.sender].deposit -= int256(amount);
-        IZimu(zimuToken).transferFrom(address(this), msg.sender, amount);
-        return amount;
+        IVault(vault).withdrawDeposit(zimuToken, msg.sender, amount);
+        emit UserWithdrawDespoit(
+            msg.sender,
+            amount,
+            uint256(users[msg.sender].deposit)
+        );
     }
 }

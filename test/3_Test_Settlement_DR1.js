@@ -21,6 +21,7 @@ describe("Settlement_DR1_Test", function () {
     const ZIMU = await ethers.getContractFactory("ZimuToken");
     const VT = await ethers.getContractFactory("VideoToken");
     const ST = await ethers.getContractFactory("SubtitleToken");
+    const VAULT = await ethers.getContractFactory("Vault");
     const ACCESS = await ethers.getContractFactory("AccessStrategy");
     const AUDIT = await ethers.getContractFactory("AuditStrategy");
     const DETECTION = await ethers.getContractFactory("DetectionStrategy");
@@ -42,9 +43,11 @@ describe("Settlement_DR1_Test", function () {
     const vtAddress = vt.address;
     st = await ST.deploy(tscsAddress);
     const stAddress = st.address;
+    const vault = await VAULT.deploy(deployerAddress, tscsAddress);
+    const vaultAddress = vault.address;
     access = await ACCESS.deploy(deployerAddress);
     const accessAddress = access.address;
-    audit = await AUDIT.deploy();
+    audit = await AUDIT.deploy(deployerAddress, 2);
     const auditAddress = audit.address;
     detection = await DETECTION.deploy(deployerAddress, 5);
     const detectionAddress = detection.address;
@@ -61,6 +64,8 @@ describe("Settlement_DR1_Test", function () {
     tx = await tscsAsDeployer.setAccessStrategy(accessAddress);
     await tx.wait();
     tx = await tscsAsDeployer.setDetectionStrategy(detectionAddress);
+    await tx.wait();
+    tx = await tscsAsDeployer.setVault(vaultAddress);
     await tx.wait();
     tx = await tscsAsDeployer.setSettlementStrategy(0, onetime0Address, "OT0");
     await tx.wait();

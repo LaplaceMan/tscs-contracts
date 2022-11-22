@@ -10,7 +10,6 @@ pragma solidity ^0.8.0;
 import "./interfaces/ISettlementStrategy.sol";
 import "./base/StrategyManager.sol";
 import "./base/VideoManager.sol";
-import "./interfaces/IVT.sol";
 
 contract SubtitleSystem is StrategyManager, VideoManager {
     /**
@@ -72,7 +71,6 @@ contract SubtitleSystem is StrategyManager, VideoManager {
         uint256[] subtitleId,
         uint256[] counts
     );
-
     event ApplicationCancel(uint256 applyId);
     event ApplicationRecover(uint256 applyId, uint256 amount, uint256 deadline);
     event ApplicationUpdate(
@@ -81,7 +79,6 @@ contract SubtitleSystem is StrategyManager, VideoManager {
         uint256 newDeadline
     );
     event ApplicationReset(uint256 applyId);
-
     event UserWithdraw(
         address user,
         address platform,
@@ -138,7 +135,7 @@ contract SubtitleSystem is StrategyManager, VideoManager {
         require(deadline > block.timestamp, "ER1");
         require(settlementStrategy[strategy].strategy != address(0), "ER6");
         totalApplyNumber++;
-        // 当平台地址为 0, 意味着使用默认结算策略
+        // 当平台地址为 0, 意味着使用默认一次性结算策略
         if (platform == address(0)) {
             require(strategy == 0, "ER7");
             require(bytes(source).length > 0, "ER1-7");
@@ -429,6 +426,13 @@ contract SubtitleSystem is StrategyManager, VideoManager {
             totalApplys[subtitleNFT[subtitleId].applyId].adopted == 0,
             "ER3"
         );
+        if (attitude == 1) {
+            require(
+                uint256(users[msg.sender].deposit) ==
+                    accessStrategy.minDeposit(),
+                "ER5"
+            );
+        }
         // 若调用者未主动加入 TSCS, 则自动初始化用户的信誉度和质押数（质押数自动设置为 0）
         _userInitialization(msg.sender, 0);
         // 根据信誉度和质押 ETH 数判断用户是否有权限使用 TSCS 提供的服务
@@ -604,11 +608,17 @@ contract SubtitleSystem is StrategyManager, VideoManager {
                 if (platform != address(0)) {
                     IVT(videoToken).mintStableToken(
                         platforms[platform].platformId,
+                        vault,
+                        thisFee
+                    );
+                } else {
+                    IZimu(zimuToken).transferFrom(
                         address(this),
+                        vault,
                         thisFee
                     );
                 }
-                _addFee(platforms[platform].platformId, thisFee);
+                IVault(vault).addFee(platforms[platform].platformId, thisFee);
             }
             if (platform != address(0)) {
                 IVT(videoToken).mintStableToken(

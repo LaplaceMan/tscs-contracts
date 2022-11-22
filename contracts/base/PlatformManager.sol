@@ -44,7 +44,6 @@ contract PlatformManager is Ownable, EntityManager {
         uint16 rate1,
         uint16 rate2
     );
-
     event PlatformSetRate(address platform, uint16 rate1, uint16 rate2);
 
     /**
