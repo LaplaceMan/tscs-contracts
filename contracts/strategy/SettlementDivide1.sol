@@ -19,7 +19,7 @@ contract SettlementDivide1 is ISettlementStrategy {
     /**
      * @notice 每一个结算策略为分成结算（策略ID 为 1）的申请下, 被采纳的字幕都拥有相应的 SubtitleSettlement 结构, 这里是 applyId => SubtitleSettlement
      */
-    mapping(uint256 => SubtitleSettlement) settlements;
+    mapping(uint256 => SubtitleSettlement) public settlements;
     /**
      * @notice 每个被采纳且所属申请的结算策略为分成结算的字幕, 都会在该结算策略合约中拥有相应的 SubtitleSettlement 结构体
      * @param settled 已经结算的稳定币数量
@@ -104,5 +104,15 @@ contract SettlementDivide1 is ISettlementStrategy {
             RATE_BASE;
         uint256 unpaidToken1 = (unpaidToken0 * amount) / RATE_BASE;
         settlements[applyId].unsettled += unpaidToken1;
+    }
+
+    /**
+     * @notice 更改特定申请的未结算代币数，为仲裁服务
+     * @param applyId 申请的 ID
+     * @param amount 恢复的代币数量
+     */
+    function resetSettlement(uint256 applyId, uint256 amount) external auth {
+        settlements[applyId].unsettled += amount;
+        settlements[applyId].settled -= amount;
     }
 }

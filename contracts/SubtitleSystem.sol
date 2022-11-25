@@ -78,7 +78,7 @@ contract SubtitleSystem is StrategyManager, VideoManager {
         uint256 newAmount,
         uint256 newDeadline
     );
-    event ApplicationReset(uint256 applyId);
+    event ApplicationReset(uint256 applyId, uint256 amount);
     event UserWithdraw(
         address user,
         address platform,
@@ -708,10 +708,15 @@ contract SubtitleSystem is StrategyManager, VideoManager {
     /**
      * @notice 该功能服务于后续的仲裁法庭，取消被确认的恶意字幕，相当于重新发出申请
      * @param applyId 被重置的申请 ID
+     * @param amount 恢复的代币奖励数量（注意这里以代币计价）
      */
-    function resetApplication(uint256 applyId) public auth {
+    function resetApplication(uint256 applyId, uint256 amount) public auth {
+        _changeST(totalApplys[applyId].adopted, 2);
         delete totalApplys[applyId].adopted;
-        totalApplys[applyId].deadline = block.timestamp + 365 days;
-        emit ApplicationReset(applyId);
+        totalApplys[applyId].deadline = block.timestamp + 7 days;
+        ISettlementStrategy(
+            settlementStrategy[totalApplys[applyId].strategy].strategy
+        ).resetSettlement(applyId, amount);
+        emit ApplicationReset(applyId, amount);
     }
 }

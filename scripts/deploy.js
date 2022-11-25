@@ -72,13 +72,13 @@ const main = async () => {
   const tx4 = await tscsExemple.setSettlementStrategy(
     0,
     onetime0Address,
-    "OT0"
+    'OT0'
   );
-  const tx5 = await tscsExemple.setSettlementStrategy(1, divide1Address, "DI1");
+  const tx5 = await tscsExemple.setSettlementStrategy(1, divide1Address, 'DI1');
   const tx6 = await tscsExemple.setSettlementStrategy(
     2,
     onetime2Address,
-    "OTM2"
+    'OTM2'
   );
   // 主合约设置代币合约地址
   const tx7 = await tscsExemple.setZimuToken(zimuAddress);

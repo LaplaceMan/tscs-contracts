@@ -19,4 +19,6 @@ interface ISettlementStrategy {
     ) external;
 
     function subtitleSystem() external view returns (address);
+
+    function resetSettlement(uint256 applyId, uint256 amount) external;
 }
