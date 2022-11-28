@@ -14,7 +14,7 @@ module.exports = {
   },
   networks: {
     localhost: {
-      url: "http://10.201.1.235:8545",
+      url: "http://127.0.0.1:8545",
     },
     goerli: {
       chainId: 5,

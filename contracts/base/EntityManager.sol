@@ -164,7 +164,8 @@ contract EntityManager {
     ) internal {
         require(users[usr].reputation != 0, "ER0");
         uint256 current = users[usr].lock[platform][day];
-        users[usr].lock[platform][day] = uint256(int256(current) + amount);
+        int256 newLock = int256(current) + amount;
+        users[usr].lock[platform][day] = (newLock > 0 ? uint256(newLock) : 0);
         emit UserLockRewardUpdate(usr, platform, day, amount);
     }
 
@@ -179,13 +180,14 @@ contract EntityManager {
         int256 reputationSpread,
         int256 tokenSpread
     ) internal {
-        users[usr].reputation = uint256(
-            int256(users[usr].reputation) + reputationSpread
+        int256 newReputation = int256(users[usr].reputation) + reputationSpread;
+        users[usr].reputation = (
+            newReputation > 0 ? uint256(newReputation) : 0
         );
         if (tokenSpread < 0) {
             //小于0意味着惩罚操作, 扣除质押Zimu数
             users[usr].deposit = users[usr].deposit + tokenSpread;
-            IVault(vault).changePenalty(uint256(tokenSpread));
+            IVault(vault).changePenalty(uint256(tokenSpread * -1));
             _changeDespoit(tokenSpread);
         } else {
             //此处待定, 临时设计为奖励操作时, 给与特定数目的平台币Zimu Token
@@ -239,7 +241,8 @@ contract EntityManager {
      */
     function _changeDespoit(int256 amount) internal {
         if (amount != 0) {
-            Despoit = uint256(int256(Despoit) + amount);
+            int256 newAmount = int256(Despoit) + amount;
+            Despoit = newAmount > 0 ? uint256(newAmount) : 0;
         }
     }
 

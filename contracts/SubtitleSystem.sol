@@ -71,7 +71,7 @@ contract SubtitleSystem is StrategyManager, VideoManager {
         uint256[] subtitleId,
         uint256[] counts
     );
-    event ApplicationCancel(uint256 applyId);
+    // event ApplicationCancel(uint256 applyId);
     event ApplicationRecover(uint256 applyId, uint256 amount, uint256 deadline);
     event ApplicationUpdate(
         uint256 applyId,
@@ -428,8 +428,8 @@ contract SubtitleSystem is StrategyManager, VideoManager {
         );
         if (attitude == 1) {
             require(
-                uint256(users[msg.sender].deposit) ==
-                    accessStrategy.minDeposit(),
+                users[msg.sender].deposit ==
+                    int256(accessStrategy.minDeposit()),
                 "ER5"
             );
         }
@@ -638,25 +638,26 @@ contract SubtitleSystem is StrategyManager, VideoManager {
      * @notice 取消申请（仅支持一次性结算策略, 其它的自动冻结）
      * @param applyId 申请 ID
      */
-    function cancel(uint256 applyId) external {
-        require(msg.sender == totalApplys[applyId].applicant, "ER5");
-        require(
-            totalApplys[applyId].adopted == 0 &&
-                totalApplys[applyId].subtitles.length == 0 &&
-                totalApplys[applyId].deadline <= block.timestamp,
-            "ER1-5"
-        );
-        require(totalApplys[applyId].strategy == 0, "ER6");
-        uint256 platformId = platforms[
-            videos[totalApplys[applyId].videoId].platform
-        ].platformId;
-        IVT(videoToken).mintStableToken(
-            platformId,
-            msg.sender,
-            totalApplys[applyId].amount
-        );
-        emit ApplicationCancel(applyId);
-    }
+    // function cancel(uint256 applyId) external {
+    //     require(msg.sender == totalApplys[applyId].applicant, "ER5");
+    //     require(
+    //         totalApplys[applyId].adopted == 0 &&
+    //             totalApplys[applyId].subtitles.length == 0 &&
+    //             totalApplys[applyId].deadline <= block.timestamp,
+    //         "ER1-5"
+    //     );
+    //     require(totalApplys[applyId].strategy == 0, "ER6");
+    //     totalApplys[applyId].deadline = 0;
+    //     uint256 platformId = platforms[
+    //         videos[totalApplys[applyId].videoId].platform
+    //     ].platformId;
+    //     IVT(videoToken).mintStableToken(
+    //         platformId,
+    //         msg.sender,
+    //         totalApplys[applyId].amount
+    //     );
+    //     emit ApplicationCancel(applyId);
+    // }
 
     /**
      * @notice 恢复申请（一次性结算策略的申请无法恢复, 必须重新发起）
