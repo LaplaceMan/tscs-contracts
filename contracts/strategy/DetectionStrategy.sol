@@ -19,6 +19,9 @@ contract DetectionStrategy is IDetectionStrategy {
      */
     address public opeator;
 
+    /**
+     * @notice 仅能由 opeator 调用
+     */
     modifier onlyOwner() {
         require(msg.sender == opeator, "ER5");
         _;
@@ -37,8 +40,8 @@ contract DetectionStrategy is IDetectionStrategy {
      * @param b 字幕文本 2
      * @return 汉明度距离
      */
-    function _hammingDistance(uint256 a, uint256 b)
-        internal
+    function hammingDistance(uint256 a, uint256 b)
+        public
         pure
         returns (uint256)
     {
@@ -67,7 +70,7 @@ contract DetectionStrategy is IDetectionStrategy {
         returns (bool)
     {
         for (uint256 i = 0; i < history.length; i++) {
-            uint256 distance = _hammingDistance(origin, history[i]);
+            uint256 distance = hammingDistance(origin, history[i]);
             if (distance <= distanceThreshold) {
                 return false;
             }
@@ -87,7 +90,7 @@ contract DetectionStrategy is IDetectionStrategy {
         override
         returns (bool)
     {
-        uint256 distance = _hammingDistance(newUpload, oldUpload);
+        uint256 distance = hammingDistance(newUpload, oldUpload);
         if (distance <= distanceThreshold) {
             return true;
         }
@@ -106,6 +109,10 @@ contract DetectionStrategy is IDetectionStrategy {
         emit SystemSetDistanceThreshold(newDistanceThreshold);
     }
 
+    /**
+     * @notice 更改操作员地址
+     * @param newOpeator 新的操作员地址
+     */
     function changeOpeator(address newOpeator) external onlyOwner {
         opeator = newOpeator;
         emit SystemChangeOpeator(newOpeator);

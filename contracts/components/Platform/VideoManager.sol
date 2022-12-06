@@ -11,12 +11,12 @@ contract VideoManager {
     /**
      * @notice TSCS 内由 Platform 为视频创作者开启服务的视频总数
      */
-    uint256 public totalVideoNumber;
+    uint256 public totalVideos;
 
     /**
      * @notice 每个视频都有相应的 Video 结构, 记录其信息, 每个视频有两个 ID, 一个是在 TSCS 内创建时的顺位 ID, 它在 TSCS 内用来唯一标识视频; 另一个是视频在 Platform 中的 ID, 主要与 symbol 结合来区分不同的视频
      */
-    mapping(uint256 => Video) public videos;
+    mapping(uint256 => Video) videos;
 
     /**
      * @notice TSCS 内顺位 ID 和 相应 Platform 内 ID 的映射, Platform 区块链地址 => 视频在 Platform 内的 ID => 视频在 TSCS 内的 ID
@@ -31,7 +31,7 @@ contract VideoManager {
      * @param creator 视频创作者区块链地址
      * @param totalViewCouts 视频总播放量
      * @param unsettled 未结算的视频总播放量
-     * @param applys 已经发出的申请的 ID
+     * @param tasks 已经发出的申请的 ID
      */
     struct Video {
         address platform;
@@ -40,7 +40,7 @@ contract VideoManager {
         address creator;
         uint256 totalViewCouts;
         uint256 unsettled;
-        uint256[] applys;
+        uint256[] tasks;
     }
 
     event VideoCreate(
@@ -66,15 +66,15 @@ contract VideoManager {
         string memory symbol,
         address creator
     ) internal returns (uint256) {
-        totalVideoNumber++;
+        totalVideos++;
         require(idReal2System[platform][id] == 0, "ER0");
-        videos[totalVideoNumber].platform = platform;
-        videos[totalVideoNumber].id = id;
-        videos[totalVideoNumber].symbol = symbol;
-        videos[totalVideoNumber].creator = creator;
-        idReal2System[platform][id] = totalVideoNumber;
-        emit VideoCreate(platform, id, totalVideoNumber, symbol, creator);
-        return totalVideoNumber;
+        videos[totalVideos].platform = platform;
+        videos[totalVideos].id = id;
+        videos[totalVideos].symbol = symbol;
+        videos[totalVideos].creator = creator;
+        idReal2System[platform][id] = totalVideos;
+        emit VideoCreate(platform, id, totalVideos, symbol, creator);
+        return totalVideos;
     }
 
     /**

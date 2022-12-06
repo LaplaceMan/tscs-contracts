@@ -20,36 +20,37 @@ contract EntityManager {
      */
     address public videoToken;
     /**
-     * @notice Platform稳定币 ERC1155合约地址
+     * @notice Murmes 金库
      */
     address public vault;
+    /**
+     * @notice 管理 Platform 和 Video
+     */
+    address public platforms;
+    /**
+     * @notice 手续费用比率
+     */
+    uint16 public fee;
     /**
      * @notice TSCS 内用户初始化时的信誉度分数, 精度为 1 即 100.0
      */
     uint16 constant baseReputation = 1000;
     /**
-     * @notice 用户加入生态时在 TSCS 内质押的 Zimu 数
-     */
-    uint256 public Despoit;
-
-    /**
-     * @notice 手续费用比率
-     */
-    uint256 fee;
-
-    /**
      * @notice 计算费用时的除数
      */
     uint256 constant BASE_FEE_RATE = 10000;
-
+    /**
+     * @notice 用户加入生态时在 TSCS 内质押的 Zimu 总数
+     */
+    uint256 public deposit;
     /**
      * @notice 语言名称与对应ID（注册顺序）的映射, 从1开始（ISO 3166-1 alpha-2 code）
      */
-    mapping(string => uint16) public languages;
+    mapping(string => uint16) languages;
     /**
      * @notice 根据语言 ID 获得语言类型
      */
-    string[] languageTypes;
+    string[] languageNote;
     /**
      * @notice 每个区块链地址与 User 结构的映射
      */
@@ -91,15 +92,12 @@ contract EntityManager {
         returns (uint16)
     {
         for (uint256 i; i < language.length; i++) {
-            languageTypes.push(language[i]);
+            languageNote.push(language[i]);
             require(languages[language[i]] == 0, "ER0");
-            languages[language[i]] = uint16(languageTypes.length - 1);
-            emit RegisterLanguage(
-                language[i],
-                uint16(languageTypes.length - 1)
-            );
+            languages[language[i]] = uint16(languageNote.length - 1);
+            emit RegisterLanguage(language[i], uint16(languageNote.length - 1));
         }
-        return uint16(languageTypes.length - 1);
+        return uint16(languageNote.length - 1);
     }
 
     /**
@@ -107,12 +105,25 @@ contract EntityManager {
      * @param languageId 欲查询语言 Id
      * @return 语言类型
      */
-    function getLanguageType(uint16 languageId)
+    function getLanguageNoteById(uint16 languageId)
         external
         view
         returns (string memory)
     {
-        return languageTypes[languageId];
+        return languageNote[languageId];
+    }
+
+    /**
+     * @notice 根据类型 Type 获得相应语言的 ID
+     * @param language 语言的类型（文字描述）
+     * @return 语言注册 ID
+     */
+    function getLanguageIdByNote(string memory language)
+        external
+        view
+        returns (uint16)
+    {
+        return languages[language];
     }
 
     /**
@@ -132,15 +143,15 @@ contract EntityManager {
      * @notice 主动加入TSCS, 并质押一定数目的 Zimu
      * @param usr 用户区块链地址
      */
-    function userJoin(address usr, uint256 despoit) external {
-        IZimu(zimuToken).transferFrom(msg.sender, vault, despoit);
+    function userJoin(address usr, uint256 deposit_) external {
+        IZimu(zimuToken).transferFrom(msg.sender, vault, deposit_);
         if (users[usr].reputation == 0) {
-            _changeDespoit(int256(despoit));
-            _userInitialization(usr, int256(despoit));
+            _changeDespoit(int256(deposit_));
+            _userInitialization(usr, int256(deposit_));
         } else {
             //当已加入时, 仍可调用此功能增加质押 Zimu 数
-            users[usr].deposit += int256(despoit);
-            _changeDespoit(int256(despoit));
+            users[usr].deposit += int256(deposit_);
+            _changeDespoit(int256(deposit_));
             emit UserInfoUpdate(
                 usr,
                 int256(users[usr].reputation),
@@ -241,8 +252,8 @@ contract EntityManager {
      */
     function _changeDespoit(int256 amount) internal {
         if (amount != 0) {
-            int256 newAmount = int256(Despoit) + amount;
-            Despoit = newAmount > 0 ? uint256(newAmount) : 0;
+            int256 newAmount = int256(deposit) + amount;
+            deposit = newAmount > 0 ? uint256(newAmount) : 0;
         }
     }
 
@@ -252,7 +263,7 @@ contract EntityManager {
      * @return 信誉度分数, 质押 Zimu 数
      */
     function getUserBaseInfo(address usr)
-        public
+        external
         view
         returns (uint256, int256)
     {
@@ -270,7 +281,7 @@ contract EntityManager {
         address usr,
         address platform,
         uint256 day
-    ) public view returns (uint256) {
+    ) external view returns (uint256) {
         return users[usr].lock[platform][day];
     }
 
@@ -278,7 +289,7 @@ contract EntityManager {
      * @notice 提取质押的 Zimu 代币
      * @param amount 欲提取 Zimu 代币数
      */
-    function withdrawDeposit(uint256 amount) public {
+    function withdrawDeposit(uint256 amount) external {
         require(users[msg.sender].deposit > 0, "ER1");
         if (amount > uint256(users[msg.sender].deposit)) {
             amount = uint256(users[msg.sender].deposit);

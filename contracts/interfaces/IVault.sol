@@ -6,7 +6,7 @@ interface IVault {
 
     function opeator() external view returns (address);
 
-    function subtitleSystem() external view returns (address);
+    function Murmes() external view returns (address);
 
     function changePenalty(uint256 amount) external;
 

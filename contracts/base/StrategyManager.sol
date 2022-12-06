@@ -7,14 +7,17 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.0;
 
+import "./EntityManager.sol";
 import "./SubtitleManager.sol";
-import "./PlatformManager.sol";
+import "../interfaces/IVT.sol";
+import "../interfaces/IPlatform.sol";
+import "../common/utils/Ownable.sol";
 import "../interfaces/IAccessStrategy.sol";
 import "../interfaces/IAuditStrategy.sol";
 import "../interfaces/IDetectionStrategy.sol";
 import "../interfaces/ISettlementStrategy.sol";
 
-contract StrategyManager is PlatformManager, SubtitleManager {
+contract StrategyManager is Ownable, EntityManager, SubtitleManager {
     /**
      * @notice 审核策略合约, 根据观众（审核员）评价信息判断字幕状态是否产生变化, 即无变化、被采用或被删除
      */
@@ -29,13 +32,13 @@ contract StrategyManager is PlatformManager, SubtitleManager {
      */
     IDetectionStrategy public detectionStrategy;
     /**
-     * @notice 结算相关时的除数
-     */
-    uint16 constant RATE_BASE = 65535;
-    /**
      * @notice 锁定期（审核期）
      */
     uint256 public lockUpTime;
+    /**
+     * @notice 结算相关时的除数
+     */
+    uint16 constant RATE_BASE = 65535;
     /**
      * @notice 记录每个结算策略的信息
      * @param strategy 结算策略合约地址
@@ -51,15 +54,17 @@ contract StrategyManager is PlatformManager, SubtitleManager {
     event SystemSetDetection(address newDetection);
     event SystemSetSettlement(uint8 strategyId, address strategy, string notes);
 
-    event SystemSetZimuToken(address token);
-    event SystemSetVideoToken(address token);
-    event SystemSetSubtitleToken(address token);
     event SystemSetVault(address vault);
     event SystemSetLockUpTime(uint256 time);
+    event SystemSetZimuToken(address token);
+    event SystemSetVideoToken(address token);
+    event SystemSetPlatforms(address platform);
+    event SystemSetSubtitleToken(address token);
+
     /**
      * @notice 结算策略 ID 与 SettlementStruct 的映射, 在 TSCS 内用 ID 唯一标识结算策略, 从0开始
      */
-    mapping(uint8 => SettlementStruct) public settlementStrategy;
+    mapping(uint8 => SettlementStruct) settlementStrategy;
 
     /**
      * @notice 修改当前 TSCS 内的审核策略, 仅能由管理员调用
@@ -116,43 +121,34 @@ contract StrategyManager is PlatformManager, SubtitleManager {
     }
 
     /**
-     * @notice 设置/修改平台币合约地址
-     * @param token 新的 ERC20 TSCS 平台币合约地址
+     * @notice 设置 Murmes 组件的合约地址
+     * @param note 0 为 Zimu 代币合约地址；1 为 VT 代币合约地址；2 为 ST 代币合约地址；3 为金库合约地址；4 为平台管理合约地址
+     * @param addr 新的合约地址
      */
-    function setZimuToken(address token) external onlyOwner {
-        require(token != address(0), "ER1");
-        zimuToken = token;
-        emit SystemSetZimuToken(token);
-    }
-
-    /**
-     * @notice 设置/修改稳定币合约地址
-     * @param token 新的 ERC1155 稳定币合约地址
-     */
-    function setVideoToken(address token) external onlyOwner {
-        require(token != address(0), "ER1");
-        videoToken = token;
-        emit SystemSetVideoToken(token);
-    }
-
-    /**
-     * @notice 设置/修改金库合约地址
-     * @param vault_ 新的金库合约地址
-     */
-    function setVault(address vault_) external onlyOwner {
-        require(vault_ != address(0), "ER1");
-        vault = vault_;
-        emit SystemSetVault(vault_);
-    }
-
-    /**
-     * @notice 设置/修改字幕代币 NFT 合约地址
-     * @param token 新的 ERC1155 稳定币合约地址
-     */
-    function setSubtitleToken(address token) external onlyOwner {
-        require(token != address(0), "ER1");
-        subtitleToken = token;
-        emit SystemSetSubtitleToken(token);
+    function setComponentsAddress(uint8 note, address addr) external onlyOwner {
+        require(addr != address(0), "ER1");
+        if (note == 0) {
+            zimuToken = addr;
+            emit SystemSetZimuToken(addr);
+        } else if (note == 1) {
+            videoToken = addr;
+            if (platforms != address(0)) {
+                IVT(videoToken).changeOpeator(platforms);
+            }
+            emit SystemSetVideoToken(addr);
+        } else if (note == 2) {
+            subtitleToken = addr;
+            emit SystemSetSubtitleToken(addr);
+        } else if (note == 3) {
+            vault = addr;
+            emit SystemSetVault(addr);
+        } else if (note == 4) {
+            platforms = addr;
+            if (videoToken != address(0)) {
+                IVT(videoToken).changeOpeator(addr);
+            }
+            emit SystemSetPlatforms(addr);
+        }
     }
 
     /**
@@ -166,18 +162,26 @@ contract StrategyManager is PlatformManager, SubtitleManager {
     }
 
     /**
+     * @notice 更新 Murmes 中的审核员分成比例
+     * @param auditorDivide 新的分成比例
+     */
+    function setAuditorDivideRate(uint16 auditorDivide) external auth {
+        IPlatform(platforms).setMurmesAuditorDivideRate(auditorDivide);
+    }
+
+    /**
      * @notice 返回指定结算策略的基本信息
      * @param strategyId 策略 ID
      * @return 结算策略合约地址和注释说明
      */
-    // function getSettlementStrategyBaseInfo(uint8 strategyId)
-    //     external
-    //     view
-    //     returns (address, string memory)
-    // {
-    //     return (
-    //         settlementStrategy[strategyId].strategy,
-    //         settlementStrategy[strategyId].notes
-    //     );
-    // }
+    function getSettlementStrategyBaseInfo(uint8 strategyId)
+        external
+        view
+        returns (address, string memory)
+    {
+        return (
+            settlementStrategy[strategyId].strategy,
+            settlementStrategy[strategyId].notes
+        );
+    }
 }

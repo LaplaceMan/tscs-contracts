@@ -2,8 +2,8 @@ const { ethers } = require("hardhat");
 const main = async () => {
   const [deployer] = await ethers.getSigners();
   const deployerAddress = deployer.address;
-  // 部署 TSCS 主合约
-  const TSCS = await ethers.getContractFactory("SubtitleSystem");
+  // 部署 Murmes 主合约
+  const TSCS = await ethers.getContractFactory("Murmes");
   const tscs = await TSCS.deploy(deployerAddress); //owner 地址（DAO地址）
   const tscsAddress = tscs.address;
   console.log("tscsAddress", tscsAddress);
@@ -12,7 +12,6 @@ const main = async () => {
   const ZIMU = await ethers.getContractFactory("ZimuToken");
   const zimu = await ZIMU.deploy(
     tscsAddress,
-    deployerAddress,
     "0x33b2e3c9fd0804000000000",
     deployerAddress
   );
@@ -33,6 +32,11 @@ const main = async () => {
   const vault = await VAULT.deploy(deployerAddress, tscsAddress);
   const vaultAddress = vault.address;
   console.log("vaultAddress", vaultAddress);
+  //部署平台合约
+  const PLATFORM = await ethers.getContractFactory("Platforms");
+  const platform = await PLATFORM.deploy(deployerAddress, tscsAddress);
+  const platformAddress = platform.address;
+  console.log("platformAddress", platformAddress);
   // 部署策略合约
   // 访问策略
   const ACCESS = await ethers.getContractFactory("AccessStrategy");
@@ -81,11 +85,12 @@ const main = async () => {
     'OTM2'
   );
   // 主合约设置代币合约地址
-  const tx7 = await tscsExemple.setZimuToken(zimuAddress);
-  const tx8 = await tscsExemple.setVideoToken(vtAddress);
-  const tx9 = await tscsExemple.setSubtitleToken(stAddress);
-  const tx10 = await tscsExemple.setVault(vaultAddress);
-  const tx11 = await tscsExemple.registerLanguage(['cn', 'us', 'jp', 'kr', 'de', 'fr', 'in', 'gb', 'ru', 'es', 'my', 'pt', 'th', 'bd', 'sa'])
+  const tx7 = await tscsExemple.setComponentsAddress(0, zimuAddress);
+  const tx8 = await tscsExemple.setComponentsAddress(1, vtAddress);
+  const tx9 = await tscsExemple.setComponentsAddress(2, stAddress);
+  const tx10 = await tscsExemple.setComponentsAddress(3, vaultAddress);
+  const tx11 = await tscsExemple.setComponentsAddress(4, platformAddress);
+  const tx12 = await tscsExemple.registerLanguage(['cn', 'us', 'jp', 'kr', 'de', 'fr', 'in', 'gb', 'ru', 'es', 'my', 'pt', 'th', 'bd', 'sa'])
   console.log("\n");
   console.log("setAuditStrategy", tx1);
   console.log("setAccessStrategy", tx2);
@@ -97,7 +102,8 @@ const main = async () => {
   console.log("setVideoToken", tx8);
   console.log("setSubtitleToken", tx9);
   console.log("setVault", tx10);
-  console.log("registerLanguage", tx11);
+  console.log("setPlatforms", tx11);
+  console.log("registerLanguage", tx12);
 };
 
 main()

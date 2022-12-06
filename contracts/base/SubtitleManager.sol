@@ -21,8 +21,8 @@ contract SubtitleManager {
      * @param dissenter 举报该字幕为恶意字幕的观众（审核员）地址集合
      */
     struct Subtitle {
-        uint256 applyId;
         uint8 state;
+        uint256 taskId;
         uint256 stateChangeTime;
         address[] supporters;
         address[] dissenter;
@@ -31,7 +31,7 @@ contract SubtitleManager {
     /**
      * @notice 与传统 ERC721 代币相比 每个 ST（Subtitle Token）都有相应的 Subtitle 结构记录字幕的详细信息, 因为观众评价（审核）机制的引入, ST 是动态的 NFT
      */
-    mapping(uint256 => Subtitle) public subtitleNFT;
+    mapping(uint256 => Subtitle) subtitleNFT;
 
     /**
      * @notice 限制每个用户只能对每个字幕评价一次, 用户区块链地址 => ST ID => 是否评价（true 为已参与评价）
@@ -42,7 +42,7 @@ contract SubtitleManager {
      */
     mapping(address => mapping(uint256 => uint256)) adopted;
 
-    event SubtilteStateChange(uint256 subtitleId, uint8 state, uint256 applyId);
+    event SubtilteStateChange(uint256 subtitleId, uint8 state, uint256 taskId);
     event SubitlteGetEvaluation(
         uint256 subtitleId,
         address evaluator,
@@ -52,26 +52,26 @@ contract SubtitleManager {
     /**
      * @notice 创建 ST, 内部功能
      * @param maker 字幕制作者区块链地址
-     * @param applyId 字幕所属申请的 ID
+     * @param taskId 字幕所属申请的 ID
      * @param languageId 字幕所属语种的 ID
      * @param fingerprint 字幕指纹, 此处暂定为 Simhash
      * @return 字幕代币 ST（Subtitle Token） ID
      */
     function _createST(
         address maker,
-        uint256 applyId,
+        uint256 taskId,
         string memory cid,
         uint16 languageId,
         uint256 fingerprint
     ) internal returns (uint256) {
         uint256 id = IST(subtitleToken).mintST(
             maker,
-            applyId,
+            taskId,
             cid,
             languageId,
             fingerprint
         );
-        subtitleNFT[id].applyId = applyId;
+        subtitleNFT[id].taskId = taskId;
         subtitleNFT[id].stateChangeTime = block.timestamp;
         return id;
     }
@@ -84,7 +84,7 @@ contract SubtitleManager {
     function _changeST(uint256 id, uint8 state) internal {
         subtitleNFT[id].state = state;
         subtitleNFT[id].stateChangeTime = block.timestamp;
-        emit SubtilteStateChange(id, state, subtitleNFT[id].applyId);
+        emit SubtilteStateChange(id, state, subtitleNFT[id].taskId);
     }
 
     /**
@@ -102,15 +102,40 @@ contract SubtitleManager {
         require(evaluated[evaluator][subtitleId] == false, "ER4");
         if (attitude == 0) {
             require(
-                adopted[evaluator][subtitleNFT[subtitleId].applyId] == 0,
+                adopted[evaluator][subtitleNFT[subtitleId].taskId] == 0,
                 "ER4"
             );
             subtitleNFT[subtitleId].supporters.push(evaluator);
-            adopted[evaluator][subtitleNFT[subtitleId].applyId] = subtitleId;
+            adopted[evaluator][subtitleNFT[subtitleId].taskId] = subtitleId;
         } else {
             subtitleNFT[subtitleId].dissenter.push(evaluator);
         }
         evaluated[evaluator][subtitleId] = true;
         emit SubitlteGetEvaluation(subtitleId, evaluator, attitude);
+    }
+
+    /**
+     * @notice 获得字幕 ST 的基本信息
+     * @param subtitleId 字幕 ID
+     * @return 返回字幕状态（1 为确认，2 为被删除）、所属申请 ID、状态改变时间、支持者和反对者信息
+     */
+    function getSubtitleBaseInfo(uint256 subtitleId)
+        external
+        view
+        returns (
+            uint8,
+            uint256,
+            uint256,
+            address[] memory,
+            address[] memory
+        )
+    {
+        return (
+            subtitleNFT[subtitleId].state,
+            subtitleNFT[subtitleId].taskId,
+            subtitleNFT[subtitleId].stateChangeTime,
+            subtitleNFT[subtitleId].supporters,
+            subtitleNFT[subtitleId].dissenter
+        );
     }
 }

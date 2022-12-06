@@ -6,18 +6,18 @@
  */
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.0;
-import "../common/token/ERC721/ERC721.sol";
 import "../interfaces/IST.sol";
+import "../common/token/ERC721/ERC721.sol";
 
 contract SubtitleToken is ERC721, IST {
+    /**
+     * @notice TSCS 主合约地址
+     */
+    address public Murmes;
     /**
      * @notice ERC721 代币 ID 顺位
      */
     uint256 private _tokenIdTracker;
-    /**
-     * @notice TSCS 主合约地址
-     */
-    address public subtitleSystem;
     /**
      * @notice Mapping from token ID to storage address
      */
@@ -29,7 +29,7 @@ contract SubtitleToken is ERC721, IST {
     function tokenURI(uint256 tokenId)
         public
         view
-        override
+        override(ERC721, IST)
         returns (string memory)
     {
         _requireMinted(tokenId);
@@ -39,13 +39,13 @@ contract SubtitleToken is ERC721, IST {
     /**
      * @notice 每个字幕 ST 在生成时都会初始化相应的 Subtitle 结构
      * @param maker 字幕制作者
-     * @param applyId 该字幕所属的申请
+     * @param taskId 该字幕所属的申请
      * @param languageId 该字幕的语言
      * @param fingerprint 此处为字幕的 Simhash 指纹，用户相似度计算
      */
     struct Subtitle {
         address maker;
-        uint256 applyId;
+        uint256 taskId;
         uint16 languageId;
         uint256 fingerprint;
     }
@@ -54,18 +54,18 @@ contract SubtitleToken is ERC721, IST {
      */
     mapping(uint256 => Subtitle) public subtitleNFT;
 
-    constructor(address ss) {
-        subtitleSystem = ss;
+    constructor(address ms) {
+        Murmes = ms;
     }
 
     modifier auth() {
-        require(msg.sender == subtitleSystem);
+        require(msg.sender == Murmes);
         _;
     }
 
     event SubtitleUpload(
         address maker,
-        uint256 applyId,
+        uint256 taskId,
         uint256 subtitleId,
         string cid,
         uint16 languageId,
@@ -75,7 +75,7 @@ contract SubtitleToken is ERC721, IST {
     /**
      * @notice 创建 ST, 内部功能
      * @param maker 字幕制作者区块链地址
-     * @param applyId 字幕所属申请的 ID
+     * @param taskId 字幕所属申请的 ID
      * @param cid 字幕存储在 IPFS 获得的 CID
      * @param languageId 字幕所属语种的 ID
      * @param fingerprint 字幕指纹, 此处暂定为 Simhash
@@ -83,7 +83,7 @@ contract SubtitleToken is ERC721, IST {
      */
     function mintST(
         address maker,
-        uint256 applyId,
+        uint256 taskId,
         string memory cid,
         uint16 languageId,
         uint256 fingerprint
@@ -92,12 +92,12 @@ contract SubtitleToken is ERC721, IST {
         _mint(maker, _tokenIdTracker);
         _tokenURI[_tokenIdTracker] = cid;
         subtitleNFT[_tokenIdTracker].maker = maker;
-        subtitleNFT[_tokenIdTracker].applyId = applyId;
+        subtitleNFT[_tokenIdTracker].taskId = taskId;
         subtitleNFT[_tokenIdTracker].languageId = languageId;
         subtitleNFT[_tokenIdTracker].fingerprint = fingerprint;
         emit SubtitleUpload(
             maker,
-            applyId,
+            taskId,
             _tokenIdTracker,
             cid,
             languageId,
@@ -112,11 +112,35 @@ contract SubtitleToken is ERC721, IST {
      * @return 返回特定字幕的指纹值
      */
     function getSTFingerprint(uint256 tokenId)
-        public
+        external
         view
         override
         returns (uint256)
     {
         return subtitleNFT[tokenId].fingerprint;
+    }
+
+    /**
+     * @notice 获得字幕代币 ST 的基本信息
+     * @param subtitleId ST ID
+     * @return 获得字幕代币ST 的拥有者、所属的申请、语言类型和哈希指纹
+     */
+    function getSTBaseInfo(uint256 subtitleId)
+        external
+        view
+        override
+        returns (
+            address,
+            uint256,
+            uint16,
+            uint256
+        )
+    {
+        return (
+            subtitleNFT[subtitleId].maker,
+            subtitleNFT[subtitleId].taskId,
+            subtitleNFT[subtitleId].languageId,
+            subtitleNFT[subtitleId].fingerprint
+        );
     }
 }

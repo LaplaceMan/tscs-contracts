@@ -1,4 +1,15 @@
-# TSCS - A Blockchain-Based Tokenized Subtitle Crowdsourcing System
+<div align="center"> 
+<img src="./logo.png" height="170px"/>
+<p><h1>MURMES</h1></p>
+<p>
+<a href="https://www.youtube.com/channel/UCcIqRf9rq1oAN7pprsfpM8w"> <img src="https://img.shields.io/badge/YouTube-FF0000?style=flat&logo=youtube&logoColor=white" height="25px" /> </a>
+<a href="https://twitter.com/laplaceman1007"> <img src="https://img.shields.io/badge/Twitter-1DA1F2?style=flat&logo=twitter&logoColor=white" height="25px" /> </a>
+<a> <img src="https://img.shields.io/badge/version-v0.2.0-blue" height="25px" /> </a>
+</p>
+<p>
+TSCS: A Blockchain-Based Tokenized Subtitle Crowdsourcing System (Old Name)
+</P>
+</div>
 
 ## Install Dependencies
 
@@ -14,8 +25,8 @@
 
 `npx hardhat run scripts/deploy.js --network <network-name>`
 
-> 先部署 TSCS 主合约 SubtitleSystem.sol ，构造函数输入参数为 DAO 合约地址
-> 然后部署代币合约 VT.sol 、Zimu.sol、ST.sol ，构造函数输入参数为主合约地址（和 DAO 合约地址）
+> 先部署 Murmes (TSCS) 主合约 Murmes.sol ，构造函数输入参数为 DAO 合约地址
+> 然后部署代币合约 VT.sol 、Zimu.sol、ST.sol 、Vault.sol、Platforms.sol，构造函数输入参数为主合约地址（和 DAO 合约地址）
 > 最后部署策略合约 AccessStrategy.sol（访问权限策略）、AuditStrategy.sol（审核策略）、DetectionStrategy.sol（相似度检测策略）和三个结算策略合约。其中，结算策略合约构造函数输入参数为主合约地址，其余为 DAO 合约地址
 
 ## Test Contracts
@@ -68,7 +79,7 @@
    - ID 为 0 的 VT 是一种特殊的通胀型代币，用户每次发布申请时都会获得与当前信誉度一致的代币数量，它的获取途径唯一，使用途径目前设计为兑换 NFT，且兑换时会燃烧
 2. **Zimu(Zimu Token)**
    - ERC20 标准
-   - TSCS 发行的通缩型平台代币，总量为 10 亿个，精度为 18
+   - Murmes (TSCS) 发行的通缩型平台代币，总量为 10 亿个，精度为 18
    - 当用户参与社区建设（字幕被确认时，字幕制作者和相应的审核员）时获得代币奖励 20%
    - 用户兑换 NFT 时不仅需要消耗一定数量的 ID 为 0 的 VT，还需要质押一定数目的 Zimu 代币
    - 基于信誉度和代币质押双重验证机制，用户注册或因信誉度过低补充质押代币时，需要使用该代币
@@ -85,5 +96,5 @@
    - 为优秀的字幕制作者或深度用户（审核员、视频创作者）发放灵魂绑定代币或提供兑换服务（需要燃烧一定数目的 ID 为 0 的 VT 代币）
    - 基于 SBT 设计奖励策略
 5. **双代币模型**
-   - TSCS 内的主要功用代币是 Zimu，它总量有限且用途广泛（发起策略为一次性结算的申请、兑换 NFT、用户加入时的质押、参与治理和分红），应当是具有升值空间的
+   - Murmes (TSCS) 内的主要功用代币是 Zimu，它总量有限且用途广泛（发起策略为一次性结算的申请、兑换 NFT、用户加入时的质押、参与治理和分红），应当是具有升值空间的
    - ID 为 0 的 VT 的引入是为了弥补申请者的交易 gas 费用，它的价值由获取唯一性和用途（兑换 NFT 和 SBT）来保证，而无限增发和用途相对单一则限制了它过高的价值，这是我们所希望的，因为需要一种低成本的回馈用户的方式（兑换粉丝向 NFT 和 具有身份象征意义的 SBT 应该是廉价的行为）

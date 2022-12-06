@@ -12,32 +12,44 @@ import "../interfaces/IVT.sol";
 
 contract VideoToken is ERC1155, IVT {
     /**
-     * @notice TSCS 合约地址
+     * @notice Murmes 合约地址
      */
-    address public subtitleSystem;
+    address public Murmes;
     /**
-     * @notice ERC1155 Token ID 与所属平台 Platform 区块链地址的映射
+     * @notice 拥有特殊权限的地址，一般为 DAO 合约
      */
-    mapping(uint256 => address) platform;
+    address public opeator;
     /**
      * @notice ERC1155 中不同 Token ID 的 Token URI 的后缀
      */
     mapping(uint256 => string) suffix;
-
     /**
-     * @notice 仅能由 TSCS 调用
+     * @notice ERC1155 Token ID 与所属平台 Platform 区块链地址的映射
+     */
+    mapping(uint256 => address) platform;
+
+    event SystemChangeOpeator(address newOpeator);
+    /**
+     * @notice 仅能由 opeator 调用
+     */
+    modifier onlyOwner() {
+        require(msg.sender == opeator, "ER5");
+        _;
+    }
+    /**
+     * @notice 仅能由 Murmes 调用
      */
     modifier auth() {
-        require(msg.sender == subtitleSystem);
+        require(msg.sender == Murmes, "ER5");
         _;
     }
 
     event PlatformToken(address platform, uint256 id);
 
-    constructor(address ss) ERC1155("VideoToken") {
-        subtitleSystem = ss;
+    constructor(address ms) ERC1155("VideoToken") {
+        Murmes = ms;
         suffix[0] = "Default";
-        platform[0] = ss;
+        platform[0] = ms;
     }
 
     /**
@@ -76,7 +88,7 @@ contract VideoToken is ERC1155, IVT {
         string memory symbol,
         address endorser,
         uint256 platformId
-    ) external override auth {
+    ) external override onlyOwner {
         require(platform[platformId] == address(0), "ER0");
         platform[platformId] = endorser;
         suffix[platformId] = symbol;
@@ -110,10 +122,20 @@ contract VideoToken is ERC1155, IVT {
         uint256 amount
     ) external override {
         require(platform[platformId] != address(0), "ER2");
-        if (msg.sender != subtitleSystem) {
+        if (msg.sender != Murmes) {
             require(msg.sender == from, "ER5");
         }
         _burn(from, platformId, amount);
+    }
+
+    /**
+     * @notice 更改拥有特殊权限的操作员地址
+     * @param newOpeator 更换 DAO 合约地址
+     */
+    function changeOpeator(address newOpeator) external {
+        require(msg.sender == opeator || msg.sender == Murmes, "ER5");
+        opeator = newOpeator;
+        emit SystemChangeOpeator(newOpeator);
     }
     /**
      * @notice 由操作员调用 safeTransferFrom 功能逻辑, 实现代币在不同地址间的转移

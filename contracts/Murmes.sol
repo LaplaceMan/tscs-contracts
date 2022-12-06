@@ -1,21 +1,21 @@
 /**
  * @Author: LaplaceMan 505876833@qq.com
  * @Date: 2022-09-07 17:56:09
- * @Description: 基于区块链的代币化字幕众包系统
+ * @Description: 基于区块链的代币化字幕众包系统 - Murmes
  * @Copyright (c) 2022 by LaplaceMan 505876833@qq.com, All Rights Reserved.
  */
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.0;
 
-import "./interfaces/ISettlementStrategy.sol";
+import "./interfaces/IVT.sol";
 import "./base/StrategyManager.sol";
-import "./base/VideoManager.sol";
+import "./interfaces/ISettlementStrategy.sol";
 
-contract SubtitleSystem is StrategyManager, VideoManager {
+contract Murmes is StrategyManager {
     /**
-     * @notice TSCS 内已经发出的申请总数
+     * @notice TSCS 内已经发出的申请（任务）总数
      */
-    uint256 public totalApplyNumber;
+    uint256 public totalTasks;
 
     /**
      * @notice 每个申请都有一个相应的 Application 结构记录申请信息
@@ -43,17 +43,13 @@ contract SubtitleSystem is StrategyManager, VideoManager {
 
     constructor(address owner) {
         _setOwner(owner);
-        // 当结算类型为一次性结算时, 默认字幕支持者分成 1/100
-        platforms[address(0)].rateAuditorDivide = 655;
-        platforms[address(0)].name = "Default";
-        platforms[address(0)].symbol = "Default";
-        languageTypes.push("Default");
+        languageNote.push("Default");
     }
 
     /**
-     * @notice applyId 与 Application 的映射, 从 1 开始（发出申请的顺位）
+     * @notice taskId 与 Application 的映射, 从 1 开始（发出申请的顺位）
      */
-    mapping(uint256 => Application) public totalApplys;
+    mapping(uint256 => Application) public tasks;
 
     event ApplicationSubmit(
         address applicant,
@@ -63,7 +59,7 @@ contract SubtitleSystem is StrategyManager, VideoManager {
         uint256 amount,
         uint16 language,
         uint256 deadline,
-        uint256 applyId,
+        uint256 taskId,
         string src
     );
     event SubtitleCountsUpdate(
@@ -71,14 +67,14 @@ contract SubtitleSystem is StrategyManager, VideoManager {
         uint256[] subtitleId,
         uint256[] counts
     );
-    // event ApplicationCancel(uint256 applyId);
-    event ApplicationRecover(uint256 applyId, uint256 amount, uint256 deadline);
+    // event ApplicationCancel(uint256 taskId);
+    event ApplicationRecover(uint256 taskId, uint256 amount, uint256 deadline);
     event ApplicationUpdate(
-        uint256 applyId,
+        uint256 taskId,
         uint256 newAmount,
         uint256 newDeadline
     );
-    event ApplicationReset(uint256 applyId, uint256 amount);
+    event ApplicationReset(uint256 taskId, uint256 amount);
     event UserWithdraw(
         address user,
         address platform,
@@ -88,30 +84,13 @@ contract SubtitleSystem is StrategyManager, VideoManager {
     event VideoPreExtract(uint256 videoId, uint256 unsettled, uint256 surplus);
 
     /**
-     * @notice 由平台 Platform 注册视频, 此后该视频支持链上结算（意味着更多结算策略的支持）
-     * @param id 视频在 Platform 内部的 ID
-     * @param symbol 视频的 symbol
-     * @param creator 视频创作者区块链地址
-     * @return 视频在 TSCS 内的 ID
-     */
-    function createVideo(
-        uint256 id,
-        string memory symbol,
-        address creator
-    ) external returns (uint256) {
-        require(platforms[msg.sender].rateCountsToProfit > 0, "ER1");
-        uint256 videoId = _createVideo(msg.sender, id, symbol, creator);
-        return videoId;
-    }
-
-    /**
      * @notice 提交制作字幕的申请
      * @param platform 视频所属平台 Platform 区块链地址
      * @param videoId 视频在 TSCS 内的 ID
      * @param strategy 结算策略 ID
      * @param amount 支付金额/比例
      * @param language 申请所需要语言的 ID
-     * @return 在 TSCS 内发出申请的顺位, applyId
+     * @return 在 TSCS 内发出申请的顺位, taskId
      */
     function submitApplication(
         address platform,
@@ -134,42 +113,45 @@ contract SubtitleSystem is StrategyManager, VideoManager {
         );
         require(deadline > block.timestamp, "ER1");
         require(settlementStrategy[strategy].strategy != address(0), "ER6");
-        totalApplyNumber++;
+        totalTasks++;
         // 当平台地址为 0, 意味着使用默认一次性结算策略
-        if (platform == address(0)) {
+        if (platform == address(this)) {
             require(strategy == 0, "ER7");
             require(bytes(source).length > 0, "ER1-7");
             // 一次性结算策略下, 需要用户提前授权主合约额度且只能使用 Zimu 代币支付
             IZimu(zimuToken).transferFrom(msg.sender, address(this), amount);
         } else {
+            (, , , address creator, , , uint256[] memory tasks_) = IPlatform(
+                platforms
+            ).getVideoBaseInfo(videoId);
             // 当结算策略非一次性时, 与视频收益相关, 需要由视频创作者主动提起
-            require(videos[videoId].creator == msg.sender, "ER5");
+            require(creator == msg.sender, "ER5");
             // 下面是为了防止重复申请制作同一语言的字幕
-            for (uint256 i; i < videos[videoId].applys.length; i++) {
-                uint256 applyId = videos[videoId].applys[i];
-                require(totalApplys[applyId].language != language, "ER0");
+            for (uint256 i; i < tasks_.length; i++) {
+                uint256 taskId = tasks_[i];
+                require(tasks[taskId].language != language, "ER0");
             }
-            uint256[] memory newApplyArr = _sortStrategyPriority(
-                videos[videoId].applys,
+            uint256[] memory newTasks = _sortStrategyPriority(
+                tasks_,
                 strategy,
-                totalApplyNumber
+                totalTasks
             );
-            videos[videoId].applys = newApplyArr;
+            IPlatform(platforms).updateVideoTasks(videoId, newTasks);
         }
         if (strategy == 2 || strategy == 0) {
             // 更新未结算稳定币数目
             ISettlementStrategy(settlementStrategy[strategy].strategy)
-                .updateDebtOrReward(totalApplyNumber, 0, amount, 0);
+                .updateDebtOrReward(totalTasks, 0, amount, 0);
         }
         // 上面都是对不同支付策略时申请变化的判断，也可以或者说应该模块化设计
-        totalApplys[totalApplyNumber].applicant = msg.sender;
-        totalApplys[totalApplyNumber].videoId = videoId;
-        totalApplys[totalApplyNumber].strategy = strategy;
-        totalApplys[totalApplyNumber].amount = amount;
-        totalApplys[totalApplyNumber].language = language;
-        totalApplys[totalApplyNumber].deadline = deadline;
-        totalApplys[totalApplyNumber].platform = platform;
-        totalApplys[totalApplyNumber].source = source;
+        tasks[totalTasks].applicant = msg.sender;
+        tasks[totalTasks].videoId = videoId;
+        tasks[totalTasks].strategy = strategy;
+        tasks[totalTasks].amount = amount;
+        tasks[totalTasks].language = language;
+        tasks[totalTasks].deadline = deadline;
+        tasks[totalTasks].platform = platform;
+        tasks[totalTasks].source = source;
         // 奖励措施
         IVT(videoToken).mintStableToken(
             0,
@@ -184,10 +166,10 @@ contract SubtitleSystem is StrategyManager, VideoManager {
             amount,
             language,
             deadline,
-            totalApplyNumber,
+            totalTasks,
             source
         );
-        return totalApplyNumber;
+        return totalTasks;
     }
 
     /**
@@ -209,7 +191,7 @@ contract SubtitleSystem is StrategyManager, VideoManager {
         }
         uint256 flag;
         for (flag = arr.length - 1; flag > 0; flag--) {
-            if (spot >= totalApplys[arr[flag]].strategy) {
+            if (spot >= tasks[arr[flag]].strategy) {
                 break;
             }
         }
@@ -227,20 +209,20 @@ contract SubtitleSystem is StrategyManager, VideoManager {
 
     /**
      * @notice 获得特定申请下所有已上传字幕的指纹, 暂定为 Simhash
-     * @param applyId 申请在 TSCS 内的顺位 ID
+     * @param taskId 申请在 TSCS 内的顺位 ID
      * @return 该申请下所有已上传字幕的 fingerprint
      */
-    function _getHistoryFingerprint(uint256 applyId)
+    function _getHistoryFingerprint(uint256 taskId)
         internal
         view
         returns (uint256[] memory)
     {
         uint256[] memory history = new uint256[](
-            totalApplys[applyId].subtitles.length
+            tasks[taskId].subtitles.length
         );
-        for (uint256 i = 0; i < totalApplys[applyId].subtitles.length; i++) {
+        for (uint256 i = 0; i < tasks[taskId].subtitles.length; i++) {
             history[i] = IST(subtitleToken).getSTFingerprint(
-                totalApplys[applyId].subtitles[i]
+                tasks[taskId].subtitles[i]
             );
         }
         return history;
@@ -248,26 +230,26 @@ contract SubtitleSystem is StrategyManager, VideoManager {
 
     /**
      * @notice 上传制作的字幕
-     * @param applyId 字幕所属申请在 TSCS 内的顺位 ID
+     * @param taskId 字幕所属申请在 TSCS 内的顺位 ID
      * @param cid 字幕存储在 IPFS 获得的 CID
      * @param languageId 字幕所属语种的 ID
      * @param fingerprint 字幕指纹值, 暂定为 Simhash
      * @return 字幕 ST ID
      */
     function uploadSubtitle(
-        uint256 applyId,
+        uint256 taskId,
         string memory cid,
         uint16 languageId,
         uint256 fingerprint
     ) external returns (uint256) {
         // 无法为已被确认的申请上传字幕, 防止资金和制作力浪费
-        require(totalApplys[applyId].adopted == 0, "ER3");
+        require(tasks[taskId].adopted == 0, "ER3");
         // 期望截至日期前没有字幕上传则申请被冻结
-        if (totalApplys[applyId].subtitles.length == 0) {
-            require(block.timestamp <= totalApplys[applyId].deadline, "ER3");
+        if (tasks[taskId].subtitles.length == 0) {
+            require(block.timestamp <= tasks[taskId].deadline, "ER3");
         }
         // 确保字幕的语言与申请所需的语言一致
-        require(languageId == totalApplys[applyId].language, "ER9");
+        require(languageId == tasks[taskId].language, "ER9");
         // 若调用者未主动加入 TSCS, 则自动初始化用户的信誉度和质押数（质押数自动设置为 0）
         _userInitialization(msg.sender, 0);
         // 根据信誉度和质押 Zimu 数判断用户是否有权限使用 TSCS 提供的服务
@@ -278,7 +260,7 @@ contract SubtitleSystem is StrategyManager, VideoManager {
             ),
             "ER5"
         );
-        uint256[] memory history = _getHistoryFingerprint(applyId);
+        uint256[] memory history = _getHistoryFingerprint(taskId);
         // 字幕相似度检测
         if (address(detectionStrategy) != address(0)) {
             require(
@@ -289,12 +271,12 @@ contract SubtitleSystem is StrategyManager, VideoManager {
         // ERC721 Token 生成
         uint256 subtitleId = _createST(
             msg.sender,
-            applyId,
+            taskId,
             cid,
             languageId,
             fingerprint
         );
-        totalApplys[applyId].subtitles.push(subtitleId);
+        tasks[taskId].subtitles.push(subtitleId);
         return subtitleId;
     }
 
@@ -308,21 +290,23 @@ contract SubtitleSystem is StrategyManager, VideoManager {
     {
         require(id.length == ss.length, "ER1");
         for (uint256 i = 0; i < id.length; i++) {
-            if (totalApplys[id[i]].adopted > 0) {
-                address platform = videos[totalApplys[id[i]].videoId].platform;
+            if (tasks[id[i]].adopted > 0) {
+                (address platform, , , , , , ) = IPlatform(platforms)
+                    .getVideoBaseInfo(tasks[id[i]].videoId);
+                (, , , uint16 rateCountsToProfit, ) = IPlatform(platforms)
+                    .platforms(platform);
                 require(msg.sender == platform, "ER5");
                 require(
-                    totalApplys[id[i]].strategy != 0 &&
-                        totalApplys[id[i]].strategy != 2,
+                    tasks[id[i]].strategy != 0 && tasks[id[i]].strategy != 2,
                     "ER1"
                 );
                 ISettlementStrategy(
-                    settlementStrategy[totalApplys[id[i]].strategy].strategy
+                    settlementStrategy[tasks[id[i]].strategy].strategy
                 ).updateDebtOrReward(
                         id[i],
                         ss[i],
-                        totalApplys[id[i]].amount,
-                        platforms[platform].rateCountsToProfit
+                        tasks[id[i]].amount,
+                        rateCountsToProfit
                     );
             }
         }
@@ -345,11 +329,11 @@ contract SubtitleSystem is StrategyManager, VideoManager {
             uint256
         )
     {
-        uint256 applyId = subtitleNFT[subtitleId].applyId;
-        uint256 uploaded = totalApplys[applyId].subtitles.length;
+        uint256 taskId = subtitleNFT[subtitleId].taskId;
+        uint256 uploaded = tasks[taskId].subtitles.length;
         uint256 allSupport;
         for (uint256 i = 0; i < uploaded; i++) {
-            uint256 singleSubtitle = totalApplys[applyId].subtitles[i];
+            uint256 singleSubtitle = tasks[taskId].subtitles[i];
             allSupport += subtitleNFT[singleSubtitle].supporters.length;
         }
         return (
@@ -422,10 +406,7 @@ contract SubtitleSystem is StrategyManager, VideoManager {
      */
     function evaluateSubtitle(uint256 subtitleId, uint8 attitude) external {
         // 无法为已被确认的申请上传字幕, 防止资金和制作力浪费
-        require(
-            totalApplys[subtitleNFT[subtitleId].applyId].adopted == 0,
-            "ER3"
-        );
+        require(tasks[subtitleNFT[subtitleId].taskId].adopted == 0, "ER3");
         if (attitude == 1) {
             require(
                 users[msg.sender].deposit ==
@@ -466,26 +447,27 @@ contract SubtitleSystem is StrategyManager, VideoManager {
             _updateUsers(subtitleId, flag);
             // 字幕被采用, 更新相应申请的状态
             if (flag == 1) {
-                totalApplys[subtitleNFT[subtitleId].applyId]
-                    .adopted = subtitleId;
+                tasks[subtitleNFT[subtitleId].taskId].adopted = subtitleId;
             }
         }
     }
 
     /**
      * @notice 预结算（视频和字幕）收益, 此处仅适用于结算策略为一次性结算（0）的申请
-     * @param applyId 申请 ID
+     * @param taskId 申请 ID
      */
-    function preExtract0(uint256 applyId) external {
-        require(totalApplys[applyId].strategy == 0, "ER6");
-        address platform = videos[totalApplys[applyId].videoId].platform;
+    function preExtract0(uint256 taskId) external {
+        require(tasks[taskId].strategy == 0, "ER6");
+        (, , , , uint16 rateAuditorDivide) = IPlatform(platforms).platforms(
+            address(this)
+        );
         ISettlementStrategy(settlementStrategy[0].strategy).settlement(
-            applyId,
-            platform,
-            IST(subtitleToken).ownerOf(totalApplys[applyId].adopted),
+            taskId,
+            address(this),
+            IST(subtitleToken).ownerOf(tasks[taskId].adopted),
             0,
-            platforms[platform].rateAuditorDivide,
-            subtitleNFT[totalApplys[applyId].adopted].supporters
+            rateAuditorDivide,
+            subtitleNFT[tasks[taskId].adopted].supporters
         );
     }
 
@@ -500,25 +482,28 @@ contract SubtitleSystem is StrategyManager, VideoManager {
         returns (uint256)
     {
         // 结算策略 strategy 拥有优先度, 根据id（小的优先级高）划分
-        for (uint256 i = 0; i < videos[videoId].applys.length; i++) {
-            uint256 applyId = videos[videoId].applys[i];
+        (address platform, , , , , , uint256[] memory tasks_) = IPlatform(
+            platforms
+        ).getVideoBaseInfo(videoId);
+        (, , , , uint16 rateAuditorDivide) = IPlatform(platforms).platforms(
+            platform
+        );
+        for (uint256 i = 0; i < tasks_.length; i++) {
+            uint256 taskId = tasks_[i];
             if (
-                totalApplys[applyId].strategy != 0 &&
-                totalApplys[applyId].adopted > 0 &&
+                tasks[taskId].strategy != 0 &&
+                tasks[taskId].adopted > 0 &&
                 unsettled > 0
             ) {
-                address platform = videos[videoId].platform;
                 uint256 subtitleGet = ISettlementStrategy(
-                    settlementStrategy[totalApplys[applyId].strategy].strategy
+                    settlementStrategy[tasks[taskId].strategy].strategy
                 ).settlement(
-                        applyId,
+                        taskId,
                         platform,
-                        IST(subtitleToken).ownerOf(
-                            totalApplys[applyId].adopted
-                        ),
+                        IST(subtitleToken).ownerOf(tasks[taskId].adopted),
                         unsettled,
-                        platforms[platform].rateAuditorDivide,
-                        subtitleNFT[totalApplys[applyId].adopted].supporters
+                        rateAuditorDivide,
+                        subtitleNFT[tasks[taskId].adopted].supporters
                     );
                 unsettled -= subtitleGet;
             }
@@ -532,23 +517,31 @@ contract SubtitleSystem is StrategyManager, VideoManager {
      * @return 本次结算稳定币数目
      */
     function preExtractOther(uint256 videoId) external returns (uint256) {
-        require(videos[videoId].unsettled > 0, "ER11");
+        (
+            address platform,
+            ,
+            ,
+            address creator,
+            ,
+            uint256 unsettled,
+
+        ) = IPlatform(platforms).getVideoBaseInfo(videoId);
+        require(unsettled > 0, "ER11");
         // 获得相应的代币计价
-        uint256 unsettled = (platforms[videos[videoId].platform]
-            .rateCountsToProfit *
-            videos[videoId].unsettled *
-            (10**6)) / RATE_BASE;
-        uint256 surplus = _ergodic(videoId, unsettled);
+        (, , uint256 platformId, uint16 rateCountsToProfit, ) = IPlatform(
+            platforms
+        ).platforms(platform);
+        uint256 unsettled_ = (rateCountsToProfit * unsettled * (10**6)) /
+            RATE_BASE;
+        uint256 surplus = _ergodic(videoId, unsettled_);
         // 若支付完字幕制作费用后仍有剩余, 则直接将收益以稳定币的形式发送给视频创作者
         if (surplus > 0) {
-            IVT(videoToken).mintStableToken(
-                platforms[videos[videoId].platform].platformId,
-                videos[videoId].creator,
-                surplus
-            );
+            IVT(videoToken).mintStableToken(platformId, creator, surplus);
         }
-
-        videos[videoId].unsettled = 0;
+        IPlatform(platforms).updateVideoUnsettled(
+            videoId,
+            int256(unsettled) * -1
+        );
         emit VideoPreExtract(videoId, unsettled, surplus);
         return unsettled;
     }
@@ -602,15 +595,14 @@ contract SubtitleSystem is StrategyManager, VideoManager {
             }
         }
         if (all > 0) {
+            (, , uint256 platformId, , ) = IPlatform(platforms).platforms(
+                platform
+            );
             if (fee > 0) {
                 uint256 thisFee = (all * fee) / BASE_FEE_RATE;
                 all -= thisFee;
-                if (platform != address(0)) {
-                    IVT(videoToken).mintStableToken(
-                        platforms[platform].platformId,
-                        vault,
-                        thisFee
-                    );
+                if (platform != address(this)) {
+                    IVT(videoToken).mintStableToken(platformId, vault, thisFee);
                 } else {
                     IZimu(zimuToken).transferFrom(
                         address(this),
@@ -618,14 +610,10 @@ contract SubtitleSystem is StrategyManager, VideoManager {
                         thisFee
                     );
                 }
-                IVault(vault).addFee(platforms[platform].platformId, thisFee);
+                IVault(vault).addFee(platformId, thisFee);
             }
-            if (platform != address(0)) {
-                IVT(videoToken).mintStableToken(
-                    platforms[platform].platformId,
-                    msg.sender,
-                    all
-                );
+            if (platform != address(this)) {
+                IVT(videoToken).mintStableToken(platformId, msg.sender, all);
             } else {
                 IZimu(zimuToken).transfer(msg.sender, all);
             }
@@ -636,88 +624,87 @@ contract SubtitleSystem is StrategyManager, VideoManager {
 
     /**
      * @notice 取消申请（仅支持一次性结算策略, 其它的自动冻结）
-     * @param applyId 申请 ID
+     * @param taskId 申请 ID
      */
-    // function cancel(uint256 applyId) external {
-    //     require(msg.sender == totalApplys[applyId].applicant, "ER5");
+    // function cancel(uint256 taskId) external {
+    //     require(msg.sender == tasks[taskId].applicant, "ER5");
     //     require(
-    //         totalApplys[applyId].adopted == 0 &&
-    //             totalApplys[applyId].subtitles.length == 0 &&
-    //             totalApplys[applyId].deadline <= block.timestamp,
+    //         tasks[taskId].adopted == 0 &&
+    //             tasks[taskId].subtitles.length == 0 &&
+    //             tasks[taskId].deadline <= block.timestamp,
     //         "ER1-5"
     //     );
-    //     require(totalApplys[applyId].strategy == 0, "ER6");
-    //     totalApplys[applyId].deadline = 0;
+    //     require(tasks[taskId].strategy == 0, "ER6");
+    //     tasks[taskId].deadline = 0;
     //     uint256 platformId = platforms[
-    //         videos[totalApplys[applyId].videoId].platform
+    //         videos[tasks[taskId].videoId].platform
     //     ].platformId;
     //     IVT(videoToken).mintStableToken(
     //         platformId,
     //         msg.sender,
-    //         totalApplys[applyId].amount
+    //         tasks[taskId].amount
     //     );
-    //     emit ApplicationCancel(applyId);
+    //     emit ApplicationCancel(taskId);
     // }
 
     /**
      * @notice 恢复申请（一次性结算策略的申请无法恢复, 必须重新发起）
-     * @param applyId 申请 ID
+     * @param taskId 申请 ID
      * @param amount 新的支付金额/比例
      * @param deadline 新的截至期限
      */
     function recover(
-        uint256 applyId,
+        uint256 taskId,
         uint256 amount,
         uint256 deadline
     ) external {
-        require(msg.sender == totalApplys[applyId].applicant, "ER5");
+        require(msg.sender == tasks[taskId].applicant, "ER5");
         require(
-            totalApplys[applyId].adopted == 0 &&
-                totalApplys[applyId].subtitles.length == 0 &&
-                totalApplys[applyId].deadline <= block.timestamp,
+            tasks[taskId].adopted == 0 &&
+                tasks[taskId].subtitles.length == 0 &&
+                tasks[taskId].deadline <= block.timestamp,
             "ER1-5"
         );
-        require(totalApplys[applyId].strategy != 0, "ER6");
+        require(tasks[taskId].strategy != 0, "ER6");
         require(deadline > block.timestamp, "ER1");
-        totalApplys[applyId].deadline = deadline;
-        totalApplys[applyId].amount = amount;
-        emit ApplicationRecover(applyId, amount, deadline);
+        tasks[taskId].deadline = deadline;
+        tasks[taskId].amount = amount;
+        emit ApplicationRecover(taskId, amount, deadline);
     }
 
     /**
      * @notice 更新（增加）申请中的额度和（延长）到期时间
-     * @param applyId 申请顺位 ID
+     * @param taskId 申请顺位 ID
      * @param plusAmount 增加支付额度
      * @param plusTime 延长到期时间
      */
     function updateApplication(
-        uint256 applyId,
+        uint256 taskId,
         uint256 plusAmount,
         uint256 plusTime
     ) public {
-        require(msg.sender == totalApplys[applyId].applicant, "ER5");
-        require(totalApplys[applyId].adopted == 0, "ER6");
-        totalApplys[applyId].amount += plusAmount;
-        totalApplys[applyId].deadline += plusTime;
+        require(msg.sender == tasks[taskId].applicant, "ER5");
+        require(tasks[taskId].adopted == 0, "ER6");
+        tasks[taskId].amount += plusAmount;
+        tasks[taskId].deadline += plusTime;
         emit ApplicationUpdate(
-            applyId,
-            totalApplys[applyId].amount,
-            totalApplys[applyId].deadline
+            taskId,
+            tasks[taskId].amount,
+            tasks[taskId].deadline
         );
     }
 
     /**
      * @notice 该功能服务于后续的仲裁法庭，取消被确认的恶意字幕，相当于重新发出申请
-     * @param applyId 被重置的申请 ID
+     * @param taskId 被重置的申请 ID
      * @param amount 恢复的代币奖励数量（注意这里以代币计价）
      */
-    function resetApplication(uint256 applyId, uint256 amount) public auth {
-        _changeST(totalApplys[applyId].adopted, 2);
-        delete totalApplys[applyId].adopted;
-        totalApplys[applyId].deadline = block.timestamp + 7 days;
-        ISettlementStrategy(
-            settlementStrategy[totalApplys[applyId].strategy].strategy
-        ).resetSettlement(applyId, amount);
-        emit ApplicationReset(applyId, amount);
+    function resetApplication(uint256 taskId, uint256 amount) public auth {
+        _changeST(tasks[taskId].adopted, 2);
+        delete tasks[taskId].adopted;
+        tasks[taskId].deadline = block.timestamp + 7 days;
+        ISettlementStrategy(settlementStrategy[tasks[taskId].strategy].strategy)
+            .resetSettlement(taskId, amount);
+        emit ApplicationReset(taskId, amount);
     }
 }

@@ -25,7 +25,7 @@ contract Vault is IVault {
     /**
      * @notice TSCS 合约地址
      */
-    address public subtitleSystem;
+    address public Murmes;
 
     /**
      * @notice 来自于不同平台的手续费收入
@@ -42,18 +42,24 @@ contract Vault is IVault {
 
     event WithdrawPlatformFee(address to, uint256 amount);
 
-    constructor(address dao, address tscs) {
+    constructor(address dao, address ms) {
         opeator = dao;
-        subtitleSystem = tscs;
+        Murmes = ms;
     }
 
+    /**
+     * @notice 仅能由 opeator 调用
+     */
     modifier onlyOwner() {
         require(msg.sender == opeator, "ER5");
         _;
     }
 
+    /**
+     * @notice 仅能由主合约 Murmes 调用
+     */
     modifier auth() {
-        require(msg.sender == subtitleSystem, "ER5");
+        require(msg.sender == Murmes, "ER5");
         _;
     }
 
@@ -83,7 +89,7 @@ contract Vault is IVault {
         address token,
         address to,
         uint256 amount
-    ) public onlyOwner {
+    ) external onlyOwner {
         require(penalty >= amount, "ER1");
         penalty -= amount;
         IZimu(token).transferFrom(address(this), to, amount);
@@ -101,7 +107,7 @@ contract Vault is IVault {
         uint256[] memory platformIds,
         address to,
         uint256[] memory amounts
-    ) public onlyOwner {
+    ) external onlyOwner {
         for (uint256 i; i < platformIds.length; i++) {
             require(platformIds[i] != 0, "ER1");
             require(feeIncome[platformIds[i]] >= amounts[i], "ER1");
@@ -127,7 +133,7 @@ contract Vault is IVault {
         address token,
         address to,
         uint256 amount
-    ) public onlyOwner {
+    ) external onlyOwner {
         require(feeIncome[0] >= amount, "ER1");
         IZimu(token).transferFrom(address(this), to, amount);
         emit WithdrawPlatformFee(to, amount);
@@ -143,7 +149,7 @@ contract Vault is IVault {
     }
 
     /**
-     * @notice 质押代币保存在金库合约中，此功能配合 TSCS 内的提取质押功能一起使用
+     * @notice 质押代币保存在金库合约中，此功能配合 Murmes 内的提取质押功能一起使用
      * @param token Zimu 代币合约
      * @param to 提币地址
      * @param amount 提币数量
@@ -152,7 +158,7 @@ contract Vault is IVault {
         address token,
         address to,
         uint256 amount
-    ) public auth {
+    ) external auth {
         IZimu(token).transferFrom(address(this), to, amount);
     }
 }

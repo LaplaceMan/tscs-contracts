@@ -13,20 +13,23 @@ contract AuditStrategy is IAuditStrategy {
     /**
      * @notice 判断状态改变所需审核数量的基本单元，测试时为 2，正常时为 10
      */
-    uint256 auditUnit;
+    uint256 public auditUnit;
     /**
      * @notice 操作员地址, 有权修改该策略中的关键参数
      */
     address public opeator;
 
-    event SystemChangeOpeator(address newOpeator);
     event SystemChangeAuditUnit(uint256 now);
+    event SystemChangeOpeator(address newOpeator);
 
     constructor(address dao, uint256 unit) {
         opeator = dao;
         auditUnit = unit;
     }
 
+    /**
+     * @notice 仅能由 opeator 调用
+     */
     modifier onlyOwner() {
         require(msg.sender == opeator, "ER5");
         _;
@@ -122,11 +125,19 @@ contract AuditStrategy is IAuditStrategy {
         }
     }
 
+    /**
+     * @notice 更改操作员地址
+     * @param newOpeator 新的操作员地址
+     */
     function changeOpeator(address newOpeator) external onlyOwner {
         opeator = newOpeator;
         emit SystemChangeOpeator(newOpeator);
     }
 
+    /**
+     * @notice 修改基本（最小）审核数量
+     * @param newAuditUnit 新的基本（最小）审核数量
+     */
     function changeAuditUnit(uint256 newAuditUnit) external onlyOwner {
         auditUnit = newAuditUnit;
         emit SystemChangeAuditUnit(newAuditUnit);

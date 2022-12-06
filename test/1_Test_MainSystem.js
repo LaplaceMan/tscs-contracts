@@ -1,10 +1,9 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { BigNumber } = require("ethers");
-const { AddressZero } = require("@ethersproject/constants");
 describe("MainSystem_Test", function () {
-    let tscs, zimu, vt, st, access, audit, detection, divide1, onetime0, onetime2;
-    let tscsAsDeployer;
+    let tscs, zimu, vt, st, platform, access, audit, detection, divide1, onetime0, onetime2;
+    let tscsAsDeployer, platformAsDeployer;
     let owner, user1, user2, user3;
     const baseEthAmount = ethers.utils.parseUnits("60", "ether");
     const unitEthAmount = ethers.utils.parseUnits("20", "ether");
@@ -18,11 +17,12 @@ describe("MainSystem_Test", function () {
         user3 = addr3;
 
         // 部署合约的工厂方法
-        const TSCS = await ethers.getContractFactory("SubtitleSystem");
+        const TSCS = await ethers.getContractFactory("Murmes");
         const ZIMU = await ethers.getContractFactory("ZimuToken");
         const VT = await ethers.getContractFactory("VideoToken");
         const ST = await ethers.getContractFactory("SubtitleToken");
         const VAULT = await ethers.getContractFactory("Vault");
+        const PLATFORM = await ethers.getContractFactory("Platforms");
         const ACCESS = await ethers.getContractFactory("AccessStrategy");
         const AUDIT = await ethers.getContractFactory("AuditStrategy");
         const DETECTION = await ethers.getContractFactory("DetectionStrategy");
@@ -35,7 +35,6 @@ describe("MainSystem_Test", function () {
         tscsAsDeployer = tscs.connect(deployer);
         zimu = await ZIMU.deploy(
             tscsAddress,
-            deployerAddress,
             "0x21e19e0c9bab2400000",
             deployerAddress
         );
@@ -43,12 +42,15 @@ describe("MainSystem_Test", function () {
         vt = await VT.deploy(tscsAddress);
         const vtAddress = vt.address;
         st = await ST.deploy(tscsAddress);
+        const stAddress = st.address;
         const vault = await VAULT.deploy(deployerAddress, tscsAddress);
         const vaultAddress = vault.address;
-        const stAddress = st.address;
+        platform = await PLATFORM.deploy(deployerAddress, tscsAddress);
+        const platformAddress = platform.address;
+        platformAsDeployer = platform.connect(deployer);
         access = await ACCESS.deploy(deployerAddress);
         const accessAddress = access.address;
-        audit = await AUDIT.deploy(deployerAddress, 2);
+        audit = await AUDIT.deploy(deployerAddress, 1);
         const auditAddress = audit.address;
         detection = await DETECTION.deploy(deployerAddress, 5);
         const detectionAddress = detection.address;
@@ -66,19 +68,21 @@ describe("MainSystem_Test", function () {
         await tx.wait();
         tx = await tscsAsDeployer.setDetectionStrategy(detectionAddress);
         await tx.wait();
-        tx = await tscsAsDeployer.setVault(vaultAddress);
-        await tx.wait();
         tx = await tscsAsDeployer.setSettlementStrategy(0, onetime0Address, "OT0");
         await tx.wait();
         tx = await tscsAsDeployer.setSettlementStrategy(1, divide1Address, "DI1");
         await tx.wait();
         tx = await tscsAsDeployer.setSettlementStrategy(2, onetime2Address, "OTM2");
         await tx.wait();
-        tx = await tscsAsDeployer.setZimuToken(zimuAddress);
+        tx = await tscsAsDeployer.setComponentsAddress(0, zimuAddress);
         await tx.wait();
-        tx = await tscsAsDeployer.setVideoToken(vtAddress);
+        tx = await tscsAsDeployer.setComponentsAddress(1, vtAddress);
         await tx.wait();
-        tx = await tscsAsDeployer.setSubtitleToken(stAddress);
+        tx = await tscsAsDeployer.setComponentsAddress(2, stAddress);
+        await tx.wait();
+        tx = await tscsAsDeployer.setComponentsAddress(3, vaultAddress);
+        await tx.wait();
+        tx = await tscsAsDeployer.setComponentsAddress(4, platformAddress);
         await tx.wait();
     });
 
@@ -111,11 +115,11 @@ describe("MainSystem_Test", function () {
     });
     // 测试时将 AuditStrategy 中的审核次数从 10 => 2, 且 AuditTime = 0
     it("Test add language", async function () {
-        let tx = await tscsAsDeployer.registerLanguage(["cn", "us", "jp"]);
+        let tx = await tscsAsDeployer.registerLanguage(['cn', 'us', 'jp']);
         await tx.wait();
-        let cnIndex = await tscsAsDeployer.languages("cn");
-        let enIndex = await tscsAsDeployer.languages("us");
-        let jpIndex = await tscsAsDeployer.languages("jp");
+        let cnIndex = await tscsAsDeployer.getLanguageIdByNote('cn');
+        let enIndex = await tscsAsDeployer.getLanguageIdByNote('us');
+        let jpIndex = await tscsAsDeployer.getLanguageIdByNote('jp');
         expect(cnIndex).to.equal(1);
         expect(enIndex).to.equal(2);
         expect(jpIndex).to.equal(3);
@@ -125,7 +129,7 @@ describe("MainSystem_Test", function () {
         const date = "0x" + (parseInt(Date.now() / 1000) + 15778800).toString(16);
         let tx = await tscs
             .connect(user1)
-            .submitApplication(AddressZero, 0, 0, unitEthAmount, 1, date, "test");
+            .submitApplication(tscs.address, 0, 0, unitEthAmount, 1, date, "test");
         await tx.wait();
         let receipt = await ethers.provider.getTransactionReceipt(tx.hash);
         expect(receipt.status).to.equal(1);
@@ -147,9 +151,9 @@ describe("MainSystem_Test", function () {
 
     it("Test add platform", async function () {
         await expect(
-            tscsAsDeployer.platfromJoin(owner.address, "test", "test", 655, 655)
+            platformAsDeployer.platfromJoin(owner.address, "test", "test", 655, 655)
         )
-            .to.emit(tscs, "PlatformJoin")
+            .to.emit(platform, "PlatformJoin")
             .withArgs(
                 owner.address,
                 BigNumber.from("1"),
@@ -161,8 +165,8 @@ describe("MainSystem_Test", function () {
     });
 
     it("Test platform add (create) video", async function () {
-        await expect(tscsAsDeployer.createVideo(1, "test", user1.address))
-            .to.emit(tscs, "VideoCreate")
+        await expect(platformAsDeployer.createVideo(1, "test", user1.address))
+            .to.emit(platform, "VideoCreate")
             .withArgs(
                 owner.address,
                 BigNumber.from("1"),
@@ -173,8 +177,8 @@ describe("MainSystem_Test", function () {
     });
 
     it("Test platform update counts", async function () {
-        await expect(tscsAsDeployer.updateViewCounts([1], [10000]))
-            .to.emit(tscs, "VideoCountsUpdate")
+        await expect(platformAsDeployer.updateViewCounts([1], [10000]))
+            .to.emit(platform, "VideoCountsUpdate")
             .withArgs(
                 owner.address, [BigNumber.from("1")], [BigNumber.from("10000")]
             );

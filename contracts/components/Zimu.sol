@@ -12,39 +12,33 @@ import "../interfaces/IZimu.sol";
 
 contract ZimuToken is ERC20, IZimu {
     /**
-     * @notice TSCS 合约地址
+     * @notice Murmes 合约地址
      */
-    address public subtitleSystem;
+    address public Murmes;
     /**
      * @notice 总供应量
      */
     uint256 immutable TOTAL_SUPPLY;
-    /**
-     * @notice 拥有特殊权限的地址，一般为 DAO 合约
-     */
-    address public opeator;
 
-    event SystemChangeDayRewardLimit(uint256 number);
     event SystemChangeOpeator(address newOpeator);
+    event SystemChangeDayRewardLimit(uint256 number);
     /**
-     * @notice 仅能由 TSCS 调用
+     * @notice 仅能由 Murmes 调用
      */
     modifier auth() {
-        require(msg.sender == subtitleSystem, "ER5");
+        require(msg.sender == Murmes, "ER5");
         _;
     }
 
     /**
-     * @notice 代币总发行量的 20% 用于奖励 TSCS 内的积极行为
+     * @notice 代币总发行量的 20% 用于奖励 Murmes 内的积极行为
      */
     constructor(
-        address ss,
-        address op,
+        address ms,
         uint256 total,
         address tokenOwnerAddress
     ) ERC20("Zimu Token", "ZM") {
-        subtitleSystem = ss;
-        opeator = op;
+        Murmes = ms;
         TOTAL_SUPPLY = total;
         uint256 preMint = (total * 4) / 5;
         _mint(tokenOwnerAddress, preMint);
@@ -55,7 +49,7 @@ contract ZimuToken is ERC20, IZimu {
      * @param to 平台币接收方
      * @param amount 铸造平台币数目
      */
-    function mintReward(address to, uint256 amount) public override auth {
+    function mintReward(address to, uint256 amount) external override auth {
         if (TOTAL_SUPPLY - totalSupply() - amount >= 0) {
             _mint(to, amount);
         }
@@ -67,19 +61,9 @@ contract ZimuToken is ERC20, IZimu {
      * @param amount 销毁平台币数目
      */
     function burnReward(address owner, uint256 amount) public {
-        if (msg.sender != subtitleSystem) {
+        if (msg.sender != Murmes) {
             require(msg.sender == owner, "ER5");
         }
         _burn(owner, amount);
-    }
-
-    /**
-     * @notice 更改拥有特殊权限的操作员地址
-     * @param newOpeator 更换 DAO 合约地址
-     */
-    function changeOpeator(address newOpeator) external {
-        require(msg.sender == opeator, "ER5");
-        opeator = newOpeator;
-        emit SystemChangeOpeator(newOpeator);
     }
 }

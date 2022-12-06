@@ -4,6 +4,8 @@ pragma solidity ^0.8.0;
 import "../common/token/ERC1155/IERC1155.sol";
 
 interface IVT is IERC1155 {
+    function Murmes() external returns (address);
+
     function decimals() external view returns (uint8);
 
     function tokenUri(uint256 tokenId) external view returns (string memory);
@@ -26,12 +28,5 @@ interface IVT is IERC1155 {
         uint256 amount
     ) external;
 
-    // function divide(
-    //     uint256 platformId,
-    //     address from,
-    //     address to,
-    //     uint256 amount
-    // ) external;
-
-    function subtitleSystem() external returns (address);
+    function changeOpeator(address newOpeator) external;
 }
