@@ -294,7 +294,7 @@ contract Murmes is StrategyManager {
                 (address platform, , , , , , ) = IPlatform(platforms)
                     .getVideoBaseInfo(tasks[id[i]].videoId);
                 (, , , uint16 rateCountsToProfit, ) = IPlatform(platforms)
-                    .platforms(platform);
+                    .getPlatformBaseInfo(platform);
                 require(msg.sender == platform, "ER5");
                 require(
                     tasks[id[i]].strategy != 0 && tasks[id[i]].strategy != 2,
@@ -458,9 +458,8 @@ contract Murmes is StrategyManager {
      */
     function preExtract0(uint256 taskId) external {
         require(tasks[taskId].strategy == 0, "ER6");
-        (, , , , uint16 rateAuditorDivide) = IPlatform(platforms).platforms(
-            address(this)
-        );
+        (, , , , uint16 rateAuditorDivide) = IPlatform(platforms)
+            .getPlatformBaseInfo(address(this));
         ISettlementStrategy(settlementStrategy[0].strategy).settlement(
             taskId,
             address(this),
@@ -485,9 +484,8 @@ contract Murmes is StrategyManager {
         (address platform, , , , , , uint256[] memory tasks_) = IPlatform(
             platforms
         ).getVideoBaseInfo(videoId);
-        (, , , , uint16 rateAuditorDivide) = IPlatform(platforms).platforms(
-            platform
-        );
+        (, , , , uint16 rateAuditorDivide) = IPlatform(platforms)
+            .getPlatformBaseInfo(platform);
         for (uint256 i = 0; i < tasks_.length; i++) {
             uint256 taskId = tasks_[i];
             if (
@@ -530,7 +528,7 @@ contract Murmes is StrategyManager {
         // 获得相应的代币计价
         (, , uint256 platformId, uint16 rateCountsToProfit, ) = IPlatform(
             platforms
-        ).platforms(platform);
+        ).getPlatformBaseInfo(platform);
         uint256 unsettled_ = (rateCountsToProfit * unsettled * (10**6)) /
             RATE_BASE;
         uint256 surplus = _ergodic(videoId, unsettled_);
@@ -595,9 +593,8 @@ contract Murmes is StrategyManager {
             }
         }
         if (all > 0) {
-            (, , uint256 platformId, , ) = IPlatform(platforms).platforms(
-                platform
-            );
+            (, , uint256 platformId, , ) = IPlatform(platforms)
+                .getPlatformBaseInfo(platform);
             if (fee > 0) {
                 uint256 thisFee = (all * fee) / BASE_FEE_RATE;
                 all -= thisFee;

@@ -6,7 +6,7 @@ interface IPlatform {
 
     function totalPlatforms() external view returns (uint256);
 
-    function platforms(address addr)
+    function getPlatformBaseInfo(address platform)
         external
         view
         returns (

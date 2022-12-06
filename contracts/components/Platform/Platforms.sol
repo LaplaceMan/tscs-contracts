@@ -27,7 +27,7 @@ contract Platforms is VideoManager {
     /**
      * @notice Platform 地址与相应结构体的映射
      */
-    mapping(address => Platform) public platforms;
+    mapping(address => Platform) platforms;
 
     event SystemChangeOpeator(address newOpeator);
 
@@ -80,6 +80,7 @@ contract Platforms is VideoManager {
         platforms[murmes].symbol = "Default";
         // Default 索引为 0，但包括在总数内
         totalPlatforms += 1;
+        emit PlatformJoin(murmes, 0, "Default", "Default", 0, 655);
     }
 
     /**
@@ -237,6 +238,31 @@ contract Platforms is VideoManager {
             videos[videoId].totalViewCouts,
             videos[videoId].unsettled,
             videos[videoId].tasks
+        );
+    }
+
+    /**
+     * @notice 获得平台的基本信息
+     * @param platform 平台所有者地址
+     * @return 获得平台的名称、符号、ID、播放量收益比、审核员分成比例
+     */
+    function getPlatformBaseInfo(address platform)
+        external
+        view
+        returns (
+            string memory,
+            string memory,
+            uint256,
+            uint16,
+            uint16
+        )
+    {
+        return (
+            platforms[platform].name,
+            platforms[platform].symbol,
+            platforms[platform].platformId,
+            platforms[platform].rateCountsToProfit,
+            platforms[platform].rateAuditorDivide
         );
     }
 }

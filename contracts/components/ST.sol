@@ -52,7 +52,7 @@ contract SubtitleToken is ERC721, IST {
     /**
      * @notice 每个字幕都会拥有相应的 Subitle 结构, 记录源信息
      */
-    mapping(uint256 => Subtitle) public subtitleNFT;
+    mapping(uint256 => Subtitle) subtitleNFT;
 
     constructor(address ms) {
         Murmes = ms;

@@ -14,13 +14,13 @@ module.exports = {
   },
   networks: {
     localhost: {
-      url: "http://localhost:8545",
+      url: "http://10.201.1.235:8545",
     },
     goerli: {
       chainId: 5,
       url: "https://goerli.infura.io/v3/",
       accounts: [
-        "",
+        "0xc5005590242b8a10728c213ef2e7572470d4a9ff18883ada078b8b03fe8997df",
       ]
     },
   },

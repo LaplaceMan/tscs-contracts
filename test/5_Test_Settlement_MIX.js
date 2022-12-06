@@ -62,6 +62,18 @@ describe("Settlement_MIX_Test", function () {
     onetime2 = await ONETIME2.deploy(tscsAddress);
     const onetime2Address = onetime2.address;
     await tscs.deployed();
+    // console.log("tscsAddress", tscsAddress);
+    // console.log("zimuAddress", zimuAddress);
+    // console.log("vtAddress", vtAddress);
+    // console.log("stAddress", stAddress);
+    // console.log("vaultAddress", vaultAddress);
+    // console.log("platformAddress", platformAddress);
+    // console.log("accessAddress", accessAddress);
+    // console.log("auditAddress", auditAddress);
+    // console.log("detectionAddress", detectionAddress);
+    // console.log("divide1Address", divide1Address);
+    // console.log("onetime0Address", onetime0Address);
+    // console.log("onetime2Address", onetime2Address);
     let tx;
     tx = await tscsAsDeployer.setAuditStrategy(auditAddress);
     await tx.wait();
