@@ -1,3 +1,3 @@
 module.exports = [
-    "0x7E489eCAD625e8e29C0cF77434c89DBef2c3c2b4"
+    "0x3f204Fcde7E2434FbC2BCdfF370e10065e499374"
 ]

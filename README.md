@@ -4,7 +4,7 @@
 <p>
 <a href="https://www.youtube.com/channel/UCcIqRf9rq1oAN7pprsfpM8w"> <img src="https://img.shields.io/badge/YouTube-FF0000?style=flat&logo=youtube&logoColor=white" height="25px" /> </a>
 <a href="https://twitter.com/laplaceman1007"> <img src="https://img.shields.io/badge/Twitter-1DA1F2?style=flat&logo=twitter&logoColor=white" height="25px" /> </a>
-<img src="https://img.shields.io/badge/version-v0.2.0-blue" height="25px" />
+<img src="https://img.shields.io/badge/version-v0.2.1-blue" height="25px" />
 </p>
 <p>
 TSCS: A Blockchain-Based Tokenized Subtitle Crowdsourcing System (Old Name)
@@ -34,6 +34,8 @@ TSCS: A Blockchain-Based Tokenized Subtitle Crowdsourcing System (Old Name)
 `npx hardhat test .\scripts\<Test script>.js --network <Network name>`
 
 ## Verify Contracts
+
+`npx hardhat clean`
 
 `npx hardhat verify --constructor-args .\scripts\<constructor arguments>.js --network goerli <On-chain contract address>`
 
@@ -98,3 +100,22 @@ TSCS: A Blockchain-Based Tokenized Subtitle Crowdsourcing System (Old Name)
 5. **双代币模型**
    - Murmes (TSCS) 内的主要功用代币是 Zimu，它总量有限且用途广泛（发起策略为一次性结算的申请、兑换 NFT、用户加入时的质押、参与治理和分红），应当是具有升值空间的
    - ID 为 0 的 VT 的引入是为了弥补申请者的交易 gas 费用，它的价值由获取唯一性和用途（兑换 NFT 和 SBT）来保证，而无限增发和用途相对单一则限制了它过高的价值，这是我们所希望的，因为需要一种低成本的回馈用户的方式（兑换粉丝向 NFT 和 具有身份象征意义的 SBT 应该是廉价的行为）
+
+## Deployed Contracts
+
+### Goerli - 0x5
+
+| Name                               | Contract Address                           |
+| ---------------------------------- | ------------------------------------------ |
+| Murmes                             | 0xD18bD5B3439c7994988534F2Bdbb64A0556085BB |
+| Zimu Token                         | 0x195D1F8BC906f1129a1Ab177E7536CAe9b7E142b |
+| Video Token                        | 0xF0D5f127AC8e8582a2C3fE228203c1015c397d3E |
+| Subtitle Token                     | 0x223dbc19cA1636cCd044F8eef5c0d829fA632C4c |
+| Vault Manager                      | 0xE9aF9E85E0D3aD5c38Fb3cd71fecAb694030787e |
+| Platform Manager                   | 0xcf757954A689834dE86182476E38e22A3fE645d4 |
+| Access Strategy                    | 0x8bA47eBcc3877ddE208de5abE5a5Cb973CF44437 |
+| Audit Strategy                     | 0xb3963a71d52E6270Bc6C066fC36DB94B20F6fE92 |
+| Detection Strategy                 | 0x90b2573320191040E05471FECE0305cDd6700cB2 |
+| Settlement-Divide (DR1)            | 0x2c7EFFBc537E3a9404d0637297C6E3C22Ee00217 |
+| Settlement-Onetime (OT0)           | 0x61F10AbA9e6087c1EA315d1651BF09977ee466d7 |
+| Settlement-Onetime Mortgage (OTM2) | 0xbBdD22dFE991F5366AC6895B18c6A2Fe11c892f1 |
