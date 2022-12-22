@@ -19,4 +19,10 @@ interface IVault {
         address to,
         uint256 amount
     ) external;
+
+    function transferPenalty(
+        address token,
+        address to,
+        uint256 amount
+    ) external;
 }

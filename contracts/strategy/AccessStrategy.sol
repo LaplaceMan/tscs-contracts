@@ -1,7 +1,7 @@
 /**
  * @Author: LaplaceMan 505876833@qq.com
  * @Date: 2022-09-08 15:53:06
- * @Description: TSCS 提供的默认访问策略合约
+ * @Description: Murmes 提供的默认访问策略合约
  * @Copyright (c) 2022 by LaplaceMan 505876833@qq.com, All Rights Reserved.
  */
 // SPDX-License-Identifier: LGPL-3.0-only
@@ -13,20 +13,24 @@ contract AccessStrategy is IAccessStrategy {
     /**
      * @notice 奖惩时计算比率的除数
      */
-    uint16 public baseRatio;
+    uint16 constant BASE_RATIO = 10 * 1000;
     /**
-     * @notice TSCS 内用户初始化时的信誉度分数, 精度为 1 即 100.0
+     * @notice Murmes 内用户初始化时的信誉度分数, 精度为 1 即 100.0
      */
-    uint16 constant basereputation = 100;
+    uint16 constant BASE_REPUTATION = 100;
     /**
      * @notice 需要质押 Zimu 的信誉度分数阈值
      */
     uint16 public depositThreshold;
 
     /**
-     * @notice 被禁止使用 TSCS 提供服务的信誉度阈值
+     * @notice 被禁止使用 Murmes 提供服务的信誉度阈值
      */
     uint8 public blacklistThreshold;
+    /**
+     * @notice 恶意字幕制作者受到惩罚的倍数, 在计算时除数为 100
+     */
+    uint8 public multiplier;
     /**
      * @notice 信誉度小于等于 depoitThreshold 时必须最小质押的 Zimu 数
      */
@@ -39,11 +43,6 @@ contract AccessStrategy is IAccessStrategy {
      * @notice 惩罚的代币数量, 此处为 Zimu
      */
     uint256 public punishmentToken;
-    /**
-     * @notice 恶意字幕制作者受到惩罚的倍数, 在计算时除数为 100
-     */
-    uint8 public multiplier;
-
     /**
      * @notice 操作员地址, 有权修改该策略中的关键参数
      */
@@ -64,9 +63,8 @@ contract AccessStrategy is IAccessStrategy {
     }
 
     constructor(address dao) {
-        baseRatio = 10 * 1000;
         minDeposit = 32**18;
-        rewardToken = 1**16;
+        rewardToken = 1**14;
         punishmentToken = 1**18;
         multiplier = 150; //表示字幕制作者扣除的信誉度是支持者的 1.5 倍
         blacklistThreshold = 1;
@@ -80,7 +78,7 @@ contract AccessStrategy is IAccessStrategy {
      * @return 可获得的奖励数值
      */
     function reward(uint256 reputation) public pure returns (uint256) {
-        return (reputation / basereputation);
+        return (reputation / BASE_REPUTATION);
     }
 
     /**
@@ -88,8 +86,8 @@ contract AccessStrategy is IAccessStrategy {
      * @param reputation 当前信誉度分数
      * @return 被扣除的惩罚数值
      */
-    function punishment(uint256 reputation) public view returns (uint256) {
-        return (baseRatio / reputation);
+    function punishment(uint256 reputation) public pure returns (uint256) {
+        return (BASE_RATIO / reputation);
     }
 
     /**
@@ -120,10 +118,9 @@ contract AccessStrategy is IAccessStrategy {
     {
         if (flag == 1) {
             uint256 thisReward = reward(reputation);
-            //rewardToken 为 0, 代币奖励策略仍在设计中
             return (thisReward, thisReward * rewardToken);
         } else if (flag == 2) {
-            //当信誉度分数低于 depoitThreshold 时, 每次惩罚都会扣除 Zimu, 此处对用户的区分逻辑为: （优秀）正常、危险、恶意
+            // 当信誉度分数低于 depoitThreshold 时, 每次惩罚都会扣除 Zimu, 此处对用户的区分逻辑为: （优秀）正常、危险、恶意
             if (reputation - punishment(reputation) < depositThreshold) {
                 return (punishment(reputation), punishmentToken);
             }
@@ -134,10 +131,10 @@ contract AccessStrategy is IAccessStrategy {
     }
 
     /**
-     * @notice 根据信誉度分数和质押 Zimu 数判断当前用户是否有使用 TSCS 提供的服务的资格
+     * @notice 根据信誉度分数和质押 Zimu 数判断当前用户是否有使用 Murmes 提供的服务的资格
      * @param reputation 用户当前信誉度分数
      * @param deposit_ 用户当前质押 Zimu 数
-     * @return 返回 false 表示用户被禁止使用 TSCS 提供的服务, 反之可以继续使用
+     * @return 返回 false 表示用户被禁止使用 Murmes 提供的服务, 反之可以继续使用
      */
     function access(uint256 reputation, int256 deposit_)
         external
@@ -157,13 +154,45 @@ contract AccessStrategy is IAccessStrategy {
     }
 
     /**
-     * @notice 以下均为对策略内关键参数的修改功能, 一般将 opeator 设置为 DAO 合约
+     * @notice 求平方根
      */
-    function setBaseRatio(uint16 newRatio) external onlyOwner {
-        baseRatio = newRatio;
-        emit SystemSetBaseRatio(newRatio);
+    function _sqrt(uint256 x) internal pure returns (uint256) {
+        uint256 z = (x + 1) / 2;
+        uint256 y = x;
+        while (z < y) {
+            y = z;
+            z = (x / z + z) / 2;
+        }
+        return y;
     }
 
+    /**
+     * @notice 根据当前信誉度计算上一个状态的信誉度
+     * @param reputation 当前信誉度分数
+     * @param flag 信誉度变化的事件
+     * @return 上一个状态（事件发生前）的信誉度
+     */
+    function lastReputation(uint256 reputation, uint8 flag)
+        public
+        pure
+        returns (uint256)
+    {
+        uint256 last;
+        if (flag == 2) {
+            uint256 _4ac = 4 * BASE_RATIO;
+            uint256 _sqrtb2_4ac = _sqrt(reputation * reputation - _4ac);
+            last = reputation + _sqrtb2_4ac / 2;
+        } else if (flag == 1) {
+            uint256 _base = BASE_REPUTATION + 1;
+            uint256 _up = reputation * BASE_REPUTATION;
+            last = _up / _base;
+        }
+        return last;
+    }
+
+    /**
+     * @notice 以下均为对策略内关键参数的修改功能, 一般将 opeator 设置为 DAO 合约
+     */
     function setDepoitThreshold(uint8 newDepoitThreshold) external onlyOwner {
         depositThreshold = newDepoitThreshold;
         emit SystemSetDepoitThreshold(newDepoitThreshold);

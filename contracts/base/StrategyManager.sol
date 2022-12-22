@@ -1,7 +1,7 @@
 /**
  * @Author: LaplaceMan 505876833@qq.com
  * @Date: 2022-09-08 15:13:26
- * @Description: 管理 TSCS 所使用的审核策略、访问策略、检测策略和结算策略
+ * @Description: 管理 Murmes 所使用的审核策略、访问策略、检测策略和结算策略
  * @Copyright (c) 2022 by LaplaceMan email: 505876833@qq.com, All Rights Reserved.
  */
 // SPDX-License-Identifier: LGPL-3.0-only
@@ -11,19 +11,18 @@ import "./EntityManager.sol";
 import "./SubtitleManager.sol";
 import "../interfaces/IVT.sol";
 import "../interfaces/IPlatform.sol";
-import "../common/utils/Ownable.sol";
 import "../interfaces/IAccessStrategy.sol";
 import "../interfaces/IAuditStrategy.sol";
 import "../interfaces/IDetectionStrategy.sol";
 import "../interfaces/ISettlementStrategy.sol";
 
-contract StrategyManager is Ownable, EntityManager, SubtitleManager {
+contract StrategyManager is EntityManager, SubtitleManager {
     /**
      * @notice 审核策略合约, 根据观众（审核员）评价信息判断字幕状态是否产生变化, 即无变化、被采用或被删除
      */
     IAuditStrategy public auditStrategy;
     /**
-     * @notice 访问策略合约, 包括两点: 1.根据信誉度判断用户是否有继续使用 TSCS 服务的资格; 2.根据信誉度和奖惩标志位, 判断用户因为奖励或惩罚后信誉度（与质押ETH数）发生的变化
+     * @notice 访问策略合约, 包括两点: 1.根据信誉度判断用户是否有继续使用 Murmes 服务的资格; 2.根据信誉度和奖惩标志位, 判断用户因为奖励或惩罚后信誉度（与质押ETH数）发生的变化
      */
     IAccessStrategy public accessStrategy;
 
@@ -62,12 +61,12 @@ contract StrategyManager is Ownable, EntityManager, SubtitleManager {
     event SystemSetSubtitleToken(address token);
 
     /**
-     * @notice 结算策略 ID 与 SettlementStruct 的映射, 在 TSCS 内用 ID 唯一标识结算策略, 从0开始
+     * @notice 结算策略 ID 与 SettlementStruct 的映射, 在 Murmes 内用 ID 唯一标识结算策略, 从0开始
      */
     mapping(uint8 => SettlementStruct) settlementStrategy;
 
     /**
-     * @notice 修改当前 TSCS 内的审核策略, 仅能由管理员调用
+     * @notice 修改当前 Murmes 内的审核策略, 仅能由管理员调用
      * @param newAudit 新的审核策略合约地址
      */
     function setAuditStrategy(IAuditStrategy newAudit) external onlyOwner {
@@ -77,7 +76,7 @@ contract StrategyManager is Ownable, EntityManager, SubtitleManager {
     }
 
     /**
-     * @notice 修改当前 TSCS 内的访问策略, 仅能由管理员调用
+     * @notice 修改当前 Murmes 内的访问策略, 仅能由管理员调用
      * @param newAccess 新的访问策略合约地址
      */
     function setAccessStrategy(IAccessStrategy newAccess) external onlyOwner {
@@ -87,7 +86,7 @@ contract StrategyManager is Ownable, EntityManager, SubtitleManager {
     }
 
     /**
-     * @notice 修改当前 TSCS 内的检测策略, 仅能由管理员调用
+     * @notice 修改当前 Murmes 内的检测策略, 仅能由管理员调用
      * @param newDetection 新的检测策略合约地址
      */
     function setDetectionStrategy(IDetectionStrategy newDetection)
@@ -111,11 +110,11 @@ contract StrategyManager is Ownable, EntityManager, SubtitleManager {
         string memory notes
     ) external onlyOwner {
         require(strategy != address(0), "ER1");
-        settlementStrategy[strategyId].strategy = strategy;
-        settlementStrategy[strategyId].notes = notes;
         if (settlementStrategy[strategyId].strategy != address(0)) {
             opeators[settlementStrategy[strategyId].strategy] = false;
         }
+        settlementStrategy[strategyId].strategy = strategy;
+        settlementStrategy[strategyId].notes = notes;
         opeators[strategy] = true;
         emit SystemSetSettlement(strategyId, strategy, notes);
     }
@@ -182,6 +181,37 @@ contract StrategyManager is Ownable, EntityManager, SubtitleManager {
         return (
             settlementStrategy[strategyId].strategy,
             settlementStrategy[strategyId].notes
+        );
+    }
+
+    /**
+     * @notice 当 DAO 判定字幕为恶意时，删除字幕，由于加密思想，我们并没有在链上删掉ST的信息，而是在本系统内作标记，将不再认可它
+     * @param id 恶意ST ID
+     */
+    function holdSubtitleStateByDAO(uint256 id, uint8 state) external auth {
+        assert(state == 0 || state == 2);
+        _changeST(id, state);
+    }
+
+    /**
+     * @notice 提取质押的 Zimu 代币
+     * @param amount 欲提取 Zimu 代币数
+     */
+    function withdrawDeposit(uint256 amount) external {
+        require(users[msg.sender].deposit > 0, "ER1");
+        require(
+            users[msg.sender].operate + 2 * lockUpTime < block.timestamp,
+            "ER5"
+        );
+        if (amount > uint256(users[msg.sender].deposit)) {
+            amount = uint256(users[msg.sender].deposit);
+        }
+        users[msg.sender].deposit -= int256(amount);
+        IVault(vault).withdrawDeposit(zimuToken, msg.sender, amount);
+        emit UserWithdrawDespoit(
+            msg.sender,
+            amount,
+            uint256(users[msg.sender].deposit)
         );
     }
 }

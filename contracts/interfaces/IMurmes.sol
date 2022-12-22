@@ -2,6 +2,9 @@
 pragma solidity ^0.8.0;
 
 interface IMurmes {
+    // ***** Ownable *****
+    function isOperator(address operator) external view returns (bool);
+
     // ***** EntityManager *****
     function zimuToken() external view returns (address);
 
@@ -36,6 +39,12 @@ interface IMurmes {
         uint256 day
     ) external view returns (uint256);
 
+    function updateUser(
+        address usr,
+        int256 reputationSpread,
+        int256 tokenSpread
+    ) external;
+
     // ***** StrategyManager *****
     function auditStrategy() external view returns (address);
 
@@ -49,6 +58,8 @@ interface IMurmes {
         external
         view
         returns (address, string memory);
+
+    function holdSubtitleStateByDAO(uint256 id, uint8 state) external;
 
     // ***** SubtitleManager *****
     function subtitleToken() external returns (address);
@@ -78,4 +89,18 @@ interface IMurmes {
         address[] memory to,
         uint256 amount
     ) external;
+
+    function updateLockReward(
+        address platform,
+        uint256 day,
+        int256 amount,
+        address usr
+    ) external;
+
+    function resetApplication(uint256 taskId, uint256 amount) external;
+
+    function getPlatformByTaskId(uint256 taskId)
+        external
+        view
+        returns (address);
 }

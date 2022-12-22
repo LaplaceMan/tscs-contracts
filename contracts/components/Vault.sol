@@ -1,7 +1,7 @@
 /**
  * @Author: LaplaceMan 505876833@qq.com
  * @Date: 2022-11-21 14:33:27
- * @Description: 管理 TSCS 内质押、手续费相关的资产
+ * @Description: 管理 Murmes 内质押、手续费相关的资产
  * @Copyright (c) 2022 by LaplaceMan email: 505876833@qq.com, All Rights Reserved.
  */
 // SPDX-License-Identifier: LGPL-3.0-only
@@ -10,20 +10,24 @@ pragma solidity ^0.8.0;
 import "../interfaces/IVT.sol";
 import "../interfaces/IZimu.sol";
 import "../interfaces/IVault.sol";
+import "../interfaces/IMurmes.sol";
 
 contract Vault is IVault {
     /**
      * @notice TSCS内产生的罚款总数（以Zimu计价）
      */
     uint256 public penalty;
-
+    /**
+     * @notice 罚款上限（以Zimu计价）
+     */
+    uint256 public penaltyUpperLimit;
     /**
      * @notice 操作员地址, 有权修改该策略中的关键参数
      */
     address public opeator;
 
     /**
-     * @notice TSCS 合约地址
+     * @notice Murmes 合约地址
      */
     address public Murmes;
 
@@ -45,14 +49,7 @@ contract Vault is IVault {
     constructor(address dao, address ms) {
         opeator = dao;
         Murmes = ms;
-    }
-
-    /**
-     * @notice 仅能由 opeator 调用
-     */
-    modifier onlyOwner() {
-        require(msg.sender == opeator, "ER5");
-        _;
+        penaltyUpperLimit = (10**5) * (10**18);
     }
 
     /**
@@ -64,7 +61,7 @@ contract Vault is IVault {
     }
 
     /**
-     * @notice TSCS 内罚没 Zimu 资产
+     * @notice Murmes 内罚没 Zimu 资产
      * @param amount 新增罚没 Zimu 数量
      */
     function changePenalty(uint256 amount) public auth {
@@ -89,8 +86,9 @@ contract Vault is IVault {
         address token,
         address to,
         uint256 amount
-    ) external onlyOwner {
+    ) external {
         require(penalty >= amount, "ER1");
+        require(IMurmes(Murmes).isOperator(msg.sender), "ER5");
         penalty -= amount;
         IZimu(token).transferFrom(address(this), to, amount);
         emit WithdrawPenalty(to, amount);
@@ -107,7 +105,8 @@ contract Vault is IVault {
         uint256[] memory platformIds,
         address to,
         uint256[] memory amounts
-    ) external onlyOwner {
+    ) external {
+        require(IMurmes(Murmes).isOperator(msg.sender), "ER5");
         for (uint256 i; i < platformIds.length; i++) {
             require(platformIds[i] != 0, "ER1");
             require(feeIncome[platformIds[i]] >= amounts[i], "ER1");
@@ -133,8 +132,10 @@ contract Vault is IVault {
         address token,
         address to,
         uint256 amount
-    ) external onlyOwner {
+    ) external {
+        require(IMurmes(Murmes).isOperator(msg.sender), "ER5");
         require(feeIncome[0] >= amount, "ER1");
+        feeIncome[0] -= amount;
         IZimu(token).transferFrom(address(this), to, amount);
         emit WithdrawPlatformFee(to, amount);
     }
@@ -160,5 +161,17 @@ contract Vault is IVault {
         uint256 amount
     ) external auth {
         IZimu(token).transferFrom(address(this), to, amount);
+    }
+
+    /**
+     * @notice 当罚金数量超过上限时，多余的转移给 Zimu 代币合约，用于社区激励
+     * @param token Zimu 代币合约
+     */
+    function donation(address token) external {
+        require(IMurmes(Murmes).isOperator(msg.sender), "ER5");
+        require(penalty > penaltyUpperLimit, "ER5");
+        uint256 overflow = penalty - penaltyUpperLimit;
+        penalty = penaltyUpperLimit;
+        IZimu(token).transferFrom(address(this), token, overflow);
     }
 }

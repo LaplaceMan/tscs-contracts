@@ -1,7 +1,7 @@
 /**
  * @Author: LaplaceMan 505876833@qq.com
  * @Date: 2022-09-09 20:53:03
- * @Description: TSCS 内提供了三种结算策略, 本合约为一次性结算策略（0）, 特点是任何用户可为任何视频发出制作字幕的申请
+ * @Description: Murmes 内提供了三种结算策略, 本合约为一次性结算策略（0）, 特点是任何用户可为任何视频发出制作字幕的申请
  * @Copyright (c) 2022 by LaplaceMan 505876833@qq.com, All Rights Reserved.
  */
 // SPDX-License-Identifier: LGPL-3.0-only
@@ -12,7 +12,7 @@ import "../interfaces/ISettlementStrategy.sol";
 
 contract SettlementOneTime0 is ISettlementStrategy {
     /**
-     * @notice TSCS 合约地址
+     * @notice Murmes 合约地址
      */
     address public Murmes;
     /**
@@ -30,7 +30,7 @@ contract SettlementOneTime0 is ISettlementStrategy {
         uint256 unsettled;
     }
     /**
-     * @notice 仅能由 TSCS 调用
+     * @notice 仅能由 Murmes 调用
      */
     modifier auth() {
         require(msg.sender == Murmes, "ER5");

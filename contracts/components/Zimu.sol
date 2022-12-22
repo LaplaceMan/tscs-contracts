@@ -1,7 +1,7 @@
 /**
  * @Author: LaplaceMan 505876833@qq.com
  * @Date: 2022-09-08 19:11:09
- * @Description: TSCS 发行的 ERC20 平台货币 Zim, 代币经济模型仍需设计
+ * @Description: Murmes 发行的 ERC20 平台货币 Zim, 代币经济模型仍需设计
  * @Copyright (c) 2022 by LaplaceMan 505876833@qq.com, All Rights Reserved.
  */
 // SPDX-License-Identifier: MIT
@@ -42,6 +42,7 @@ contract ZimuToken is ERC20, IZimu {
         TOTAL_SUPPLY = total;
         uint256 preMint = (total * 4) / 5;
         _mint(tokenOwnerAddress, preMint);
+        _mint(address(this), total - preMint);
     }
 
     /**
@@ -50,7 +51,7 @@ contract ZimuToken is ERC20, IZimu {
      * @param amount 铸造平台币数目
      */
     function mintReward(address to, uint256 amount) external override auth {
-        if (TOTAL_SUPPLY - totalSupply() - amount >= 0) {
+        if (balanceOf(address(this)) >= 0) {
             _mint(to, amount);
         }
     }

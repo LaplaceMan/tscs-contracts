@@ -13,7 +13,7 @@ import "./interfaces/ISettlementStrategy.sol";
 
 contract Murmes is StrategyManager {
     /**
-     * @notice TSCS 内已经发出的申请（任务）总数
+     * @notice Murmes 内已经发出的申请（任务）总数
      */
     uint256 public totalTasks;
 
@@ -43,6 +43,8 @@ contract Murmes is StrategyManager {
 
     constructor(address owner) {
         _setOwner(owner);
+        opeators[owner] = true;
+        opeators[address(this)] = true;
         languageNote.push("Default");
     }
 
@@ -86,11 +88,11 @@ contract Murmes is StrategyManager {
     /**
      * @notice 提交制作字幕的申请
      * @param platform 视频所属平台 Platform 区块链地址
-     * @param videoId 视频在 TSCS 内的 ID
+     * @param videoId 视频在 Murmes 内的 ID
      * @param strategy 结算策略 ID
      * @param amount 支付金额/比例
      * @param language 申请所需要语言的 ID
-     * @return 在 TSCS 内发出申请的顺位, taskId
+     * @return 在 Murmes 内发出申请的顺位, taskId
      */
     function submitApplication(
         address platform,
@@ -101,9 +103,9 @@ contract Murmes is StrategyManager {
         uint256 deadline,
         string memory source
     ) external returns (uint256) {
-        // 若调用者未主动加入 TSCS, 则自动初始化用户的信誉度和质押数（质押数自动设置为 0）
+        // 若调用者未主动加入 Murmes, 则自动初始化用户的信誉度和质押数（质押数自动设置为 0）
         _userInitialization(msg.sender, 0);
-        // 根据信誉度和质押 Zimu 数判断用户是否有权限使用 TSCS 提供的服务
+        // 根据信誉度和质押 Zimu 数判断用户是否有权限使用 Murmes 提供的服务
         require(
             accessStrategy.access(
                 users[msg.sender].reputation,
@@ -209,7 +211,7 @@ contract Murmes is StrategyManager {
 
     /**
      * @notice 获得特定申请下所有已上传字幕的指纹, 暂定为 Simhash
-     * @param taskId 申请在 TSCS 内的顺位 ID
+     * @param taskId 申请在 Murmes 内的顺位 ID
      * @return 该申请下所有已上传字幕的 fingerprint
      */
     function _getHistoryFingerprint(uint256 taskId)
@@ -230,7 +232,7 @@ contract Murmes is StrategyManager {
 
     /**
      * @notice 上传制作的字幕
-     * @param taskId 字幕所属申请在 TSCS 内的顺位 ID
+     * @param taskId 字幕所属申请在 Murmes 内的顺位 ID
      * @param cid 字幕存储在 IPFS 获得的 CID
      * @param languageId 字幕所属语种的 ID
      * @param fingerprint 字幕指纹值, 暂定为 Simhash
@@ -250,9 +252,9 @@ contract Murmes is StrategyManager {
         }
         // 确保字幕的语言与申请所需的语言一致
         require(languageId == tasks[taskId].language, "ER9");
-        // 若调用者未主动加入 TSCS, 则自动初始化用户的信誉度和质押数（质押数自动设置为 0）
+        // 若调用者未主动加入 Murmes, 则自动初始化用户的信誉度和质押数（质押数自动设置为 0）
         _userInitialization(msg.sender, 0);
-        // 根据信誉度和质押 Zimu 数判断用户是否有权限使用 TSCS 提供的服务
+        // 根据信誉度和质押 Zimu 数判断用户是否有权限使用 Murmes 提供的服务
         require(
             accessStrategy.access(
                 users[msg.sender].reputation,
@@ -339,7 +341,7 @@ contract Murmes is StrategyManager {
         return (
             uploaded,
             subtitleNFT[subtitleId].supporters.length,
-            subtitleNFT[subtitleId].dissenter.length,
+            subtitleNFT[subtitleId].dissenters.length,
             allSupport,
             subtitleNFT[subtitleId].stateChangeTime
         );
@@ -362,7 +364,7 @@ contract Murmes is StrategyManager {
                     users[IST(subtitleToken).ownerOf(subtitleId)].reputation,
                     flag
                 );
-            _updateUser(
+            updateUser(
                 IST(subtitleToken).ownerOf(subtitleId),
                 int256((reputationSpread * multiplier) / 100) * newFlag,
                 int256((tokenSpread * multiplier) / 100) * newFlag
@@ -379,20 +381,24 @@ contract Murmes is StrategyManager {
                     users[subtitleNFT[subtitleId].supporters[i]].reputation,
                     flag
                 );
-            _updateUser(
+            updateUser(
                 subtitleNFT[subtitleId].supporters[i],
                 int256(reputationSpread) * newFlag,
                 int256(tokenSpread) * newFlag
             );
         }
-        for (uint256 i = 0; i < subtitleNFT[subtitleId].dissenter.length; i++) {
+        for (
+            uint256 i = 0;
+            i < subtitleNFT[subtitleId].dissenters.length;
+            i++
+        ) {
             (uint256 reputationSpread, uint256 tokenSpread) = accessStrategy
                 .spread(
-                    users[subtitleNFT[subtitleId].dissenter[i]].reputation,
+                    users[subtitleNFT[subtitleId].dissenters[i]].reputation,
                     flag
                 );
-            _updateUser(
-                subtitleNFT[subtitleId].dissenter[i],
+            updateUser(
+                subtitleNFT[subtitleId].dissenters[i],
                 int256(reputationSpread) * newFlag * (-1),
                 int256(tokenSpread) * newFlag * (-1)
             );
@@ -414,9 +420,9 @@ contract Murmes is StrategyManager {
                 "ER5"
             );
         }
-        // 若调用者未主动加入 TSCS, 则自动初始化用户的信誉度和质押数（质押数自动设置为 0）
+        // 若调用者未主动加入 Murmes, 则自动初始化用户的信誉度和质押数（质押数自动设置为 0）
         _userInitialization(msg.sender, 0);
-        // 根据信誉度和质押 ETH 数判断用户是否有权限使用 TSCS 提供的服务
+        // 根据信誉度和质押 ETH 数判断用户是否有权限使用 Murmes 提供的服务
         require(
             accessStrategy.access(
                 users[msg.sender].reputation,
@@ -458,6 +464,7 @@ contract Murmes is StrategyManager {
      */
     function preExtract0(uint256 taskId) external {
         require(tasks[taskId].strategy == 0, "ER6");
+        _userInitialization(msg.sender, 0);
         (, , , , uint16 rateAuditorDivide) = IPlatform(platforms)
             .getPlatformBaseInfo(address(this));
         ISettlementStrategy(settlementStrategy[0].strategy).settlement(
@@ -472,7 +479,7 @@ contract Murmes is StrategyManager {
 
     /**
      * @notice 预结算时, 遍历用到的结算策略
-     * @param videoId 视频在 TSCS 内的 ID
+     * @param videoId 视频在 Murmes 内的 ID
      * @param unsettled 未结算稳定币数
      * @return 本次预结算支付字幕制作费用后剩余的稳定币数目
      */
@@ -511,7 +518,7 @@ contract Murmes is StrategyManager {
 
     /**
      * @notice 预结算（视频和字幕）收益, 仍需优化, 实现真正的模块化
-     * @param videoId 视频在 TSCS 内的 ID
+     * @param videoId 视频在 Murmes 内的 ID
      * @return 本次结算稳定币数目
      */
     function preExtractOther(uint256 videoId) external returns (uint256) {
@@ -525,6 +532,7 @@ contract Murmes is StrategyManager {
 
         ) = IPlatform(platforms).getVideoBaseInfo(videoId);
         require(unsettled > 0, "ER11");
+        _userInitialization(msg.sender, 0);
         // 获得相应的代币计价
         (, , uint256 platformId, uint16 rateCountsToProfit, ) = IPlatform(
             platforms
@@ -703,5 +711,19 @@ contract Murmes is StrategyManager {
         ISettlementStrategy(settlementStrategy[tasks[taskId].strategy].strategy)
             .resetSettlement(taskId, amount);
         emit ApplicationReset(taskId, amount);
+    }
+
+    /**
+     * @notice 根据申请 ID 获得其所属的平台
+     * @param taskId 申请/任务 ID
+     * @return 申请所属的平台
+     */
+    function getPlatformByTaskId(uint256 taskId)
+        external
+        view
+        returns (address)
+    {
+        require(tasks[taskId].applicant != address(0), "ER1");
+        return tasks[taskId].platform;
     }
 }

@@ -4,7 +4,7 @@
 <p>
 <a href="https://www.youtube.com/channel/UCcIqRf9rq1oAN7pprsfpM8w"> <img src="https://img.shields.io/badge/YouTube-FF0000?style=flat&logo=youtube&logoColor=white" height="25px" /> </a>
 <a href="https://twitter.com/laplaceman1007"> <img src="https://img.shields.io/badge/Twitter-1DA1F2?style=flat&logo=twitter&logoColor=white" height="25px" /> </a>
-<img src="https://img.shields.io/badge/version-v0.2.1-blue" height="25px" />
+<img src="https://img.shields.io/badge/version-v0.2.2-blue" height="25px" />
 </p>
 <p>
 TSCS: A Blockchain-Based Tokenized Subtitle Crowdsourcing System (Old Name)
@@ -63,16 +63,11 @@ TSCS: A Blockchain-Based Tokenized Subtitle Crowdsourcing System (Old Name)
 
 ## Next Update
 
-- [ ] 使用 Zimu 代币和 VT 代币兑换 NFT
-- [ ] DAO 管理
-- [ ] 仲裁（法庭）机制
 - [ ] 字幕组 DAO
-- [ ] 粉丝空投奖励
-- [ ] SBT 设计
-- [ ] 字幕的版本控制
-- [ ] 当被确认字幕是恶意字幕，仲裁发出后的惩罚逻辑
+- [ ] SBT 设计，由项目方空投
+- [ ] 使用 Zimu 代币和 VT 代币兑换 NFT
 
-# Token Economics
+## Token Economics
 
 1. **VT(Video Token)**
    - ERC1155 标准
@@ -101,9 +96,16 @@ TSCS: A Blockchain-Based Tokenized Subtitle Crowdsourcing System (Old Name)
    - Murmes (TSCS) 内的主要功用代币是 Zimu，它总量有限且用途广泛（发起策略为一次性结算的申请、兑换 NFT、用户加入时的质押、参与治理和分红），应当是具有升值空间的
    - ID 为 0 的 VT 的引入是为了弥补申请者的交易 gas 费用，它的价值由获取唯一性和用途（兑换 NFT 和 SBT）来保证，而无限增发和用途相对单一则限制了它过高的价值，这是我们所希望的，因为需要一种低成本的回馈用户的方式（兑换粉丝向 NFT 和 具有身份象征意义的 SBT 应该是廉价的行为）
 
+## DAO
+
+1. 仲裁机制：当有举报/仲裁发起，DAO 成员首先在链下进行投票，由平台指定的用户构成安全多签，根据链下的投票信息确定审核结果，然后将必要的信息上传到链上执行。主要工具为 arbitration.sol 合约。
+2. 参数修改：整个系统中存在的一些参数可能需要根据不同的情况动态调整，例如审核期限（代币锁定期），共识过程将全部在链上进行。主要工具为 Governor.sol 合约（基于 OpenZeppelin）。
+
 ## Deployed Contracts
 
 ### Goerli - 0x5
+
+#### v0.2.0
 
 | Name                               | Contract Address                           |
 | ---------------------------------- | ------------------------------------------ |

@@ -18,14 +18,14 @@ contract SubtitleManager {
      * @param state 字幕当前状态, 0 为默认状态, 1 为被确认, 2 为被认定为恶意字幕
      * @param stateChangeTime 字幕状态改变时的时间戳, 用于利益相关者稳定币锁定期判断, 在申请未确认前, 指的是字幕上传时间
      * @param supporters 支持该字幕被采纳的观众（审核员）地址集合
-     * @param dissenter 举报该字幕为恶意字幕的观众（审核员）地址集合
+     * @param dissenters 举报该字幕为恶意字幕的观众（审核员）地址集合
      */
     struct Subtitle {
         uint8 state;
         uint256 taskId;
         uint256 stateChangeTime;
         address[] supporters;
-        address[] dissenter;
+        address[] dissenters;
     }
 
     /**
@@ -108,7 +108,7 @@ contract SubtitleManager {
             subtitleNFT[subtitleId].supporters.push(evaluator);
             adopted[evaluator][subtitleNFT[subtitleId].taskId] = subtitleId;
         } else {
-            subtitleNFT[subtitleId].dissenter.push(evaluator);
+            subtitleNFT[subtitleId].dissenters.push(evaluator);
         }
         evaluated[evaluator][subtitleId] = true;
         emit SubitlteGetEvaluation(subtitleId, evaluator, attitude);
@@ -135,7 +135,7 @@ contract SubtitleManager {
             subtitleNFT[subtitleId].taskId,
             subtitleNFT[subtitleId].stateChangeTime,
             subtitleNFT[subtitleId].supporters,
-            subtitleNFT[subtitleId].dissenter
+            subtitleNFT[subtitleId].dissenters
         );
     }
 }

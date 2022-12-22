@@ -62,7 +62,7 @@ contract VideoToken is ERC1155, IVT {
 
     /**
      * @notice 通过 URI 区分由不同平台 Platform 背书的稳定币, 同时符合 ERC1155 标准
-     * @param tokenId Token ID, 与平台 Platform 在 TSCS 内的 ID 对应
+     * @param tokenId Token ID, 与平台 Platform 在 Murmes 内的 ID 对应
      * @return 返回 ERC1155 不同 Token 的 URI
      */
     function tokenUri(uint256 tokenId)
@@ -79,10 +79,10 @@ contract VideoToken is ERC1155, IVT {
     }
 
     /**
-     * @notice 当新平台 Platform 加入 TSCS 时, 同时生成由其背书的稳定币（用来结算）
+     * @notice 当新平台 Platform 加入 Murmes 时, 同时生成由其背书的稳定币（用来结算）
      * @param symbol 平台 Platform 加入时设置的 symbol
      * @param endorser 为发行的稳定币背书, 实际上就是平台 Platform 区块链地址
-     * @param platformId 平台 Platform 在 TSCS 内的 ID
+     * @param platformId 平台 Platform 在 Murmes 内的 ID
      */
     function createPlatformToken(
         string memory symbol,
@@ -97,7 +97,7 @@ contract VideoToken is ERC1155, IVT {
 
     /**
      * @notice 为用户在相应平台 Platform 铸造稳定币
-     * @param platformId 平台 Platform 在 TSCS 内的 ID
+     * @param platformId 平台 Platform 在 Murmes 内的 ID
      * @param to 稳定币接收方
      * @param amount 接收由相应平台发行并背书的稳定币数量
      */
@@ -112,7 +112,7 @@ contract VideoToken is ERC1155, IVT {
 
     /**
      * @notice 销毁用户在平台 Platform 的稳定币
-     * @param platformId 平台 Platform 在 TSCS 内的 ID
+     * @param platformId 平台 Platform 在 Murmes 内的 ID
      * @param from 支出稳定币的一方
      * @param amount 支出稳定币数目
      */
@@ -137,20 +137,4 @@ contract VideoToken is ERC1155, IVT {
         opeator = newOpeator;
         emit SystemChangeOpeator(newOpeator);
     }
-    /**
-     * @notice 由操作员调用 safeTransferFrom 功能逻辑, 实现代币在不同地址间的转移
-     * @param platformId 台 Platform 在 TSCS 内的 ID
-     * @param from 稳定币发出方
-     * @param to 稳定接收方
-     * @param amount 稳定币数量
-     */
-    // function divide(
-    //     uint256 platformId,
-    //     address from,
-    //     address to,
-    //     uint256 amount
-    // ) external override auth {
-    //     require(platform[platformId] == address(0), "Already Joined");
-    //     _safeTransferFrom(from, to, platformId, amount, "");
-    // }
 }

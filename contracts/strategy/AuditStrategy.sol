@@ -1,7 +1,7 @@
 /**
  * @Author: LaplaceMan 505876833@qq.com
  * @Date: 2022-09-08 14:44:30
- * @Description: TSCS 内默认的字幕审核策略, 设计逻辑可参阅论文
+ * @Description: Murmes 内默认的字幕审核策略, 设计逻辑可参阅论文
  * @Copyright (c) 2022 by LaplaceMan 505876833@qq.com, All Rights Reserved.
  */
 // SPDX-License-Identifier: LGPL-3.0-only
@@ -100,7 +100,7 @@ contract AuditStrategy is IAuditStrategy {
      * @param against 单个字幕获得的反对（举报）数
      * @param allSupport 相应申请下所有字幕获得支持数的和
      * @param uploadTime 字幕上传时间
-     * @param lockUpTime TSCS 内设置的锁定期/审核期
+     * @param lockUpTime Murmes 内设置的锁定期/审核期
      * @return 返回 0 表示状态不变化, 返回 1 表示字幕被采纳（申请被采纳）, 返回 2 表示字幕被认定为恶意字幕
      */
     function auditResult(

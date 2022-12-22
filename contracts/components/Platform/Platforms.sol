@@ -84,7 +84,7 @@ contract Platforms is VideoManager {
     }
 
     /**
-     * @notice 由 TSCS 管理员操作, 添加新 Platform 生态
+     * @notice 由 Murmes 管理员操作, 添加新 Platform 生态
      * @param platfrom Platform区块链地址,
      * @param name Platform名称
      * @param symbol Platform符号
@@ -166,7 +166,7 @@ contract Platforms is VideoManager {
      * @param id 视频在 Platform 内部的 ID
      * @param symbol 视频的 symbol
      * @param creator 视频创作者区块链地址
-     * @return 视频在 TSCS 内的 ID
+     * @return 视频在 Murmes 内的 ID
      */
     function createVideo(
         uint256 id,

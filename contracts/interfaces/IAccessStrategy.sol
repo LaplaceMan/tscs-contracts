@@ -12,8 +12,6 @@ interface IAccessStrategy {
         view
         returns (bool);
 
-    function baseRatio() external view returns (uint16);
-
     function depositThreshold() external view returns (uint16);
 
     function blacklistThreshold() external view returns (uint8);
@@ -31,4 +29,9 @@ interface IAccessStrategy {
     function reward(uint256 reputation) external pure returns (uint256);
 
     function punishment(uint256 reputation) external view returns (uint256);
+
+    function lastReputation(uint256 reputation, uint8 flag)
+        external
+        pure
+        returns (uint256);
 }

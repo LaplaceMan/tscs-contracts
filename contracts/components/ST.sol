@@ -1,7 +1,7 @@
 /**
  * @Author: LaplaceMan 505876833@qq.com
  * @Date: 2022-11-21 14:33:27
- * @Description: TSCS 内的 字幕代币合约，每个上传的字幕都会生成相应的 ERC-721 代币
+ * @Description: Murmes 内的 字幕代币合约，每个上传的字幕都会生成相应的 ERC-721 代币
  * @Copyright (c) 2022 by LaplaceMan email: 505876833@qq.com, All Rights Reserved.
  */
 // SPDX-License-Identifier: LGPL-3.0-only
@@ -11,7 +11,7 @@ import "../common/token/ERC721/ERC721.sol";
 
 contract SubtitleToken is ERC721, IST {
     /**
-     * @notice TSCS 主合约地址
+     * @notice Murmes 主合约地址
      */
     address public Murmes;
     /**

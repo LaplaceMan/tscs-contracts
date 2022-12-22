@@ -9,17 +9,17 @@ pragma solidity ^0.8.0;
 
 contract VideoManager {
     /**
-     * @notice TSCS 内由 Platform 为视频创作者开启服务的视频总数
+     * @notice Murmes 内由 Platform 为视频创作者开启服务的视频总数
      */
     uint256 public totalVideos;
 
     /**
-     * @notice 每个视频都有相应的 Video 结构, 记录其信息, 每个视频有两个 ID, 一个是在 TSCS 内创建时的顺位 ID, 它在 TSCS 内用来唯一标识视频; 另一个是视频在 Platform 中的 ID, 主要与 symbol 结合来区分不同的视频
+     * @notice 每个视频都有相应的 Video 结构, 记录其信息, 每个视频有两个 ID, 一个是在 Murmes 内创建时的顺位 ID, 它在 Murmes 内用来唯一标识视频; 另一个是视频在 Platform 中的 ID, 主要与 symbol 结合来区分不同的视频
      */
     mapping(uint256 => Video) videos;
 
     /**
-     * @notice TSCS 内顺位 ID 和 相应 Platform 内 ID 的映射, Platform 区块链地址 => 视频在 Platform 内的 ID => 视频在 TSCS 内的 ID
+     * @notice Murmes 内顺位 ID 和 相应 Platform 内 ID 的映射, Platform 区块链地址 => 视频在 Platform 内的 ID => 视频在 Murmes 内的 ID
      */
     mapping(address => mapping(uint256 => uint256)) idReal2System;
 
@@ -58,7 +58,7 @@ contract VideoManager {
      * @param id 视频在 Platform 内的 ID
      * @param symbol 标识视频的符号
      * @param creator 视频创作者地址
-     * @return 视频在 TSCS 内的顺位 ID
+     * @return 视频在 Murmes 内的顺位 ID
      */
     function _createVideo(
         address platform,
@@ -79,7 +79,7 @@ contract VideoManager {
 
     /**
      * @notice 更新视频播放量, 此处为新增量, 仅能由视频所属的 Platform 调用
-     * @param id 视频在 TSCS 内的 ID
+     * @param id 视频在 Murmes 内的 ID
      * @param vs 新增播放量
      */
     function updateViewCounts(uint256[] memory id, uint256[] memory vs)

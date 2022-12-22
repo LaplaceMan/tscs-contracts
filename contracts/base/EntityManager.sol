@@ -1,16 +1,17 @@
 /**
  * @Author: LaplaceMan 505876833@qq.com
  * @Date: 2022-09-07 18:33:27
- * @Description: 管理 TSCS 内代币合约地址、语言和用户信息
+ * @Description: 管理 Murmes 内代币合约地址、语言和用户信息
  * @Copyright (c) 2022 by LaplaceMan email: 505876833@qq.com, All Rights Reserved.
  */
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.0;
 
-import "../interfaces/IVault.sol";
 import "../interfaces/IZimu.sol";
+import "../interfaces/IVault.sol";
+import "../common/utils/Ownable.sol";
 
-contract EntityManager {
+contract EntityManager is Ownable {
     /**
      * @notice TSCS代币 ERC20合约地址
      */
@@ -32,15 +33,15 @@ contract EntityManager {
      */
     uint16 public fee;
     /**
-     * @notice TSCS 内用户初始化时的信誉度分数, 精度为 1 即 100.0
+     * @notice Murmes 内用户初始化时的信誉度分数, 精度为 1 即 100.0
      */
     uint16 constant baseReputation = 1000;
     /**
      * @notice 计算费用时的除数
      */
-    uint256 constant BASE_FEE_RATE = 10000;
+    uint16 constant BASE_FEE_RATE = 10000;
     /**
-     * @notice 用户加入生态时在 TSCS 内质押的 Zimu 总数
+     * @notice 用户加入生态时在 Murmes 内质押的 Zimu 总数
      */
     uint256 public deposit;
     /**
@@ -63,6 +64,7 @@ contract EntityManager {
      */
     struct User {
         uint256 reputation;
+        uint256 operate;
         int256 deposit;
         mapping(address => mapping(uint256 => uint256)) lock;
     }
@@ -137,6 +139,7 @@ contract EntityManager {
             users[usr].deposit = amount;
             emit UserJoin(usr, users[usr].reputation, users[usr].deposit);
         }
+        users[usr].operate = block.timestamp;
     }
 
     /**
@@ -167,12 +170,12 @@ contract EntityManager {
      * @param amount 有正负（新增或扣除）的稳定币数量（为锁定状态）
      * @param usr 用户区块链地址
      */
-    function _updateLockReward(
+    function updateLockReward(
         address platform,
         uint256 day,
         int256 amount,
         address usr
-    ) internal {
+    ) public auth {
         require(users[usr].reputation != 0, "ER0");
         uint256 current = users[usr].lock[platform][day];
         int256 newLock = int256(current) + amount;
@@ -186,20 +189,28 @@ contract EntityManager {
      * @param reputationSpread 有正负（增加或扣除）的信誉度分数
      * @param tokenSpread 有正负的（增加或扣除）Zimu 数量
      */
-    function _updateUser(
+    function updateUser(
         address usr,
         int256 reputationSpread,
         int256 tokenSpread
-    ) internal {
+    ) public auth {
         int256 newReputation = int256(users[usr].reputation) + reputationSpread;
         users[usr].reputation = (
             newReputation > 0 ? uint256(newReputation) : 0
         );
         if (tokenSpread < 0) {
             //小于0意味着惩罚操作, 扣除质押Zimu数
+            int256 despoit_ = tokenSpread;
+            uint256 penalty_ = uint256(tokenSpread * -1);
+            if (users[usr].deposit > 0) {
+                if (users[usr].deposit + tokenSpread < 0) {
+                    penalty_ = uint256(users[usr].deposit);
+                    despoit_ = users[usr].deposit * -1;
+                }
+                IVault(vault).changePenalty(penalty_);
+                _changeDespoit(despoit_);
+            }
             users[usr].deposit = users[usr].deposit + tokenSpread;
-            IVault(vault).changePenalty(uint256(tokenSpread * -1));
-            _changeDespoit(tokenSpread);
         } else {
             //此处待定, 临时设计为奖励操作时, 给与特定数目的平台币Zimu Token
             IZimu(zimuToken).mintReward(usr, uint256(tokenSpread));
@@ -230,7 +241,7 @@ contract EntityManager {
         address to,
         uint256 amount
     ) internal {
-        _updateLockReward(platform, _day(), int256(amount), to);
+        updateLockReward(platform, _day(), int256(amount), to);
     }
 
     /**
@@ -242,12 +253,12 @@ contract EntityManager {
         uint256 amount
     ) internal {
         for (uint256 i = 0; i < to.length; i++) {
-            _updateLockReward(platform, _day(), int256(amount), to[i]);
+            updateLockReward(platform, _day(), int256(amount), to[i]);
         }
     }
 
     /**
-     * @notice 更改 TSCS 内质押的 Zimu 数量
+     * @notice 更改 Murmes 内质押的 Zimu 数量
      * @param amount 变化数量
      */
     function _changeDespoit(int256 amount) internal {
@@ -283,23 +294,5 @@ contract EntityManager {
         uint256 day
     ) external view returns (uint256) {
         return users[usr].lock[platform][day];
-    }
-
-    /**
-     * @notice 提取质押的 Zimu 代币
-     * @param amount 欲提取 Zimu 代币数
-     */
-    function withdrawDeposit(uint256 amount) external {
-        require(users[msg.sender].deposit > 0, "ER1");
-        if (amount > uint256(users[msg.sender].deposit)) {
-            amount = uint256(users[msg.sender].deposit);
-        }
-        users[msg.sender].deposit -= int256(amount);
-        IVault(vault).withdrawDeposit(zimuToken, msg.sender, amount);
-        emit UserWithdrawDespoit(
-            msg.sender,
-            amount,
-            uint256(users[msg.sender].deposit)
-        );
     }
 }
