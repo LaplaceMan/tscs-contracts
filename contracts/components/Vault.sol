@@ -22,11 +22,6 @@ contract Vault is IVault {
      */
     uint256 public penaltyUpperLimit;
     /**
-     * @notice 操作员地址, 有权修改该策略中的关键参数
-     */
-    address public opeator;
-
-    /**
      * @notice Murmes 合约地址
      */
     address public Murmes;
@@ -44,10 +39,9 @@ contract Vault is IVault {
         uint256[] amounts
     );
 
-    event WithdrawPlatformFee(address to, uint256 amount);
+    // event WithdrawPlatformFee(address to, uint256 amount);
 
-    constructor(address dao, address ms) {
-        opeator = dao;
+    constructor(address ms) {
         Murmes = ms;
         penaltyUpperLimit = (10**5) * (10**18);
     }
@@ -100,27 +94,30 @@ contract Vault is IVault {
      * @param to VT 代币接收地址
      * @param amounts 提取数量
      */
-    function transferVideoPlatformFee(
-        address token,
-        uint256[] memory platformIds,
-        address to,
-        uint256[] memory amounts
-    ) external {
-        require(IMurmes(Murmes).isOperator(msg.sender), "ER5");
-        for (uint256 i; i < platformIds.length; i++) {
-            require(platformIds[i] != 0, "ER1");
-            require(feeIncome[platformIds[i]] >= amounts[i], "ER1");
-            feeIncome[platformIds[i]] -= amounts[i];
-        }
-        IVT(token).safeBatchTransferFrom(
-            address(this),
-            to,
-            platformIds,
-            amounts,
-            ""
-        );
-        emit WithdrawVideoPlatformFee(to, platformIds, amounts);
-    }
+    // function transferVideoPlatformFee(
+    //     address token,
+    //     uint256[] memory platformIds,
+    //     address to,
+    //     uint256[] memory amounts
+    // ) external {
+    //     require(IMurmes(Murmes).isOperator(msg.sender), "ER5");
+    //     for (uint256 i; i < platformIds.length; i++) {
+    //         require(platformIds[i] != 0, "ER1");
+    //         uint256 balance = IVT(token).balanceOf(
+    //             address(this),
+    //             platformIds[i]
+    //         );
+    //         require(balance - feeIncome[platformIds[i]] >= amounts[i], "ER1");
+    //     }
+    //     IVT(token).safeBatchTransferFrom(
+    //         address(this),
+    //         to,
+    //         platformIds,
+    //         amounts,
+    //         ""
+    //     );
+    //     emit WithdrawVideoPlatformFee(to, platformIds, amounts);
+    // }
 
     /**
      * @notice 提取平台内产生的交易费用，此功能专用于提取一次性结算时的 Zimu 代币手续费
@@ -128,17 +125,16 @@ contract Vault is IVault {
      * @param to 代币接收地址
      * @param amount 提取代币数量
      */
-    function transferPlatformFee(
-        address token,
-        address to,
-        uint256 amount
-    ) external {
-        require(IMurmes(Murmes).isOperator(msg.sender), "ER5");
-        require(feeIncome[0] >= amount, "ER1");
-        feeIncome[0] -= amount;
-        IZimu(token).transferFrom(address(this), to, amount);
-        emit WithdrawPlatformFee(to, amount);
-    }
+    // function transferPlatformFee(
+    //     address token,
+    //     address to,
+    //     uint256 amount
+    // ) external {
+    //     require(IMurmes(Murmes).isOperator(msg.sender), "ER5");
+    //     require(feeIncome[0] >= amount, "ER1");
+    //     IZimu(token).transferFrom(address(this), to, amount);
+    //     emit WithdrawPlatformFee(to, amount);
+    // }
 
     /**
      * @notice 获得指定平台所拥有的资产数（收费情况）

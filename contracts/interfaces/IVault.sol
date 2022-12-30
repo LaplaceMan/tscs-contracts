@@ -4,8 +4,6 @@ pragma solidity ^0.8.0;
 interface IVault {
     function penalty() external view returns (uint256);
 
-    function opeator() external view returns (address);
-
     function Murmes() external view returns (address);
 
     function changePenalty(uint256 amount) external;
