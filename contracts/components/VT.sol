@@ -7,18 +7,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../common/token/ERC1155/ERC1155.sol";
 import "../interfaces/IVT.sol";
+import "../interfaces/IMurmes.sol";
+import "../common/token/ERC1155/ERC1155.sol";
 
 contract VideoToken is ERC1155, IVT {
     /**
      * @notice Murmes 合约地址
      */
     address public Murmes;
-    /**
-     * @notice 拥有特殊权限的地址，一般为 DAO 合约
-     */
-    address public opeator;
     /**
      * @notice ERC1155 中不同 Token ID 的 Token URI 的后缀
      */
@@ -29,20 +26,6 @@ contract VideoToken is ERC1155, IVT {
     mapping(uint256 => address) platform;
 
     event SystemChangeOpeator(address newOpeator);
-    /**
-     * @notice 仅能由 opeator 调用
-     */
-    modifier onlyOwner() {
-        require(msg.sender == opeator, "ER5");
-        _;
-    }
-    /**
-     * @notice 仅能由 Murmes 调用
-     */
-    modifier auth() {
-        require(msg.sender == Murmes, "ER5");
-        _;
-    }
 
     event PlatformToken(address platform, uint256 id);
 
@@ -88,8 +71,9 @@ contract VideoToken is ERC1155, IVT {
         string memory symbol,
         address endorser,
         uint256 platformId
-    ) external override onlyOwner {
+    ) external override {
         require(platform[platformId] == address(0), "ER0");
+        require(IMurmes(Murmes).isOperator(msg.sender), "ER5");
         platform[platformId] = endorser;
         suffix[platformId] = symbol;
         emit PlatformToken(endorser, platformId);
@@ -105,7 +89,8 @@ contract VideoToken is ERC1155, IVT {
         uint256 platformId,
         address to,
         uint256 amount
-    ) external override auth {
+    ) external override {
+        require(msg.sender == Murmes, "ER5");
         require(platform[platformId] != address(0), "ER2");
         _mint(to, platformId, amount, "");
     }
@@ -126,15 +111,5 @@ contract VideoToken is ERC1155, IVT {
             require(msg.sender == from, "ER5");
         }
         _burn(from, platformId, amount);
-    }
-
-    /**
-     * @notice 更改拥有特殊权限的操作员地址
-     * @param newOpeator 更换 DAO 合约地址
-     */
-    function changeOpeator(address newOpeator) external {
-        require(msg.sender == opeator || msg.sender == Murmes, "ER5");
-        opeator = newOpeator;
-        emit SystemChangeOpeator(newOpeator);
     }
 }

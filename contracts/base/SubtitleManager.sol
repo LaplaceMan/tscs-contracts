@@ -13,6 +13,11 @@ contract SubtitleManager {
      * @notice ST 合约地址
      */
     address public subtitleToken;
+
+    /**
+     * @notice ST 版本管理合约
+     */
+    address public versionManagement;
     /**
      * @notice 每个字幕 ST 在生成时都会初始化相应的 Subtitle 结构
      * @param state 字幕当前状态, 0 为默认状态, 1 为被确认, 2 为被认定为恶意字幕
@@ -103,7 +108,7 @@ contract SubtitleManager {
         if (attitude == 0) {
             require(
                 adopted[evaluator][subtitleNFT[subtitleId].taskId] == 0,
-                "ER4"
+                "ER4-2"
             );
             subtitleNFT[subtitleId].supporters.push(evaluator);
             adopted[evaluator][subtitleNFT[subtitleId].taskId] = subtitleId;

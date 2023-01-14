@@ -17,10 +17,6 @@ contract Platforms is VideoManager {
      */
     address public Murmes;
     /**
-     * @notice 操作员地址, 有权修改该策略中的关键参数
-     */
-    address public opeator;
-    /**
      * @notice 已加入的 Platform 总数
      */
     uint256 public totalPlatforms;
@@ -28,8 +24,6 @@ contract Platforms is VideoManager {
      * @notice Platform 地址与相应结构体的映射
      */
     mapping(address => Platform) platforms;
-
-    event SystemChangeOpeator(address newOpeator);
 
     /**
      * @notice 记录每个 Platform 的基本信息
@@ -56,31 +50,15 @@ contract Platforms is VideoManager {
     );
     event PlatformSetRate(address platform, uint16 rate1, uint16 rate2);
 
-    /**
-     * @notice 仅能由 opeator 调用
-     */
-    modifier onlyOwner() {
-        require(msg.sender == opeator, "ER5");
-        _;
-    }
-    /**
-     * @notice 仅能由 Murmes 调用
-     */
-    modifier auth() {
-        require(msg.sender == Murmes, "ER5");
-        _;
-    }
-
-    constructor(address op, address murmes) {
-        Murmes = murmes;
-        opeator = op;
+    constructor(address ms) {
+        Murmes = ms;
         // 当结算类型为一次性结算时, 默认字幕支持者分成 1/100
-        platforms[murmes].rateAuditorDivide = 655;
-        platforms[murmes].name = "Default";
-        platforms[murmes].symbol = "Default";
+        platforms[ms].rateAuditorDivide = 655;
+        platforms[ms].name = "Default";
+        platforms[ms].symbol = "Default";
         // Default 索引为 0，但包括在总数内
         totalPlatforms += 1;
-        emit PlatformJoin(murmes, 0, "Default", "Default", 0, 655);
+        emit PlatformJoin(ms, 0, "Default", "Default", 0, 655);
     }
 
     /**
@@ -97,7 +75,8 @@ contract Platforms is VideoManager {
         string memory symbol,
         uint16 rate1,
         uint16 rate2
-    ) external onlyOwner {
+    ) external {
+        require(IMurmes(Murmes).owner() == msg.sender, "ER5");
         require(platforms[platfrom].rateCountsToProfit == 0, "ER0");
         require(rate1 > 0 && rate2 > 0, "ER1");
         platforms[platfrom] = (
@@ -156,7 +135,8 @@ contract Platforms is VideoManager {
      * @notice 设置一次性结算时 Murmes 中审核员的分成比例
      * @param auditorDivide 新的分成比例
      */
-    function setMurmesAuditorDivideRate(uint16 auditorDivide) external auth {
+    function setMurmesAuditorDivideRate(uint16 auditorDivide) external {
+        require(IMurmes(Murmes).owner() == msg.sender, "ER5");
         platforms[Murmes].rateAuditorDivide = auditorDivide;
         emit PlatformSetRate(Murmes, 0, auditorDivide);
     }
@@ -185,8 +165,8 @@ contract Platforms is VideoManager {
      */
     function updateVideoTasks(uint256 videoId, uint256[] memory tasks)
         external
-        auth
     {
+        require(msg.sender == Murmes, "ER5");
         videos[videoId].tasks = tasks;
     }
 
@@ -195,21 +175,10 @@ contract Platforms is VideoManager {
      * @param videoId 视频 ID
      * @param differ 未结算播放量变化
      */
-    function updateVideoUnsettled(uint256 videoId, int256 differ)
-        external
-        auth
-    {
+    function updateVideoUnsettled(uint256 videoId, int256 differ) external {
+        require(msg.sender == Murmes, "ER5");
         int256 unsettled = int256(videos[videoId].unsettled) + differ;
         videos[videoId].unsettled = unsettled > 0 ? uint256(unsettled) : 0;
-    }
-
-    /**
-     * @notice 更改操作员地址
-     * @param newOpeator 新的操作员地址
-     */
-    function changeOpeator(address newOpeator) external onlyOwner {
-        opeator = newOpeator;
-        emit SystemChangeOpeator(newOpeator);
     }
 
     /**

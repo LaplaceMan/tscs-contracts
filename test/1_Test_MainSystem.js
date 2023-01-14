@@ -1,12 +1,13 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { BigNumber } = require("ethers");
-describe("MainSystem_Test", function () {
-    let tscs, zimu, vt, st, platform, access, audit, detection, divide1, onetime0, onetime2;
-    let tscsAsDeployer, platformAsDeployer;
-    let owner, user1, user2, user3;
-    const baseEthAmount = ethers.utils.parseUnits("60", "ether");
-    const unitEthAmount = ethers.utils.parseUnits("20", "ether");
+let tscs, zimu, vt, st, platform, access, audit, detection, divide1, onetime0, onetime2;
+let tscsAsDeployer, platformAsDeployer;
+let owner, user1, user2, user3;
+const baseEthAmount = ethers.utils.parseUnits("60", "ether");
+const unitEthAmount = ethers.utils.parseUnits("20", "ether");
+
+describe("MainSystem_Base_Test", function () {
     it("Deploy contracts", async function () {
         // 获得区块链网络提供的测试账号
         const [deployer, addr1, addr2, addr3] = await ethers.getSigners();
@@ -21,7 +22,7 @@ describe("MainSystem_Test", function () {
         const ZIMU = await ethers.getContractFactory("ZimuToken");
         const VT = await ethers.getContractFactory("VideoToken");
         const ST = await ethers.getContractFactory("SubtitleToken");
-        const VAULT = await ethers.getContractFactory("Vault");
+        const VAULTANDDEPOSIT = await ethers.getContractFactory("DepositMining");
         const PLATFORM = await ethers.getContractFactory("Platforms");
         const ACCESS = await ethers.getContractFactory("AccessStrategy");
         const AUDIT = await ethers.getContractFactory("AuditStrategy");
@@ -30,7 +31,7 @@ describe("MainSystem_Test", function () {
         const ONETIME0 = await ethers.getContractFactory("SettlementOneTime0");
         const ONETIME2 = await ethers.getContractFactory("SettlementOneTime2");
         // 部署合约
-        tscs = await TSCS.deploy(deployerAddress);
+        tscs = await TSCS.deploy(deployerAddress, deployerAddress);
         const tscsAddress = tscs.address;
         tscsAsDeployer = tscs.connect(deployer);
         zimu = await ZIMU.deploy(
@@ -43,16 +44,16 @@ describe("MainSystem_Test", function () {
         const vtAddress = vt.address;
         st = await ST.deploy(tscsAddress);
         const stAddress = st.address;
-        const vault = await VAULT.deploy(deployerAddress, tscsAddress);
+        const vault = await VAULTANDDEPOSIT.deploy(tscsAddress, deployerAddress);
         const vaultAddress = vault.address;
-        platform = await PLATFORM.deploy(deployerAddress, tscsAddress);
+        platform = await PLATFORM.deploy(tscsAddress);
         const platformAddress = platform.address;
         platformAsDeployer = platform.connect(deployer);
-        access = await ACCESS.deploy(deployerAddress);
+        access = await ACCESS.deploy(tscsAddress);
         const accessAddress = access.address;
-        audit = await AUDIT.deploy(deployerAddress, 1);
+        audit = await AUDIT.deploy(tscsAddress, 1);
         const auditAddress = audit.address;
-        detection = await DETECTION.deploy(deployerAddress, 5);
+        detection = await DETECTION.deploy(tscsAddress, 5);
         const detectionAddress = detection.address;
         divide1 = await DIVIDE1.deploy(tscsAddress);
         const divide1Address = divide1.address;
@@ -70,7 +71,7 @@ describe("MainSystem_Test", function () {
         await tx.wait();
         tx = await tscsAsDeployer.setSettlementStrategy(0, onetime0Address, "OT0");
         await tx.wait();
-        tx = await tscsAsDeployer.setSettlementStrategy(1, divide1Address, "DI1");
+        tx = await tscsAsDeployer.setSettlementStrategy(1, divide1Address, "D1");
         await tx.wait();
         tx = await tscsAsDeployer.setSettlementStrategy(2, onetime2Address, "OTM2");
         await tx.wait();
@@ -113,6 +114,26 @@ describe("MainSystem_Test", function () {
             .getUserBaseInfo(user1.address);
         console.log("User joined info:", user1JoinInfo);
     });
+
+    it("Despoit for audit", async function () {
+        let tx = await zimu.connect(owner).transfer(user2.address, baseEthAmount);
+        await tx.wait();
+        tx = await zimu.connect(owner).transfer(user3.address, baseEthAmount);
+        await tx.wait();
+        tx = await zimu
+            .connect(user2)
+            .approve(tscs.address, baseEthAmount);
+        await tx.wait();
+        tx = await zimu
+            .connect(user3)
+            .approve(tscs.address, baseEthAmount);
+        await tx.wait();
+        tx = await tscs.connect(user2).userJoin(user2.address, baseEthAmount);
+        await tx.wait();
+        tx = await tscs.connect(user3).userJoin(user3.address, baseEthAmount);
+        await tx.wait();
+    });
+
     // 测试时将 AuditStrategy 中的审核次数从 10 => 2, 且 AuditTime = 0
     it("Test add language", async function () {
         let tx = await tscsAsDeployer.registerLanguage(['cn', 'us', 'jp']);
@@ -136,7 +157,14 @@ describe("MainSystem_Test", function () {
     });
 
     it("Test upload subtitle", async function () {
-        let tx = await tscs.connect(user2).uploadSubtitle(1, "test", 1, "0x1a2b");
+        let tx = await tscs.connect(user3).uploadSubtitle(1, "testtest", 1, "1000");
+        await tx.wait();
+        let receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+        expect(receipt.status).to.equal(1);
+    });
+
+    it("Test upload subtitles", async function () {
+        let tx = await tscs.connect(user2).uploadSubtitle(1, "testtesttest", 1, "0x1a2b");
         await tx.wait();
         let receipt = await ethers.provider.getTransactionReceipt(tx.hash);
         expect(receipt.status).to.equal(1);
@@ -148,7 +176,9 @@ describe("MainSystem_Test", function () {
         let receipt = await ethers.provider.getTransactionReceipt(tx.hash);
         expect(receipt.status).to.equal(1);
     });
+});
 
+describe("MainSystem_Other_Test", function () {
     it("Test add platform", async function () {
         await expect(
             platformAsDeployer.platfromJoin(owner.address, "test", "test", 655, 655)

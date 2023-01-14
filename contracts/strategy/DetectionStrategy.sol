@@ -9,33 +9,37 @@ pragma solidity ^0.8.0;
 
 import "../interfaces/IDetectionStrategy.sol";
 
+interface MurmesInterface {
+    function owner() external view returns (address);
+}
+
 contract DetectionStrategy is IDetectionStrategy {
     /**
      * @notice 汉明距离阈值, 大于该值表示不相似, 反之表示相似度过高
      */
     uint8 public distanceThreshold;
     /**
-     * @notice 拥有修改 distanceThreshold 的权限, 一般为 DAO 合约地址
+     * @notice 协议主合约
      */
-    address public opeator;
+    address public Murmes;
 
     /**
      * @notice 仅能由 opeator 调用
      */
     modifier onlyOwner() {
-        require(msg.sender == opeator, "ER5");
+        require(MurmesInterface(Murmes).owner() == msg.sender, "ER5");
         _;
     }
-    event SystemSetDistanceThreshold(uint8 newDistanceThreshold);
-    event SystemChangeOpeator(address newOpeator);
 
-    constructor(address dao, uint8 threshold) {
-        opeator = dao;
+    event SystemSetDistanceThreshold(uint8 newDistanceThreshold);
+
+    constructor(address ms, uint8 threshold) {
+        Murmes = ms;
         distanceThreshold = threshold;
     }
 
     /**
-     * @notice 计算两个 Simhash 的汉明度距离
+     * @notice 计算两个 Simhash 的汉明度距离，https://github.com/BiDAlab/BlockchainBiometrics
      * @param a 字幕文本 1
      * @param b 字幕文本 2
      * @return 汉明度距离
@@ -107,14 +111,5 @@ contract DetectionStrategy is IDetectionStrategy {
     {
         distanceThreshold = newDistanceThreshold;
         emit SystemSetDistanceThreshold(newDistanceThreshold);
-    }
-
-    /**
-     * @notice 更改操作员地址
-     * @param newOpeator 新的操作员地址
-     */
-    function changeOpeator(address newOpeator) external onlyOwner {
-        opeator = newOpeator;
-        emit SystemChangeOpeator(newOpeator);
     }
 }

@@ -10,6 +10,8 @@ pragma solidity ^0.8.0;
 abstract contract Ownable {
     address private _owner;
 
+    address private _multiSig;
+
     mapping(address => bool) opeators;
 
     event OwnershipTransferred(
@@ -17,15 +19,15 @@ abstract contract Ownable {
         address indexed newOwner
     );
 
-    event OpeatorsStateChange(address[] indexed opeators, bool indexed state);
+    event MutliSigTransferred(address previousMutliSig, address newMutliSig);
 
     modifier onlyOwner() {
-        require(msg.sender == _owner, "ER5");
+        require(msg.sender == _owner, "Own-ER5");
         _;
     }
 
     modifier auth() {
-        require(opeators[msg.sender] == true, "ER5");
+        require(opeators[msg.sender] == true, "Own-ER5");
         _;
     }
 
@@ -33,28 +35,42 @@ abstract contract Ownable {
         return _owner;
     }
 
-    function transferOwnership(address newOwner) external virtual onlyOwner {
-        require(newOwner != address(0), "ER1");
-        _setOwner(newOwner);
-    }
-
-    function setOperators(address[] memory operators, bool state)
-        external
-        onlyOwner
-    {
-        for (uint256 i = 0; i < operators.length; i++) {
-            opeators[operators[i]] = state;
-        }
-        emit OpeatorsStateChange(operators, state);
+    function multiSig() public view returns (address) {
+        return _multiSig;
     }
 
     function isOperator(address operator) public view returns (bool) {
         return opeators[operator];
     }
 
+    function transferOwnership(address newOwner) external virtual onlyOwner {
+        require(newOwner != address(0), "Own-ER1");
+        _setOwner(newOwner);
+    }
+
+    function transferMutliSig(address newMutliSig) external {
+        require(msg.sender == _multiSig, "Own-ER5");
+        _multiSig = newMutliSig;
+    }
+
+    function _replaceOperator(address old, address replace) internal {
+        opeators[old] = false;
+        opeators[replace] = true;
+    }
+
+    function _setOperator(address newOperator) internal {
+        opeators[newOperator] = true;
+    }
+
     function _setOwner(address newOwner) internal {
         address oldOwner = _owner;
         _owner = newOwner;
         emit OwnershipTransferred(oldOwner, newOwner);
+    }
+
+    function _setMutliSig(address newMutliSig) internal {
+        address oldMutliSig = _multiSig;
+        _multiSig = newMutliSig;
+        emit MutliSigTransferred(oldMutliSig, newMutliSig);
     }
 }

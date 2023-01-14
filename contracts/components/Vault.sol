@@ -50,7 +50,7 @@ contract Vault is IVault {
      * @notice 仅能由主合约 Murmes 调用
      */
     modifier auth() {
-        require(msg.sender == Murmes, "ER5");
+        require(msg.sender == Murmes, "Vault-ER5");
         _;
     }
 
@@ -81,11 +81,54 @@ contract Vault is IVault {
         address to,
         uint256 amount
     ) external {
-        require(penalty >= amount, "ER1");
-        require(IMurmes(Murmes).isOperator(msg.sender), "ER5");
+        require(
+            IMurmes(Murmes).isOperator(msg.sender) ||
+                IMurmes(Murmes).owner() == msg.sender,
+            "Vault-ER5"
+        );
+        if (amount > penalty) amount = penalty;
         penalty -= amount;
         IZimu(token).transferFrom(address(this), to, amount);
         emit WithdrawPenalty(to, amount);
+    }
+
+    /**
+     * @notice 获得指定平台所拥有的资产数（收费情况）
+     * @param platformId 指定 platform 的 ID
+     * @return 指定平台所拥有的资产数
+     */
+    function getFeeIncome(uint256 platformId) public view returns (uint256) {
+        return feeIncome[platformId];
+    }
+
+    /**
+     * @notice 质押代币保存在金库合约中，此功能配合 Murmes 内的提取质押功能一起使用
+     * @param token Zimu 代币合约
+     * @param to 提币地址
+     * @param amount 提币数量
+     */
+    function withdrawDeposit(
+        address token,
+        address to,
+        uint256 amount
+    ) external auth {
+        IZimu(token).transferFrom(address(this), to, amount);
+    }
+
+    /**
+     * @notice 当罚金数量超过上限时，多余的转移给 Zimu 代币合约，用于社区激励
+     * @param token Zimu 代币合约
+     */
+    function donation(address token) external {
+        require(
+            IMurmes(Murmes).multiSig() == msg.sender ||
+                IMurmes(Murmes).owner() == msg.sender,
+            "Vault-ER5"
+        );
+        require(penalty > penaltyUpperLimit, "Vault-ER5-2");
+        uint256 overflow = penalty - penaltyUpperLimit;
+        penalty = penaltyUpperLimit;
+        IZimu(token).transferFrom(address(this), token, overflow);
     }
 
     /**
@@ -135,39 +178,4 @@ contract Vault is IVault {
     //     IZimu(token).transferFrom(address(this), to, amount);
     //     emit WithdrawPlatformFee(to, amount);
     // }
-
-    /**
-     * @notice 获得指定平台所拥有的资产数（收费情况）
-     * @param platformId 指定 platform 的 ID
-     * @return 指定平台所拥有的资产数
-     */
-    function getFeeIncome(uint256 platformId) public view returns (uint256) {
-        return feeIncome[platformId];
-    }
-
-    /**
-     * @notice 质押代币保存在金库合约中，此功能配合 Murmes 内的提取质押功能一起使用
-     * @param token Zimu 代币合约
-     * @param to 提币地址
-     * @param amount 提币数量
-     */
-    function withdrawDeposit(
-        address token,
-        address to,
-        uint256 amount
-    ) external auth {
-        IZimu(token).transferFrom(address(this), to, amount);
-    }
-
-    /**
-     * @notice 当罚金数量超过上限时，多余的转移给 Zimu 代币合约，用于社区激励
-     * @param token Zimu 代币合约
-     */
-    function donation(address token) external {
-        require(IMurmes(Murmes).isOperator(msg.sender), "ER5");
-        require(penalty > penaltyUpperLimit, "ER5");
-        uint256 overflow = penalty - penaltyUpperLimit;
-        penalty = penaltyUpperLimit;
-        IZimu(token).transferFrom(address(this), token, overflow);
-    }
 }

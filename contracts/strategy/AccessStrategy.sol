@@ -9,11 +9,15 @@ pragma solidity ^0.8.0;
 
 import "../interfaces/IAccessStrategy.sol";
 
+interface MurmesInterface {
+    function owner() external view returns (address);
+}
+
 contract AccessStrategy is IAccessStrategy {
     /**
      * @notice 奖惩时计算比率的除数
      */
-    uint16 constant BASE_RATIO = 10 * 1000;
+    uint32 constant BASE_RATIO = 100 * 1000;
     /**
      * @notice Murmes 内用户初始化时的信誉度分数, 精度为 1 即 100.0
      */
@@ -44,9 +48,9 @@ contract AccessStrategy is IAccessStrategy {
      */
     uint256 public punishmentToken;
     /**
-     * @notice 操作员地址, 有权修改该策略中的关键参数
+     * @notice 协议主合约地址
      */
-    address public opeator;
+    address public Murmes;
 
     event SystemSetBaseRatio(uint16 newBaseRatio);
     event SystemSetDepoitThreshold(uint8 newDepoitThreshold);
@@ -55,21 +59,20 @@ contract AccessStrategy is IAccessStrategy {
     event SystemSetRewardToken(uint256 newRewardToken);
     event SystemSetPunishmentToken(uint256 newPunishmentToken);
     event SystemSetMultiplier(uint8 newMultiplier);
-    event SystemChangeOpeator(address newOpeator);
 
     modifier onlyOwner() {
-        require(msg.sender == opeator, "ER5");
+        require(MurmesInterface(Murmes).owner() == msg.sender, "ER5");
         _;
     }
 
-    constructor(address dao) {
-        minDeposit = 32**18;
-        rewardToken = 1**14;
-        punishmentToken = 1**18;
+    constructor(address ms) {
+        minDeposit = 32 * 10**18;
+        rewardToken = 1 * 10**14;
+        punishmentToken = 1 * 10**17;
         multiplier = 150; //表示字幕制作者扣除的信誉度是支持者的 1.5 倍
         blacklistThreshold = 1;
-        depositThreshold = 500; //50.0
-        opeator = dao;
+        depositThreshold = 600; //60.0
+        Murmes = ms;
     }
 
     /**
@@ -121,8 +124,9 @@ contract AccessStrategy is IAccessStrategy {
             return (thisReward, thisReward * rewardToken);
         } else if (flag == 2) {
             // 当信誉度分数低于 depoitThreshold 时, 每次惩罚都会扣除 Zimu, 此处对用户的区分逻辑为: （优秀）正常、危险、恶意
-            if (reputation - punishment(reputation) < depositThreshold) {
-                return (punishment(reputation), punishmentToken);
+            if (reputation < depositThreshold) {
+                uint256 thisPunishment = punishment(reputation);
+                return (thisPunishment, thisPunishment * punishmentToken);
             }
             return (punishment(reputation), 0);
         } else {
@@ -147,6 +151,19 @@ contract AccessStrategy is IAccessStrategy {
                 deposit_ <= int256(deposit(reputation))) ||
             reputation <= blacklistThreshold
         ) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    /**
+     * @notice 在用户状态非危险的情况下，判断是否有审核/评价权限
+     * @param deposit_ 质押的Zimu代币数
+     * @return 是否有资格
+     */
+    function auditable(int256 deposit_) external view override returns (bool) {
+        if (deposit_ < int256(minDeposit)) {
             return false;
         } else {
             return true;
@@ -224,10 +241,5 @@ contract AccessStrategy is IAccessStrategy {
     function setMultiplier(uint8 newMultiplier) external onlyOwner {
         multiplier = newMultiplier;
         emit SystemSetMultiplier(newMultiplier);
-    }
-
-    function changeOpeator(address newOpeator) external onlyOwner {
-        opeator = newOpeator;
-        emit SystemChangeOpeator(newOpeator);
     }
 }

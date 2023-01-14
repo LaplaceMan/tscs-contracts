@@ -9,30 +9,25 @@ pragma solidity ^0.8.0;
 
 import "../interfaces/IAuditStrategy.sol";
 
+interface MurmesInterface {
+    function owner() external view returns (address);
+}
+
 contract AuditStrategy is IAuditStrategy {
+    /**
+     * @notice 协议主合约地址
+     */
+    address public Murmes;
     /**
      * @notice 判断状态改变所需审核数量的基本单元，测试时为 2，正常时为 10
      */
     uint256 public auditUnit;
-    /**
-     * @notice 操作员地址, 有权修改该策略中的关键参数
-     */
-    address public opeator;
 
     event SystemChangeAuditUnit(uint256 now);
-    event SystemChangeOpeator(address newOpeator);
 
-    constructor(address dao, uint256 unit) {
-        opeator = dao;
+    constructor(address ms, uint256 unit) {
+        Murmes = ms;
         auditUnit = unit;
-    }
-
-    /**
-     * @notice 仅能由 opeator 调用
-     */
-    modifier onlyOwner() {
-        require(msg.sender == opeator, "ER5");
-        _;
     }
 
     /**
@@ -53,7 +48,7 @@ contract AuditStrategy is IAuditStrategy {
         if (uploaded > 1) {
             if (
                 support > auditUnit &&
-                ((support - against) > (allSupport / uploaded))
+                ((support - against) >= (allSupport / uploaded))
             ) {
                 flag = 1;
             }
@@ -82,11 +77,11 @@ contract AuditStrategy is IAuditStrategy {
     {
         uint8 flag;
         if (support > 1) {
-            if (against >= auditUnit * support) {
+            if (against >= (auditUnit * support) / 2 + support) {
                 flag = 2;
             }
         } else {
-            if (against >= auditUnit) {
+            if (against >= auditUnit + 1) {
                 flag = 2;
             }
         }
@@ -126,19 +121,11 @@ contract AuditStrategy is IAuditStrategy {
     }
 
     /**
-     * @notice 更改操作员地址
-     * @param newOpeator 新的操作员地址
-     */
-    function changeOpeator(address newOpeator) external onlyOwner {
-        opeator = newOpeator;
-        emit SystemChangeOpeator(newOpeator);
-    }
-
-    /**
      * @notice 修改基本（最小）审核数量
      * @param newAuditUnit 新的基本（最小）审核数量
      */
-    function changeAuditUnit(uint256 newAuditUnit) external onlyOwner {
+    function changeAuditUnit(uint256 newAuditUnit) external {
+        require(MurmesInterface(Murmes).owner() == msg.sender, "ER5");
         auditUnit = newAuditUnit;
         emit SystemChangeAuditUnit(newAuditUnit);
     }

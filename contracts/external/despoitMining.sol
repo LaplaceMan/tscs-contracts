@@ -1,15 +1,13 @@
 /**
  * @Author: LaplaceMan 505876833@qq.com
  * @Date: 2022-12-30 15:38:40
- * @Description: 质押 Zimu 代币获得收益，平台分别收取 (Zimu) 50% 和 (VT) 25%
+ * @Description: 质押 Zimu 代币获得收益，平台分别收取 (Zimu) 25% 和 (VT) 33%
  * @Copyright (c) 2022 by LaplaceMan 505876833@qq.com, All Rights Reserved.
  */
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.0;
 
 import "../components/Vault.sol";
-import "../interfaces/IZimu.sol";
-import "../interfaces/IMurmes.sol";
 import "../interfaces/IPlatform.sol";
 
 contract DepositMining is Vault {
@@ -39,7 +37,17 @@ contract DepositMining is Vault {
         uint128 duration;
     }
 
-    constructor(address ss, address to) Vault(ss) {
+    event NewDepositMining(
+        address user,
+        uint128 allTokens,
+        uint256 allParts,
+        uint256 subtitleId,
+        uint256 unlockTime
+    );
+
+    event NewWithdrawProfit(address user, uint256 zimu, uint256 vt);
+
+    constructor(address ms, address to) Vault(ms) {
         feeTo = to;
     }
 
@@ -69,13 +77,16 @@ contract DepositMining is Vault {
         // 质押代币数量应当大于 0
         require(number > 0, "ER1");
         // 质押时间应当大于平台设置的最小质押时间
-        require(duration > min, "ER1");
+        require(duration > min, "ER1-2");
         // 质押的字幕 ST 没有处于冷却期
-        require(block.timestamp > cooling[subtitleId], "ER1");
+        require(block.timestamp > cooling[subtitleId], "ER1-3");
+        // 手续费已经开启
+        require(IMurmes(Murmes).fee() > 0, "ER5");
         (uint8 state, , uint256 change, , ) = IMurmes(Murmes)
             .getSubtitleBaseInfo(subtitleId);
         // 质押的字幕 ST 是合法的，即被确认且经过了一定的时间（审核期）
-        require(state == 1 && block.timestamp > change + 14 days, "ER1");
+        uint256 lockUpTime = IMurmes(Murmes).lockUpTime();
+        require(state == 1 && block.timestamp > change + lockUpTime, "ER1-4");
         address zimu = IMurmes(Murmes).zimuToken();
         IZimu(zimu).transferFrom(msg.sender, address(this), number);
         cooling[subtitleId] = block.timestamp + 2 * duration;
@@ -87,12 +98,19 @@ contract DepositMining is Vault {
         }
         deposits[msg.sender] = deposit(
             subtitleId,
-            block.timestamp,
+            deposits[msg.sender].start,
             add,
             number,
-            duration
+            deposits[msg.sender].duration + duration
         );
         points += add;
+        emit NewDepositMining(
+            msg.sender,
+            number,
+            add,
+            subtitleId,
+            block.timestamp + duration
+        );
         return add;
     }
 
@@ -111,9 +129,9 @@ contract DepositMining is Vault {
         IZimu(zimu).transferFrom(
             address(this),
             msg.sender,
-            deposits[msg.sender].tokens + fee0 / 2
+            deposits[msg.sender].tokens + (fee0 - fee0 / 4)
         );
-        IZimu(zimu).transferFrom(address(this), feeTo, fee0 - fee0 / 2);
+        IZimu(zimu).transferFrom(address(this), feeTo, fee0 / 4);
         feeIncome[0] -= fee0;
 
         address platform = IMurmes(Murmes).platforms();
@@ -128,8 +146,8 @@ contract DepositMining is Vault {
 
                 uint256 get = (feeIncome[i] * deposits[msg.sender].parts) /
                     points;
-                amounts[i - 1] = get - get / 4;
-                fees[i - 1] = get / 4;
+                amounts[i - 1] = get - get / 3;
+                fees[i - 1] = get / 3;
                 feeIncome[i] -= get;
                 tokens += get;
             }
@@ -152,6 +170,16 @@ contract DepositMining is Vault {
             }
         }
         delete deposits[msg.sender];
+        emit NewWithdrawProfit(msg.sender, fee0, tokens);
         return (fee0, tokens);
+    }
+
+    /**
+     * @notice 设置新的费用接收地址
+     * @param newFeeTo 新的费用接收地址
+     */
+    function setFeeTo(address newFeeTo) external {
+        require(IMurmes(Murmes).multiSig() == msg.sender, "ER5");
+        feeTo = newFeeTo;
     }
 }

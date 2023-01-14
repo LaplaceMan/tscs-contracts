@@ -22,13 +22,6 @@ contract ZimuToken is ERC20, IZimu {
 
     event SystemChangeOpeator(address newOpeator);
     event SystemChangeDayRewardLimit(uint256 number);
-    /**
-     * @notice 仅能由 Murmes 调用
-     */
-    modifier auth() {
-        require(msg.sender == Murmes, "ER5");
-        _;
-    }
 
     /**
      * @notice 代币总发行量的 20% 用于奖励 Murmes 内的积极行为
@@ -50,7 +43,8 @@ contract ZimuToken is ERC20, IZimu {
      * @param to 平台币接收方
      * @param amount 铸造平台币数目
      */
-    function mintReward(address to, uint256 amount) external override auth {
+    function mintReward(address to, uint256 amount) external override {
+        require(msg.sender == Murmes, "Zimu-ER5");
         if (balanceOf(address(this)) >= 0) {
             _mint(to, amount);
         }
@@ -62,9 +56,7 @@ contract ZimuToken is ERC20, IZimu {
      * @param amount 销毁平台币数目
      */
     function burnReward(address owner, uint256 amount) public {
-        if (msg.sender != Murmes) {
-            require(msg.sender == owner, "ER5");
-        }
+        require(msg.sender == owner, "Zimu-ER5");
         _burn(owner, amount);
     }
 }

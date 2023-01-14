@@ -16,7 +16,9 @@ contract SubtitleVersionManagement {
      * @notice Murmes 主合约地址
      */
     address public Murmes;
-
+    /**
+     * @notice 字幕 ID 与各个版本的映射
+     */
     mapping(uint256 => version[]) subtitles;
 
     /**
@@ -39,8 +41,8 @@ contract SubtitleVersionManagement {
     );
     event ReportInvalidVersion(uint256 subtitleId, uint256 versionId);
 
-    constructor(address ss) {
-        Murmes = ss;
+    constructor(address ms) {
+        Murmes = ms;
     }
 
     /**
@@ -67,7 +69,7 @@ contract SubtitleVersionManagement {
         }
         address owner = IST(st).ownerOf(subtitleId);
         require(owner == maker && msg.sender == owner, "ER5");
-        require(version0 != fingerprint && fingerprint != 0, "ER1");
+        require(version0 != fingerprint && fingerprint != 0, "ER1-2");
         address detection = IMurmes(Murmes).detectionStrategy();
         bool can;
         can = IDetectionStrategy(detection).afterDetection(

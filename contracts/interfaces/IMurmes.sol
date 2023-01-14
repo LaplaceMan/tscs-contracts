@@ -5,6 +5,10 @@ interface IMurmes {
     // ***** Ownable *****
     function isOperator(address operator) external view returns (bool);
 
+    function owner() external view returns (address);
+
+    function multiSig() external view returns (address);
+
     // ***** EntityManager *****
     function zimuToken() external view returns (address);
 
@@ -63,6 +67,8 @@ interface IMurmes {
 
     // ***** SubtitleManager *****
     function subtitleToken() external returns (address);
+
+    function versionManagement() external returns (address);
 
     function getSubtitleBaseInfo(uint256 subtitleId)
         external

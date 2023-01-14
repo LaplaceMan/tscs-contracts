@@ -20,11 +20,6 @@ contract Arbitration {
     address immutable Murmes;
 
     /**
-     * @notice 字幕版本管理合约地址
-     */
-    address immutable SVM;
-
-    /**
      * @notice 举报理由
      * @param PLAGIARIZE 侵权
      * @param WRONG 恶意
@@ -81,23 +76,24 @@ contract Arbitration {
         address reporter
     );
 
-    constructor(address ss, address svm) {
-        Murmes = ss;
-        SVM = svm;
+    event ReportResult(uint256 reportId, string resultProof, bool result);
+
+    constructor(address ms) {
+        Murmes = ms;
     }
 
     /**
      * @notice 发起一个新的举报
      * @param reason 举报理由/原因
      * @param subtitleId 被举报字幕 ST ID
-     * @param proofSubtitleId 证明材料，类型为 UINT
-     * @param otherProof 证明材料，类型为 STRING
+     * @param uintProof 证明材料，类型为 UINT
+     * @param stringProof 证明材料，类型为 STRING
      */
     function report(
         Reason reason,
         uint256 subtitleId,
-        uint256 proofSubtitleId,
-        string memory otherProof
+        uint256 uintProof,
+        string memory stringProof
     ) public {
         {
             (uint256 reputation, int256 deposit) = IMurmes(Murmes)
@@ -107,14 +103,17 @@ contract Arbitration {
             require(IAccessStrategy(access).access(reputation, deposit), "ER5");
             require(
                 deposit >= int256(IAccessStrategy(access).minDeposit()),
-                "ER5"
+                "ER5-2"
             );
             require(IST(st).ownerOf(subtitleId) != address(0), "ER1");
-            (uint8 state, , , , ) = IMurmes(Murmes).getSubtitleBaseInfo(
-                subtitleId
-            );
+            (uint8 state, , uint256 changeTime, , ) = IMurmes(Murmes)
+                .getSubtitleBaseInfo(subtitleId);
+            uint256 lockUpTime = IMurmes(Murmes).lockUpTime();
+            require(block.timestamp <= changeTime + lockUpTime, "ER6");
             if (reason != Reason.MISTAKEN) {
-                require(state == 1, "ER1");
+                require(state == 1, "ER1-2");
+            } else {
+                require(state == 2, "ER1-3");
             }
         }
         if (subtitleReports[subtitleId].length > 0) {
@@ -129,15 +128,9 @@ contract Arbitration {
         reports[numberOfReports].reason = reason;
         reports[numberOfReports].reporter = msg.sender;
         reports[numberOfReports].subtitleId = subtitleId;
-        reports[numberOfReports].stringProof = otherProof;
-        reports[numberOfReports].uintProof = proofSubtitleId;
-        emit NewReport(
-            reason,
-            subtitleId,
-            proofSubtitleId,
-            otherProof,
-            msg.sender
-        );
+        reports[numberOfReports].stringProof = stringProof;
+        reports[numberOfReports].uintProof = uintProof;
+        emit NewReport(reason, subtitleId, uintProof, stringProof, msg.sender);
     }
 
     /**
@@ -153,7 +146,11 @@ contract Arbitration {
         bool result,
         uint256[] memory params
     ) public {
-        require(IMurmes(Murmes).isOperator(msg.sender), "ER5");
+        require(
+            IMurmes(Murmes).multiSig() == msg.sender ||
+                IMurmes(Murmes).owner() == msg.sender,
+            "ER5"
+        );
         reports[reportId].resultProof = resultProof;
         reports[reportId].result = result;
         address access = IMurmes(Murmes).accessStrategy();
@@ -173,8 +170,8 @@ contract Arbitration {
             );
             if (reports[reportId].reason != Reason.MISTAKEN) {
                 _deleteSubtitle(reports[reportId].subtitleId);
-                _liquidatingSuppoters(access, supporters);
-                _liquidatingDissenters(access, dissenters, 1);
+                _liquidatingMaliciousUser(access, supporters);
+                _liquidatingNormalUser(access, dissenters);
                 _liquidatingSubtitleMaker(maker, reportId);
                 address platform = IMurmes(Murmes).getPlatformByTaskId(taskId);
                 _processRevenue(
@@ -189,13 +186,14 @@ contract Arbitration {
                 );
             } else {
                 _recoverSubtitle(reports[reportId].subtitleId);
-                _liquidatingSuppoters(access, dissenters);
-                _liquidatingDissenters(access, supporters, 0);
+                _liquidatingMaliciousUser(access, dissenters);
+                _liquidatingNormalUser(access, supporters);
                 _recoverSubtitleMaker(maker, access);
             }
         } else {
             _punishRepoter(reportId, access);
         }
+        emit ReportResult(reportId, resultProof, result);
     }
 
     /**
@@ -210,6 +208,7 @@ contract Arbitration {
             uint256 reputationPunishment,
             uint256 tokenPunishment
         ) = IAccessStrategy(access).spread(reputation, 2);
+        if (tokenPunishment == 0) tokenPunishment = 8 * 10**18;
         IMurmes(Murmes).updateUser(
             reports[reportId].reporter,
             int256(reputationPunishment) * -1,
@@ -223,7 +222,8 @@ contract Arbitration {
      */
     function _deleteSubtitle(uint256 subtitleId) internal {
         IMurmes(Murmes).holdSubtitleStateByDAO(subtitleId, 2);
-        ISubtitleVersionManagement(SVM).reportInvalidVersion(subtitleId, 0);
+        address svm = IMurmes(Murmes).versionManagement();
+        ISubtitleVersionManagement(svm).reportInvalidVersion(subtitleId, 0);
     }
 
     /**
@@ -239,9 +239,10 @@ contract Arbitration {
      * @param access Murmes 合约的 access 策略合约地址
      * @param suppoters 恶意评价者
      */
-    function _liquidatingSuppoters(address access, address[] memory suppoters)
-        internal
-    {
+    function _liquidatingMaliciousUser(
+        address access,
+        address[] memory suppoters
+    ) internal {
         for (uint256 i; i < suppoters.length; i++) {
             (uint256 reputation, ) = IMurmes(Murmes).getUserBaseInfo(
                 suppoters[i]
@@ -250,19 +251,27 @@ contract Arbitration {
                 reputation,
                 1
             );
+            (, uint256 tokenPunishment1) = IAccessStrategy(access).spread(
+                lastReputation,
+                1
+            );
             // 一般来说，lastReputation 小于 reputation
             (
                 uint256 reputationPunishment,
-                uint256 tokenPunishment
+                uint256 tokenPunishment2
             ) = IAccessStrategy(access).spread(lastReputation, 2);
             int256 spread = int256(lastReputation) -
                 int256(reputation) -
                 int256(reputationPunishment);
             // 当 Zimu 激励代币发送完毕时，恶意用户获得额外的惩罚 tokenFixedReward
+            uint256 punishmentToken = tokenPunishment1 + tokenPunishment2 >
+                4 * 10**18
+                ? tokenPunishment1 + tokenPunishment2
+                : 4 * 10**18;
             IMurmes(Murmes).updateUser(
                 suppoters[i],
                 spread,
-                int256(tokenPunishment) * -1
+                int256(punishmentToken) * -1
             );
         }
     }
@@ -271,13 +280,10 @@ contract Arbitration {
      * @notice 恢复诚实评价者被系统扣除的信誉度和代币
      * @param access Murmes 合约的 access 策略合约地址
      * @param dissenters 诚实评价者
-     * @param flag 0 时只恢复信誉度，其它情况下提供额外奖励
      */
-    function _liquidatingDissenters(
-        address access,
-        address[] memory dissenters,
-        uint8 flag
-    ) internal {
+    function _liquidatingNormalUser(address access, address[] memory dissenters)
+        internal
+    {
         for (uint256 i; i < dissenters.length; i++) {
             (uint256 reputation, ) = IMurmes(Murmes).getUserBaseInfo(
                 dissenters[i]
@@ -286,20 +292,18 @@ contract Arbitration {
                 reputation,
                 2
             );
-            // 一般来说，lastReputation 大于 reputation
-            (uint256 reputationReward, uint256 tokenReward) = IAccessStrategy(
-                access
-            ).spread(lastReputation, 1);
-            if (flag == 0) reputationReward = 0;
-            int256 spread = int256(lastReputation) -
-                int256(reputation) +
-                int256(reputationReward);
-            // 当 Zimu 激励代币发送完毕时，诚实用户获得额外的奖励 tokenFixedReward
-            IMurmes(Murmes).updateUser(
-                dissenters[i],
-                spread,
-                int256(tokenReward)
+            (, uint256 tokenReward) = IAccessStrategy(access).spread(
+                lastReputation,
+                2
             );
+            // 一般来说，lastReputation 大于 reputation
+            tokenReward = tokenReward > 1 * 10**18 ? tokenReward : 1 * 10**18;
+            int256 spread = int256(lastReputation) - int256(reputation) + 10;
+            address vault = IMurmes(Murmes).vault();
+            address zimu = IMurmes(Murmes).zimuToken();
+            // 当 Zimu 激励代币发送完毕时，诚实用户获得额外的奖励 tokenFixedReward
+            IVault(vault).transferPenalty(zimu, dissenters[i], tokenReward);
+            IMurmes(Murmes).updateUser(dissenters[i], spread, 0);
         }
     }
 
@@ -352,21 +356,26 @@ contract Arbitration {
             reputation,
             2
         );
-        uint8 mutilpler = IAccessStrategy(access).multiplier();
+        uint8 multipler = IAccessStrategy(access).multiplier();
         uint256 _reputationSpread = ((lastReputation - reputation) *
-            mutilpler) / 100;
+            multipler) / 100;
         lastReputation = reputation + _reputationSpread;
 
         (, uint256 tokenPunishment) = IAccessStrategy(access).spread(
             lastReputation,
             1
         );
-        // 多补偿被扣掉代币数的百分之五
-        IMurmes(Murmes).updateUser(
+        // 多补偿被扣掉代币数的百分之三
+        address vault = IMurmes(Murmes).vault();
+        address zimu = IMurmes(Murmes).zimuToken();
+        // 当 Zimu 激励代币发送完毕时，诚实用户获得额外的奖励 tokenFixedReward
+        tokenPunishment = (tokenPunishment * (multipler + 3)) / 100;
+        IVault(vault).transferPenalty(
+            zimu,
             maker,
-            int256(_reputationSpread),
-            (int256(tokenPunishment) * int8(mutilpler + 5)) / 100
+            tokenPunishment > 3 * 10**18 ? tokenPunishment : 3 * 10**18
         );
+        IMurmes(Murmes).updateUser(maker, int256(_reputationSpread), 0);
     }
 
     /**

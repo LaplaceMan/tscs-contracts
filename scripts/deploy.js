@@ -4,16 +4,16 @@ const main = async () => {
   const deployerAddress = deployer.address;
   // 部署 Murmes 主合约
   const TSCS = await ethers.getContractFactory("Murmes");
-  const tscs = await TSCS.deploy(deployerAddress); //owner 地址（DAO地址）
+  const tscs = await TSCS.deploy(deployerAddress, deployerAddress); //owner 地址（DAO地址）+ 多签地址
   const tscsAddress = tscs.address;
   console.log("tscsAddress", tscsAddress);
   const tscsExemple = await TSCS.attach(tscsAddress);
   // 部署平台代币 Zimu 合约（ERC20）
   const ZIMU = await ethers.getContractFactory("ZimuToken");
   const zimu = await ZIMU.deploy(
-    tscsAddress,
-    "0x33b2e3c9fd0804000000000",
-    deployerAddress
+    tscsAddress, // Murmes合约地址
+    "0x33b2e3c9fd0804000000000", // 铸造代币总量
+    deployerAddress // 线性解锁代币合约地址
   );
   const zimuAddress = zimu.address;
   console.log("zimuAddress", zimuAddress);
@@ -28,29 +28,33 @@ const main = async () => {
   const stAddress = st.address;
   console.log("stAddress", stAddress);
   //部署金库合约
-  const VAULT = await ethers.getContractFactory("Vault");
-  const vault = await VAULT.deploy(deployerAddress, tscsAddress);
-  const vaultAddress = vault.address;
-  console.log("vaultAddress", vaultAddress);
+  // const VAULT = await ethers.getContractFactory("Vault");
+  // const vault = await VAULT.deploy(deployerAddress, tscsAddress);
+  // const vaultAddress = vault.address;
+  // console.log("vaultAddress", vaultAddress);
+  const VAULTANDDEPOSIT = await ethers.getContractFactory("DepositMining");
+  const vaultAndDeposit = await VAULTANDDEPOSIT.deploy(tscsAddress, deployerAddress);
+  const vaultAndDepositAddress = vaultAndDeposit.address;
+  console.log("vaultAndDepositAddress", vaultAndDepositAddress);
   //部署平台合约
   const PLATFORM = await ethers.getContractFactory("Platforms");
-  const platform = await PLATFORM.deploy(deployerAddress, tscsAddress);
+  const platform = await PLATFORM.deploy(tscsAddress);
   const platformAddress = platform.address;
   console.log("platformAddress", platformAddress);
   // 部署策略合约
   // 访问策略
   const ACCESS = await ethers.getContractFactory("AccessStrategy");
-  const access = await ACCESS.deploy(deployerAddress);
+  const access = await ACCESS.deploy(tscsAddress);
   const accessAddress = access.address;
   console.log("accessAddress", accessAddress);
   // 审核策略
   const AUDIT = await ethers.getContractFactory("AuditStrategy");
-  const audit = await AUDIT.deploy(deployerAddress, 2);
+  const audit = await AUDIT.deploy(tscsAddress, 1);
   const auditAddress = audit.address;
   console.log("auditAddress", auditAddress);
   // 相似度检测策略
   const DETECTION = await ethers.getContractFactory("DetectionStrategy");
-  const detection = await DETECTION.deploy(deployerAddress, 5); //owner 地址（DAO地址）, 阈值
+  const detection = await DETECTION.deploy(tscsAddress, 5); //owner 地址（DAO地址）, 阈值
   const detectionAddress = detection.address;
   console.log("detectionAddress", detectionAddress);
   // 部署结算策略合约
@@ -69,6 +73,17 @@ const main = async () => {
   const onetime2 = await ONETIME2.deploy(tscsAddress);
   const onetime2Address = onetime2.address;
   console.log("onetime2Address", onetime2Address);
+  // 部署挂载合约
+  // 部署字幕版本管理合约
+  const VERSIONMANAGEMENT = await ethers.getContractFactory("SubtitleVersionManagement");
+  const versionManagement = await VERSIONMANAGEMENT.deploy(tscsAddress);
+  const versionManagementAddress = versionManagement.address;
+  console.log(versionManagementAddress);
+  //部署仲裁合约
+  const ARBITRATION = await ethers.getContractFactory("Arbitration");
+  const arbitration = await ARBITRATION.deploy(tscsAddress);
+  const arbitrationAddress = arbitration.address;
+  console.log("arbitrationAddress", arbitrationAddress);
   // 主合约设置策略合约地址
   const tx1 = await tscsExemple.setAuditStrategy(auditAddress);
   const tx2 = await tscsExemple.setAccessStrategy(accessAddress);
@@ -78,7 +93,7 @@ const main = async () => {
     onetime0Address,
     'OT0'
   );
-  const tx5 = await tscsExemple.setSettlementStrategy(1, divide1Address, 'DI1');
+  const tx5 = await tscsExemple.setSettlementStrategy(1, divide1Address, 'D1');
   const tx6 = await tscsExemple.setSettlementStrategy(
     2,
     onetime2Address,
@@ -88,9 +103,11 @@ const main = async () => {
   const tx7 = await tscsExemple.setComponentsAddress(0, zimuAddress);
   const tx8 = await tscsExemple.setComponentsAddress(1, vtAddress);
   const tx9 = await tscsExemple.setComponentsAddress(2, stAddress);
-  const tx10 = await tscsExemple.setComponentsAddress(3, vaultAddress);
+  const tx10 = await tscsExemple.setComponentsAddress(3, vaultAndDepositAddress);
   const tx11 = await tscsExemple.setComponentsAddress(4, platformAddress);
-  const tx12 = await tscsExemple.registerLanguage(['cn', 'us', 'jp', 'kr', 'de', 'fr', 'in', 'gb', 'ru', 'es', 'my', 'pt', 'th', 'bd', 'sa'])
+  const tx12 = await tscsExemple.setComponentsAddress(5, arbitrationAddress);
+  const tx13 = await tscsExemple.setComponentsAddress(6, versionManagementAddress);
+  const tx14 = await tscsExemple.registerLanguage(['cn', 'us', 'jp', 'kr', 'de', 'fr', 'in', 'gb', 'ru', 'es', 'my', 'pt', 'th', 'bd', 'sa'])
   console.log("\n");
   console.log("setAuditStrategy", tx1);
   console.log("setAccessStrategy", tx2);
@@ -104,6 +121,8 @@ const main = async () => {
   console.log("setVault", tx10);
   console.log("setPlatforms", tx11);
   console.log("registerLanguage", tx12);
+  console.log("registerLanguage", tx13);
+  console.log("registerLanguage", tx14);
 };
 
 main()

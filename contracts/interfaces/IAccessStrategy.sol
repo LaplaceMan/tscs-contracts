@@ -12,6 +12,8 @@ interface IAccessStrategy {
         view
         returns (bool);
 
+    function auditable(int256 deposit_) external view returns (bool);
+
     function depositThreshold() external view returns (uint16);
 
     function blacklistThreshold() external view returns (uint8);
@@ -23,8 +25,6 @@ interface IAccessStrategy {
     function punishmentToken() external view returns (uint256);
 
     function multiplier() external view returns (uint8);
-
-    function opeator() external view returns (address);
 
     function reward(uint256 reputation) external pure returns (uint256);
 

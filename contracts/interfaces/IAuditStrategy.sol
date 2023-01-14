@@ -4,8 +4,6 @@ pragma solidity ^0.8.0;
 interface IAuditStrategy {
     function auditUnit() external view returns (uint256);
 
-    function opeator() external view returns (address);
-
     function auditResult(
         uint256 uploaded,
         uint256 support,

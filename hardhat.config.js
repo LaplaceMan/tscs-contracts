@@ -1,6 +1,8 @@
+require('dotenv').config()
 require("@nomiclabs/hardhat-waffle");
 require("hardhat-contract-sizer");
 require("@nomiclabs/hardhat-etherscan");
+
 module.exports = {
   defaultNetwork: "localhost",
   solidity: {
@@ -14,20 +16,20 @@ module.exports = {
   },
   networks: {
     localhost: {
-      url: "http://localhost:8545",
+      url: process.env.LOCALHOST_URL,
     },
     goerli: {
       chainId: 5,
-      url: "https://goerli.infura.io/v3/",
+      url: process.env.GOERLI_URL,
       accounts: [
-        "",
+        process.env.ACCOUNT,
       ],
       gasPrice: 1000000000
     },
   },
   etherscan: {
     apiKey: {
-      goerli: ""
+      goerli: process.env.EHTERSCAN_GOERLI_API
     },
     customChains: [
       {

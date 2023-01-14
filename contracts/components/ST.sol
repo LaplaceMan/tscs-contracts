@@ -58,11 +58,6 @@ contract SubtitleToken is ERC721, IST {
         Murmes = ms;
     }
 
-    modifier auth() {
-        require(msg.sender == Murmes);
-        _;
-    }
-
     event SubtitleUpload(
         address maker,
         uint256 taskId,
@@ -87,7 +82,8 @@ contract SubtitleToken is ERC721, IST {
         string memory cid,
         uint16 languageId,
         uint256 fingerprint
-    ) external override auth returns (uint256) {
+    ) external override returns (uint256) {
+        require(msg.sender == Murmes, "ER5");
         _tokenIdTracker++;
         _mint(maker, _tokenIdTracker);
         _tokenURI[_tokenIdTracker] = cid;

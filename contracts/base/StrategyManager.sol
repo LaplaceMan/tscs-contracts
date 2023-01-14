@@ -59,6 +59,8 @@ contract StrategyManager is EntityManager, SubtitleManager {
     event SystemSetVideoToken(address token);
     event SystemSetPlatforms(address platform);
     event SystemSetSubtitleToken(address token);
+    event SystemSetArbitration(address arbitration);
+    event SystemSetSubtitleVersionManagement(address versionManagement);
 
     /**
      * @notice 结算策略 ID 与 SettlementStruct 的映射, 在 Murmes 内用 ID 唯一标识结算策略, 从0开始
@@ -111,17 +113,17 @@ contract StrategyManager is EntityManager, SubtitleManager {
     ) external onlyOwner {
         require(strategy != address(0), "ER1");
         if (settlementStrategy[strategyId].strategy != address(0)) {
-            opeators[settlementStrategy[strategyId].strategy] = false;
+            _replaceOperator(settlementStrategy[strategyId].strategy, strategy);
         }
+        _setOperator(strategy);
         settlementStrategy[strategyId].strategy = strategy;
         settlementStrategy[strategyId].notes = notes;
-        opeators[strategy] = true;
         emit SystemSetSettlement(strategyId, strategy, notes);
     }
 
     /**
      * @notice 设置 Murmes 组件的合约地址
-     * @param note 0 为 Zimu 代币合约地址；1 为 VT 代币合约地址；2 为 ST 代币合约地址；3 为金库合约地址；4 为平台管理合约地址
+     * @param note 0 为 Zimu 代币合约地址；1 为 VT 代币合约地址；2 为 ST 代币合约地址；3 为金库合约地址；4 为平台管理合约地址；5 为仲裁合约地址
      * @param addr 新的合约地址
      */
     function setComponentsAddress(uint8 note, address addr) external onlyOwner {
@@ -131,9 +133,6 @@ contract StrategyManager is EntityManager, SubtitleManager {
             emit SystemSetZimuToken(addr);
         } else if (note == 1) {
             videoToken = addr;
-            if (platforms != address(0)) {
-                IVT(videoToken).changeOpeator(platforms);
-            }
             emit SystemSetVideoToken(addr);
         } else if (note == 2) {
             subtitleToken = addr;
@@ -142,11 +141,24 @@ contract StrategyManager is EntityManager, SubtitleManager {
             vault = addr;
             emit SystemSetVault(addr);
         } else if (note == 4) {
-            platforms = addr;
-            if (videoToken != address(0)) {
-                IVT(videoToken).changeOpeator(addr);
+            if (platforms != address(0)) {
+                _replaceOperator(platforms, addr);
+            } else {
+                _setOperator(addr);
             }
+            platforms = addr;
             emit SystemSetPlatforms(addr);
+        } else if (note == 5) {
+            if (arbitration != address(0)) {
+                _replaceOperator(platforms, addr);
+            } else {
+                _setOperator(addr);
+            }
+            arbitration = addr;
+            emit SystemSetArbitration(addr);
+        } else if (note == 6) {
+            versionManagement = addr;
+            emit SystemSetSubtitleVersionManagement(addr);
         }
     }
 
@@ -158,14 +170,6 @@ contract StrategyManager is EntityManager, SubtitleManager {
         require(time > 0, "ER1");
         lockUpTime = time;
         emit SystemSetLockUpTime(time);
-    }
-
-    /**
-     * @notice 更新 Murmes 中的审核员分成比例
-     * @param auditorDivide 新的分成比例
-     */
-    function setAuditorDivideRate(uint16 auditorDivide) external auth {
-        IPlatform(platforms).setMurmesAuditorDivideRate(auditorDivide);
     }
 
     /**
@@ -213,5 +217,13 @@ contract StrategyManager is EntityManager, SubtitleManager {
             amount,
             uint256(users[msg.sender].deposit)
         );
+    }
+
+    /**
+     * @notice 设置手续费，大于0时开启，等于0时关闭
+     * @param rate 手续费比率，若为1%，应设置为100，因为计算后的值为 100/BASE_FEE_RATE
+     */
+    function setFee(uint16 rate) external onlyOwner {
+        fee = rate;
     }
 }

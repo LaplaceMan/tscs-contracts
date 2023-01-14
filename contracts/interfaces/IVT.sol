@@ -27,6 +27,4 @@ interface IVT is IERC1155 {
         address from,
         uint256 amount
     ) external;
-
-    function changeOpeator(address newOpeator) external;
 }

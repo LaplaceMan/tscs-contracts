@@ -29,6 +29,18 @@ contract EntityManager is Ownable {
      */
     address public platforms;
     /**
+     * @notice Murmers DAO 仲裁合约
+     */
+    address public arbitration;
+    /**
+     * @notice 用户加入生态时在 Murmes 内质押的 Zimu 总数
+     */
+    uint256 public deposit;
+    /**
+     * @notice 根据语言 ID 获得语言类型
+     */
+    string[] languageNote;
+    /**
      * @notice 手续费用比率
      */
     uint16 public fee;
@@ -41,17 +53,9 @@ contract EntityManager is Ownable {
      */
     uint16 constant BASE_FEE_RATE = 10000;
     /**
-     * @notice 用户加入生态时在 Murmes 内质押的 Zimu 总数
-     */
-    uint256 public deposit;
-    /**
      * @notice 语言名称与对应ID（注册顺序）的映射, 从1开始（ISO 3166-1 alpha-2 code）
      */
-    mapping(string => uint16) languages;
-    /**
-     * @notice 根据语言 ID 获得语言类型
-     */
-    string[] languageNote;
+    mapping(string => uint32) languages;
     /**
      * @notice 每个区块链地址与 User 结构的映射
      */
@@ -59,6 +63,7 @@ contract EntityManager is Ownable {
     /**
      * @notice 每个用户在TSCS内的行为记录
      * @param reputation 信誉度分数
+     * @param operate 用户在协议内执行重要操作的时间
      * @param deposit 已质押以太数, 为负表示负债
      * @param lock 平台区块链地址 => 天（Unix）=> 锁定稳定币数量，Default 为 0x0
      */
@@ -123,7 +128,7 @@ contract EntityManager is Ownable {
     function getLanguageIdByNote(string memory language)
         external
         view
-        returns (uint16)
+        returns (uint32)
     {
         return languages[language];
     }
@@ -189,11 +194,19 @@ contract EntityManager is Ownable {
      * @param reputationSpread 有正负（增加或扣除）的信誉度分数
      * @param tokenSpread 有正负的（增加或扣除）Zimu 数量
      */
-    function updateUser(
+    function updaterUser(
         address usr,
         int256 reputationSpread,
         int256 tokenSpread
     ) public auth {
+        _updateUser(usr, reputationSpread, tokenSpread);
+    }
+
+    function _updateUser(
+        address usr,
+        int256 reputationSpread,
+        int256 tokenSpread
+    ) internal {
         int256 newReputation = int256(users[usr].reputation) + reputationSpread;
         users[usr].reputation = (
             newReputation > 0 ? uint256(newReputation) : 0

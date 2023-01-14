@@ -1,12 +1,13 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { BigNumber } = require("ethers");
+let tscs, zimu, vt, st, access, audit, platform, detection, divide1, onetime0, onetime2;
+let tscsAsDeployer, platformAsDeployer;
+let owner, user1, user2, user3, user4;
+const unitVTAmount = ethers.utils.parseUnits("20", "6");
+const baseEthAmount = ethers.utils.parseUnits("60", "ether");
+const now = parseInt(Date.now() / 1000 / 86400);
 describe("Settlement_MIX_Test", function () {
-  let tscs, zimu, vt, st, access, audit, platform, detection, divide1, onetime0, onetime2;
-  let tscsAsDeployer, platformAsDeployer;
-  let owner, user1, user2, user3, user4;
-  const unitVTAmount = ethers.utils.parseUnits("20", "6");
-  const now = parseInt(Date.now() / 1000 / 86400);
   it("Prepare", async function () {
     // 获得区块链网络提供的测试账号
     const [deployer, addr1, addr2, addr3, addr4] = await ethers.getSigners();
@@ -22,7 +23,7 @@ describe("Settlement_MIX_Test", function () {
     const ZIMU = await ethers.getContractFactory("ZimuToken");
     const VT = await ethers.getContractFactory("VideoToken");
     const ST = await ethers.getContractFactory("SubtitleToken");
-    const VAULT = await ethers.getContractFactory("Vault");
+    const VAULTANDDEPOSIT = await ethers.getContractFactory("DepositMining");
     const PLATFORM = await ethers.getContractFactory("Platforms");
     const ACCESS = await ethers.getContractFactory("AccessStrategy");
     const AUDIT = await ethers.getContractFactory("AuditStrategy");
@@ -31,7 +32,7 @@ describe("Settlement_MIX_Test", function () {
     const ONETIME0 = await ethers.getContractFactory("SettlementOneTime0");
     const ONETIME2 = await ethers.getContractFactory("SettlementOneTime2");
     // 部署合约
-    tscs = await TSCS.deploy(deployerAddress);
+    tscs = await TSCS.deploy(deployerAddress, deployerAddress);
     const tscsAddress = tscs.address;
     tscsAsDeployer = tscs.connect(deployer);
     zimu = await ZIMU.deploy(
@@ -44,16 +45,16 @@ describe("Settlement_MIX_Test", function () {
     const vtAddress = vt.address;
     st = await ST.deploy(tscsAddress);
     const stAddress = st.address;
-    const vault = await VAULT.deploy(deployerAddress, tscsAddress);
+    const vault = await VAULTANDDEPOSIT.deploy(tscsAddress, deployerAddress);
     const vaultAddress = vault.address;
-    platform = await PLATFORM.deploy(deployerAddress, tscsAddress);
+    platform = await PLATFORM.deploy(tscsAddress);
     const platformAddress = platform.address;
     platformAsDeployer = platform.connect(deployer);
-    access = await ACCESS.deploy(deployerAddress);
+    access = await ACCESS.deploy(tscsAddress);
     const accessAddress = access.address;
-    audit = await AUDIT.deploy(deployerAddress, 1);
+    audit = await AUDIT.deploy(tscsAddress, 1);
     const auditAddress = audit.address;
-    detection = await DETECTION.deploy(deployerAddress, 5);
+    detection = await DETECTION.deploy(tscsAddress, 5);
     const detectionAddress = detection.address;
     divide1 = await DIVIDE1.deploy(tscsAddress);
     const divide1Address = divide1.address;
@@ -62,18 +63,6 @@ describe("Settlement_MIX_Test", function () {
     onetime2 = await ONETIME2.deploy(tscsAddress);
     const onetime2Address = onetime2.address;
     await tscs.deployed();
-    // console.log("tscsAddress", tscsAddress);
-    // console.log("zimuAddress", zimuAddress);
-    // console.log("vtAddress", vtAddress);
-    // console.log("stAddress", stAddress);
-    // console.log("vaultAddress", vaultAddress);
-    // console.log("platformAddress", platformAddress);
-    // console.log("accessAddress", accessAddress);
-    // console.log("auditAddress", auditAddress);
-    // console.log("detectionAddress", detectionAddress);
-    // console.log("divide1Address", divide1Address);
-    // console.log("onetime0Address", onetime0Address);
-    // console.log("onetime2Address", onetime2Address);
     let tx;
     tx = await tscsAsDeployer.setAuditStrategy(auditAddress);
     await tx.wait();
@@ -83,7 +72,7 @@ describe("Settlement_MIX_Test", function () {
     await tx.wait();
     tx = await tscsAsDeployer.setSettlementStrategy(0, onetime0Address, "OT0");
     await tx.wait();
-    tx = await tscsAsDeployer.setSettlementStrategy(1, divide1Address, "DI1");
+    tx = await tscsAsDeployer.setSettlementStrategy(1, divide1Address, "D1");
     await tx.wait();
     tx = await tscsAsDeployer.setSettlementStrategy(2, onetime2Address, "OTM2");
     await tx.wait();
@@ -142,7 +131,7 @@ describe("Settlement_MIX_Test", function () {
         ethers.BigNumber.from("1"),
         "test"
       );
-    // 提交第二个申请 (DR1)
+    // 提交第二个申请 (D1)
     await expect(
       tscs
         .connect(user1)
@@ -165,6 +154,25 @@ describe("Settlement_MIX_Test", function () {
     await tx.wait();
     // 给第二个申请上传字幕
     tx = await tscs.connect(user2).uploadSubtitle(2, "test", 2, "0x2a3b");
+    await tx.wait();
+  });
+
+  it("Despoit for audit", async function () {
+    let tx = await zimu.connect(owner).transfer(user3.address, baseEthAmount);
+    await tx.wait();
+    tx = await zimu.connect(owner).transfer(user4.address, baseEthAmount);
+    await tx.wait();
+    tx = await zimu
+      .connect(user3)
+      .approve(tscs.address, baseEthAmount);
+    await tx.wait();
+    tx = await zimu
+      .connect(user4)
+      .approve(tscs.address, baseEthAmount);
+    await tx.wait();
+    tx = await tscs.connect(user3).userJoin(user3.address, baseEthAmount);
+    await tx.wait();
+    tx = await tscs.connect(user4).userJoin(user4.address, baseEthAmount);
     await tx.wait();
   });
 
