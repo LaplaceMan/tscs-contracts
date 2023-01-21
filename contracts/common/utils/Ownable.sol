@@ -50,6 +50,7 @@ abstract contract Ownable {
 
     function transferMutliSig(address newMutliSig) external {
         require(msg.sender == _multiSig, "Own-ER5");
+        require(newMutliSig != address(0), "Own-ER1");
         _multiSig = newMutliSig;
     }
 

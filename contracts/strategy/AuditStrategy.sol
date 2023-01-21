@@ -44,7 +44,7 @@ contract AuditStrategy is IAuditStrategy {
         uint256 against,
         uint256 allSupport
     ) internal view returns (uint8) {
-        uint8 flag;
+        uint8 flag = 0;
         if (uploaded > 1) {
             if (
                 support > auditUnit &&
@@ -75,7 +75,7 @@ contract AuditStrategy is IAuditStrategy {
         view
         returns (uint8)
     {
-        uint8 flag;
+        uint8 flag = 0;
         if (support > 1) {
             if (against >= (auditUnit * support) / 2 + support) {
                 flag = 2;
@@ -106,7 +106,7 @@ contract AuditStrategy is IAuditStrategy {
         uint256 uploadTime,
         uint256 lockUpTime
     ) external view override returns (uint8) {
-        uint8 flag1;
+        uint8 flag1 = 0;
         if (block.timestamp >= uploadTime + lockUpTime) {
             flag1 = _adopt(uploaded, support, against, allSupport);
         }

@@ -12,5 +12,5 @@ interface IDetectionStrategy {
         view
         returns (bool);
 
-    function distanceThreshold() external view returns (uint8);
+    function distanceThreshold() external view returns (uint256);
 }

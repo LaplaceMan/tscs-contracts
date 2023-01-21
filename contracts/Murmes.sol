@@ -41,8 +41,8 @@ contract Murmes is StrategyManager {
         uint256 deadline;
     }
 
-    constructor(address owner, address mutliSig) {
-        _setOwner(owner);
+    constructor(address dao, address mutliSig) {
+        _setOwner(dao);
         _setMutliSig(mutliSig);
         languageNote.push("Default");
     }
@@ -120,7 +120,14 @@ contract Murmes is StrategyManager {
             require(strategy == 0, "ER7");
             require(bytes(source).length > 0, "ER7-2");
             // 一次性结算策略下, 需要用户提前授权主合约额度且只能使用 Zimu 代币支付
-            IZimu(zimuToken).transferFrom(msg.sender, address(this), amount);
+            require(
+                IZimu(zimuToken).transferFrom(
+                    msg.sender,
+                    address(this),
+                    amount
+                ),
+                "ER12"
+            );
         } else {
             (, , , address creator, , , uint256[] memory tasks_) = IPlatform(
                 platforms
@@ -128,7 +135,7 @@ contract Murmes is StrategyManager {
             // 当结算策略非一次性时, 与视频收益相关, 需要由视频创作者主动提起
             require(creator == msg.sender, "ER5-2");
             // 下面是为了防止重复申请制作同一语言的字幕
-            for (uint256 i; i < tasks_.length; i++) {
+            for (uint256 i = 0; i < tasks_.length; i++) {
                 uint256 taskId = tasks_[i];
                 require(tasks[taskId].language != language, "ER0");
             }
@@ -196,7 +203,7 @@ contract Murmes is StrategyManager {
                 break;
             }
         }
-        for (uint256 i; i < newArr.length; i++) {
+        for (uint256 i = 0; i < newArr.length; i++) {
             if (i <= flag) {
                 newArr[i] = arr[i];
             } else if (i == flag + 1) {
@@ -356,6 +363,7 @@ contract Murmes is StrategyManager {
      */
     function _updateUsers(uint256 subtitleId, uint8 flag) internal {
         int8 newFlag = 1;
+        uint8 reverseFlag = (flag == 1 ? 2 : 1);
         uint8 multiplier = accessStrategy.multiplier();
         // 2 表示字幕被认定为恶意字幕, 对字幕制作者和支持者进行惩罚, 所以标志位为 负
         if (flag == 2) newFlag = -1;
@@ -397,7 +405,7 @@ contract Murmes is StrategyManager {
             (uint256 reputationSpread, uint256 tokenSpread) = accessStrategy
                 .spread(
                     users[subtitleNFT[subtitleId].dissenters[i]].reputation,
-                    flag
+                    reverseFlag
                 );
             _updateUser(
                 subtitleNFT[subtitleId].dissenters[i],
@@ -588,7 +596,7 @@ contract Murmes is StrategyManager {
         external
         returns (uint256)
     {
-        uint256 all;
+        uint256 all = 0;
         for (uint256 i = 0; i < day.length; i++) {
             if (
                 users[msg.sender].lock[platform][day[i]] > 0 &&
@@ -607,10 +615,13 @@ contract Murmes is StrategyManager {
                 if (platform != address(this)) {
                     IVT(videoToken).mintStableToken(platformId, vault, thisFee);
                 } else {
-                    IZimu(zimuToken).transferFrom(
-                        address(this),
-                        vault,
-                        thisFee
+                    require(
+                        IZimu(zimuToken).transferFrom(
+                            address(this),
+                            vault,
+                            thisFee
+                        ),
+                        "ER12"
                     );
                 }
                 IVault(vault).addFee(platformId, thisFee);
@@ -618,7 +629,7 @@ contract Murmes is StrategyManager {
             if (platform != address(this)) {
                 IVT(videoToken).mintStableToken(platformId, msg.sender, all);
             } else {
-                IZimu(zimuToken).transfer(msg.sender, all);
+                require(IZimu(zimuToken).transfer(msg.sender, all), "ER12");
             }
         }
         emit UserWithdraw(msg.sender, platform, day, all);

@@ -53,6 +53,7 @@ contract StrategyManager is EntityManager, SubtitleManager {
     event SystemSetDetection(address newDetection);
     event SystemSetSettlement(uint8 strategyId, address strategy, string notes);
 
+    event SystemSetFee(uint16 old, uint16 fee);
     event SystemSetVault(address vault);
     event SystemSetLockUpTime(uint256 time);
     event SystemSetZimuToken(address token);
@@ -224,6 +225,8 @@ contract StrategyManager is EntityManager, SubtitleManager {
      * @param rate 手续费比率，若为1%，应设置为100，因为计算后的值为 100/BASE_FEE_RATE
      */
     function setFee(uint16 rate) external onlyOwner {
+        uint16 old = fee;
         fee = rate;
+        emit SystemSetFee(old, rate);
     }
 }

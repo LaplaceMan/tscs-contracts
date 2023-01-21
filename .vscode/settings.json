@@ -1,0 +1,8 @@
+{
+  "slither.solcPath": "",
+  "slither.hiddenDetectors": [
+    "missing-zero-check",
+    "name-reused",
+    "weak-prng"
+  ]
+}

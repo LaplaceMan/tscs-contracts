@@ -39,6 +39,7 @@ contract SubtitleVersionManagement {
         string source,
         uint256 versionId
     );
+
     event ReportInvalidVersion(uint256 subtitleId, uint256 versionId);
 
     constructor(address ms) {
@@ -50,13 +51,12 @@ contract SubtitleVersionManagement {
      * @param subtitleId ST ID
      * @param fingerprint 新版本字幕 Sinhash 指纹
      * @param source 新版本字幕源地址
-     * @return 是否上传成功
      */
     function updateSubtitleVersion(
         uint256 subtitleId,
         uint256 fingerprint,
         string memory source
-    ) external returns (bool) {
+    ) external {
         address st = IMurmes(Murmes).subtitleToken();
         (address maker, , , uint256 version0) = IST(st).getSTBaseInfo(
             subtitleId
@@ -71,43 +71,33 @@ contract SubtitleVersionManagement {
         require(owner == maker && msg.sender == owner, "ER5");
         require(version0 != fingerprint && fingerprint != 0, "ER1-2");
         address detection = IMurmes(Murmes).detectionStrategy();
-        bool can;
-        can = IDetectionStrategy(detection).afterDetection(
-            version0,
-            fingerprint
+        require(
+            IDetectionStrategy(detection).afterDetection(version0, fingerprint),
+            "ER12-1"
         );
-        if (can) {
-            if (subtitles[subtitleId].length > 0) {
-                for (uint256 i; i < subtitles[subtitleId].length; i++) {
-                    assert(fingerprint != subtitles[subtitleId][i].fingerprint);
-                    if (subtitles[subtitleId][i].invalid == false) {
-                        can = IDetectionStrategy(detection).afterDetection(
+        if (subtitles[subtitleId].length > 0) {
+            for (uint256 i = 0; i < subtitles[subtitleId].length; i++) {
+                assert(fingerprint != subtitles[subtitleId][i].fingerprint);
+                if (subtitles[subtitleId][i].invalid == false) {
+                    require(
+                        IDetectionStrategy(detection).afterDetection(
                             fingerprint,
                             subtitles[subtitleId][i].fingerprint
-                        );
-                    }
-                    if (!can) {
-                        break;
-                    }
+                        ),
+                        "ER12-2"
+                    );
                 }
             }
         }
-        if (can) {
-            subtitles[subtitleId].push(
-                version({
-                    source: source,
-                    fingerprint: fingerprint,
-                    invalid: false
-                })
-            );
-            emit UpdateSubtitleVersion(
-                subtitleId,
-                fingerprint,
-                source,
-                subtitles[subtitleId].length
-            );
-        }
-        return can;
+        subtitles[subtitleId].push(
+            version({source: source, fingerprint: fingerprint, invalid: false})
+        );
+        emit UpdateSubtitleVersion(
+            subtitleId,
+            fingerprint,
+            source,
+            subtitles[subtitleId].length
+        );
     }
 
     /**
@@ -130,10 +120,13 @@ contract SubtitleVersionManagement {
      * @param subtitleId ST ID
      */
     function deleteInvaildSubtitle(uint256 subtitleId) public {
-        (uint8 state, , , , ) = IMurmes(Murmes).getSubtitleBaseInfo(subtitleId);
+        (uint8 state, , uint256 stateChangeTime, , ) = IMurmes(Murmes)
+            .getSubtitleBaseInfo(subtitleId);
+        uint256 lockUpTime = IMurmes(Murmes).lockUpTime();
         require(state == 2, "ER1");
+        require(block.timestamp > stateChangeTime + 3 * lockUpTime, "ER5");
         if (subtitles[subtitleId].length > 0) {
-            for (uint256 i; i < subtitles[subtitleId].length; i++) {
+            for (uint256 i = 0; i < subtitles[subtitleId].length; i++) {
                 if (subtitles[subtitleId][i].invalid == false) {
                     subtitles[subtitleId][i].invalid = true;
                     emit ReportInvalidVersion(subtitleId, i);
@@ -168,8 +161,8 @@ contract SubtitleVersionManagement {
         returns (uint256, uint256)
     {
         if (subtitles[subtitleId].length == 0) return (0, 0);
-        uint256 validNumber;
-        for (uint256 i; i < subtitles[subtitleId].length; i++) {
+        uint256 validNumber = 0;
+        for (uint256 i = 0; i < subtitles[subtitleId].length; i++) {
             if (
                 subtitles[subtitleId][i].fingerprint != 0 &&
                 subtitles[subtitleId][i].invalid == false
@@ -193,9 +186,10 @@ contract SubtitleVersionManagement {
         string memory source;
         uint256 fingerprint;
         for (uint256 i = subtitles[subtitleId].length; i > 0; i--) {
-            if (subtitles[subtitleId][i].invalid == false) {
-                source = subtitles[subtitleId][i].source;
-                fingerprint = subtitles[subtitleId][i].fingerprint;
+            if (subtitles[subtitleId][i - 1].invalid == false) {
+                source = subtitles[subtitleId][i - 1].source;
+                fingerprint = subtitles[subtitleId][i - 1].fingerprint;
+                break;
             }
         }
         return (source, fingerprint);

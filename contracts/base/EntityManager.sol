@@ -98,7 +98,7 @@ contract EntityManager is Ownable {
         external
         returns (uint16)
     {
-        for (uint256 i; i < language.length; i++) {
+        for (uint256 i = 0; i < language.length; i++) {
             languageNote.push(language[i]);
             require(languages[language[i]] == 0, "ER0");
             languages[language[i]] = uint16(languageNote.length - 1);
@@ -152,7 +152,13 @@ contract EntityManager is Ownable {
      * @param usr 用户区块链地址
      */
     function userJoin(address usr, uint256 deposit_) external {
-        IZimu(zimuToken).transferFrom(msg.sender, vault, deposit_);
+        if (deposit_ > 0) {
+            require(
+                IZimu(zimuToken).transferFrom(msg.sender, vault, deposit_),
+                "ER12"
+            );
+        }
+
         if (users[usr].reputation == 0) {
             _changeDespoit(int256(deposit_));
             _userInitialization(usr, int256(deposit_));

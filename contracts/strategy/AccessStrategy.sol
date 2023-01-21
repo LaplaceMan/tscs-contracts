@@ -17,7 +17,7 @@ contract AccessStrategy is IAccessStrategy {
     /**
      * @notice 奖惩时计算比率的除数
      */
-    uint32 constant BASE_RATIO = 100 * 1000;
+    uint32 constant BASE_RATIO = 100000;
     /**
      * @notice Murmes 内用户初始化时的信誉度分数, 精度为 1 即 100.0
      */
@@ -50,7 +50,7 @@ contract AccessStrategy is IAccessStrategy {
     /**
      * @notice 协议主合约地址
      */
-    address public Murmes;
+    address public immutable Murmes;
 
     event SystemSetBaseRatio(uint16 newBaseRatio);
     event SystemSetDepoitThreshold(uint8 newDepoitThreshold);
@@ -127,8 +127,9 @@ contract AccessStrategy is IAccessStrategy {
             if (reputation < depositThreshold) {
                 uint256 thisPunishment = punishment(reputation);
                 return (thisPunishment, thisPunishment * punishmentToken);
+            } else {
+                return (punishment(reputation), 0);
             }
-            return (punishment(reputation), 0);
         } else {
             return (0, 0);
         }
@@ -194,7 +195,7 @@ contract AccessStrategy is IAccessStrategy {
         pure
         returns (uint256)
     {
-        uint256 last;
+        uint256 last = 0;
         if (flag == 2) {
             uint256 _4ac = 4 * BASE_RATIO;
             uint256 _sqrtb2_4ac = _sqrt(reputation * reputation - _4ac);

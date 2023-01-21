@@ -4,7 +4,11 @@
 <p>
 <a href="https://www.youtube.com/channel/UCcIqRf9rq1oAN7pprsfpM8w"> <img src="https://img.shields.io/badge/YouTube-FF0000?style=flat&logo=youtube&logoColor=white" height="25px" /> </a>
 <a href="https://twitter.com/laplaceman1007"> <img src="https://img.shields.io/badge/Twitter-1DA1F2?style=flat&logo=twitter&logoColor=white" height="25px" /> </a>
-<img src="https://img.shields.io/badge/version-v0.3.0-blue" height="25px" />
+<img src="https://img.shields.io/badge/version-v0.3.1-blue" height="25px" />
+ </a>
+</a>
+<img src="https://img.shields.io/badge/license-LGPL3.0 only-blue.svg?style=plastic" height="25px" />
+ </a>
 </p>
 <p>
 TSCS: A Blockchain-Based Tokenized Subtitle Crowdsourcing System (Old Name)
@@ -58,6 +62,7 @@ TSCS: A Blockchain-Based Tokenized Subtitle Crowdsourcing System (Old Name)
 | ER9   | Language Inconsistency |
 | ER10  | High Similarity        |
 | ER11  | Invalid Settlement     |
+| ER12  | Transaction failed     |
 
 ## Contracts UML Diagram
 

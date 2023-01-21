@@ -117,7 +117,7 @@ contract Arbitration {
             }
         }
         if (subtitleReports[subtitleId].length > 0) {
-            for (uint256 i; i < subtitleReports[subtitleId].length; i++) {
+            for (uint256 i = 0; i < subtitleReports[subtitleId].length; i++) {
                 uint256 reportId = subtitleReports[subtitleId][i];
                 assert(reports[reportId].reason != reason);
             }
@@ -243,7 +243,7 @@ contract Arbitration {
         address access,
         address[] memory suppoters
     ) internal {
-        for (uint256 i; i < suppoters.length; i++) {
+        for (uint256 i = 0; i < suppoters.length; i++) {
             (uint256 reputation, ) = IMurmes(Murmes).getUserBaseInfo(
                 suppoters[i]
             );
@@ -284,7 +284,7 @@ contract Arbitration {
     function _liquidatingNormalUser(address access, address[] memory dissenters)
         internal
     {
-        for (uint256 i; i < dissenters.length; i++) {
+        for (uint256 i = 0; i < dissenters.length; i++) {
             (uint256 reputation, ) = IMurmes(Murmes).getUserBaseInfo(
                 dissenters[i]
             );
@@ -400,7 +400,7 @@ contract Arbitration {
         uint256 day
     ) internal {
         require(share * suppoters.length + main == all, "ER1");
-        for (uint256 i; i < suppoters.length; i++) {
+        for (uint256 i = 0; i < suppoters.length; i++) {
             IMurmes(Murmes).updateLockReward(
                 platform,
                 day,

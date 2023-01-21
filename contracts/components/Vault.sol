@@ -88,7 +88,7 @@ contract Vault is IVault {
         );
         if (amount > penalty) amount = penalty;
         penalty -= amount;
-        IZimu(token).transferFrom(address(this), to, amount);
+        require(IZimu(token).transferFrom(address(this), to, amount), "ER12");
         emit WithdrawPenalty(to, amount);
     }
 
@@ -112,7 +112,7 @@ contract Vault is IVault {
         address to,
         uint256 amount
     ) external auth {
-        IZimu(token).transferFrom(address(this), to, amount);
+        require(IZimu(token).transferFrom(address(this), to, amount), "ER12");
     }
 
     /**
@@ -128,7 +128,10 @@ contract Vault is IVault {
         require(penalty > penaltyUpperLimit, "Vault-ER5-2");
         uint256 overflow = penalty - penaltyUpperLimit;
         penalty = penaltyUpperLimit;
-        IZimu(token).transferFrom(address(this), token, overflow);
+        require(
+            IZimu(token).transferFrom(address(this), token, overflow),
+            "ER12"
+        );
     }
 
     /**

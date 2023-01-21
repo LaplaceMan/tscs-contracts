@@ -9,8 +9,9 @@ pragma solidity ^0.8.0;
 
 import "../components/Vault.sol";
 import "../interfaces/IPlatform.sol";
+import "../common/utils/ReentrancyGuard.sol";
 
-contract DepositMining is Vault {
+contract DepositMining is Vault, ReentrancyGuard {
     // 参与质押的总份额
     uint256 public points;
     // 最小质押时间
@@ -88,7 +89,10 @@ contract DepositMining is Vault {
         uint256 lockUpTime = IMurmes(Murmes).lockUpTime();
         require(state == 1 && block.timestamp > change + lockUpTime, "ER1-4");
         address zimu = IMurmes(Murmes).zimuToken();
-        IZimu(zimu).transferFrom(msg.sender, address(this), number);
+        require(
+            IZimu(zimu).transferFrom(msg.sender, address(this), number),
+            "ER12"
+        );
         cooling[subtitleId] = block.timestamp + 2 * duration;
         uint256 add = _sqrt(number * duration);
         if (deposits[msg.sender].tokens != 0) {
@@ -118,7 +122,7 @@ contract DepositMining is Vault {
      * @notice 取出质押的代币和奖励
      * @return 总计的额外 Zimu 代币和 VT 代币收入
      */
-    function exit() public returns (uint256, uint256) {
+    function exit() public nonReentrant returns (uint256, uint256) {
         require(
             block.timestamp >
                 deposits[msg.sender].start + deposits[msg.sender].duration,
@@ -126,12 +130,18 @@ contract DepositMining is Vault {
         );
         address zimu = IMurmes(Murmes).zimuToken();
         uint256 fee0 = (feeIncome[0] * deposits[msg.sender].parts) / points;
-        IZimu(zimu).transferFrom(
-            address(this),
-            msg.sender,
-            deposits[msg.sender].tokens + (fee0 - fee0 / 4)
+        require(
+            IZimu(zimu).transferFrom(
+                address(this),
+                msg.sender,
+                deposits[msg.sender].tokens + (fee0 - fee0 / 4)
+            ),
+            "ER12"
         );
-        IZimu(zimu).transferFrom(address(this), feeTo, fee0 / 4);
+        require(
+            IZimu(zimu).transferFrom(address(this), feeTo, fee0 / 4),
+            "ER12"
+        );
         feeIncome[0] -= fee0;
 
         address platform = IMurmes(Murmes).platforms();

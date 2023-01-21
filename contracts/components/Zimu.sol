@@ -45,8 +45,8 @@ contract ZimuToken is ERC20, IZimu {
      */
     function mintReward(address to, uint256 amount) external override {
         require(msg.sender == Murmes, "Zimu-ER5");
-        if (balanceOf(address(this)) >= 0) {
-            _mint(to, amount);
+        if (balanceOf(address(this)) > amount) {
+            _transfer(address(this), to, amount);
         }
     }
 

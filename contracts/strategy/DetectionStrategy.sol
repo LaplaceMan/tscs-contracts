@@ -17,7 +17,7 @@ contract DetectionStrategy is IDetectionStrategy {
     /**
      * @notice 汉明距离阈值, 大于该值表示不相似, 反之表示相似度过高
      */
-    uint8 public distanceThreshold;
+    uint256 public distanceThreshold;
     /**
      * @notice 协议主合约
      */
@@ -33,7 +33,7 @@ contract DetectionStrategy is IDetectionStrategy {
 
     event SystemSetDistanceThreshold(uint8 newDistanceThreshold);
 
-    constructor(address ms, uint8 threshold) {
+    constructor(address ms, uint256 threshold) {
         Murmes = ms;
         distanceThreshold = threshold;
     }
