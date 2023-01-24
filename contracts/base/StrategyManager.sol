@@ -54,14 +54,8 @@ contract StrategyManager is EntityManager, SubtitleManager {
     event SystemSetSettlement(uint8 strategyId, address strategy, string notes);
 
     event SystemSetFee(uint16 old, uint16 fee);
-    event SystemSetVault(address vault);
     event SystemSetLockUpTime(uint256 time);
-    event SystemSetZimuToken(address token);
-    event SystemSetVideoToken(address token);
-    event SystemSetPlatforms(address platform);
-    event SystemSetSubtitleToken(address token);
-    event SystemSetArbitration(address arbitration);
-    event SystemSetSubtitleVersionManagement(address versionManagement);
+    event SystemSetAddress(uint8 id, address addr);
 
     /**
      * @notice 结算策略 ID 与 SettlementStruct 的映射, 在 Murmes 内用 ID 唯一标识结算策略, 从0开始
@@ -131,16 +125,12 @@ contract StrategyManager is EntityManager, SubtitleManager {
         require(addr != address(0), "ER1");
         if (note == 0) {
             zimuToken = addr;
-            emit SystemSetZimuToken(addr);
         } else if (note == 1) {
             videoToken = addr;
-            emit SystemSetVideoToken(addr);
         } else if (note == 2) {
             subtitleToken = addr;
-            emit SystemSetSubtitleToken(addr);
         } else if (note == 3) {
             vault = addr;
-            emit SystemSetVault(addr);
         } else if (note == 4) {
             if (platforms != address(0)) {
                 _replaceOperator(platforms, addr);
@@ -148,7 +138,6 @@ contract StrategyManager is EntityManager, SubtitleManager {
                 _setOperator(addr);
             }
             platforms = addr;
-            emit SystemSetPlatforms(addr);
         } else if (note == 5) {
             if (arbitration != address(0)) {
                 _replaceOperator(platforms, addr);
@@ -156,11 +145,10 @@ contract StrategyManager is EntityManager, SubtitleManager {
                 _setOperator(addr);
             }
             arbitration = addr;
-            emit SystemSetArbitration(addr);
         } else if (note == 6) {
             versionManagement = addr;
-            emit SystemSetSubtitleVersionManagement(addr);
         }
+        emit SystemSetAddress(note, addr);
     }
 
     /**

@@ -109,4 +109,44 @@ interface IMurmes {
         external
         view
         returns (address);
+
+    function submitApplication(
+        address platform,
+        uint256 videoId,
+        uint8 strategy,
+        uint256 amount,
+        uint32 language,
+        uint256 deadline,
+        string memory source
+    ) external returns (uint256);
+
+    function uploadSubtitle(
+        uint256 taskId,
+        string memory cid,
+        uint16 languageId,
+        uint256 fingerprint
+    ) external returns (uint256);
+
+    function cancel(uint256 taskId) external;
+
+    function updateApplication(
+        uint256 taskId,
+        uint256 plusAmount,
+        uint256 plusTime
+    ) external;
+
+    function tasks(uint256 taskId)
+        external
+        returns (
+            address,
+            address,
+            uint256,
+            string memory,
+            uint8,
+            uint256,
+            uint32,
+            uint256[] memory,
+            uint256,
+            uint256
+        );
 }

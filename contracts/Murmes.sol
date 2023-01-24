@@ -68,7 +68,7 @@ contract Murmes is StrategyManager {
         uint256[] subtitleId,
         uint256[] counts
     );
-    // event ApplicationCancel(uint256 taskId);
+    event ApplicationCancel(uint256 taskId);
     event ApplicationRecover(uint256 taskId, uint256 amount, uint256 deadline);
     event ApplicationUpdate(
         uint256 taskId,
@@ -640,38 +640,7 @@ contract Murmes is StrategyManager {
      * @notice 取消申请（仅支持一次性结算策略, 其它的自动冻结）
      * @param taskId 申请 ID
      */
-    // function cancel(uint256 taskId) external {
-    //     require(msg.sender == tasks[taskId].applicant, "ER5");
-    //     require(
-    //         tasks[taskId].adopted == 0 &&
-    //             tasks[taskId].subtitles.length == 0 &&
-    //             tasks[taskId].deadline <= block.timestamp,
-    //         "ER1-5"
-    //     );
-    //     require(tasks[taskId].strategy == 0, "ER6");
-    //     tasks[taskId].deadline = 0;
-    //     uint256 platformId = platforms[
-    //         videos[tasks[taskId].videoId].platform
-    //     ].platformId;
-    //     IVT(videoToken).mintStableToken(
-    //         platformId,
-    //         msg.sender,
-    //         tasks[taskId].amount
-    //     );
-    //     emit ApplicationCancel(taskId);
-    // }
-
-    /**
-     * @notice 恢复申请（一次性结算策略的申请无法恢复, 必须重新发起）
-     * @param taskId 申请 ID
-     * @param amount 新的支付金额/比例
-     * @param deadline 新的截至期限
-     */
-    function recover(
-        uint256 taskId,
-        uint256 amount,
-        uint256 deadline
-    ) external {
+    function cancel(uint256 taskId) external {
         require(msg.sender == tasks[taskId].applicant, "ER5");
         require(
             tasks[taskId].adopted == 0 &&
@@ -679,11 +648,18 @@ contract Murmes is StrategyManager {
                 tasks[taskId].deadline <= block.timestamp,
             "ER5-2"
         );
-        require(tasks[taskId].strategy != 0, "ER6");
-        require(deadline > block.timestamp, "ER1");
-        tasks[taskId].deadline = deadline;
-        tasks[taskId].amount = amount;
-        emit ApplicationRecover(taskId, amount, deadline);
+        tasks[taskId].deadline = 0;
+        if (tasks[taskId].strategy == 0) {
+            require(
+                IZimu(zimuToken).transferFrom(
+                    address(this),
+                    msg.sender,
+                    tasks[taskId].amount
+                ),
+                "ER12"
+            );
+        }
+        emit ApplicationCancel(taskId);
     }
 
     /**
@@ -699,8 +675,27 @@ contract Murmes is StrategyManager {
     ) public {
         require(msg.sender == tasks[taskId].applicant, "ER5");
         require(tasks[taskId].adopted == 0, "ER6");
-        tasks[taskId].amount += plusAmount;
-        tasks[taskId].deadline += plusTime;
+        if (tasks[taskId].deadline <= block.timestamp) {
+            emit ApplicationRecover(taskId, plusAmount, plusTime);
+        }
+        if (tasks[taskId].deadline == 0) {
+            tasks[taskId].amount = plusAmount;
+            tasks[taskId].deadline = plusTime;
+            require(plusTime > block.timestamp + 1 days, "ER1");
+        } else {
+            tasks[taskId].amount += plusAmount;
+            tasks[taskId].deadline += plusTime;
+        }
+        if (tasks[taskId].strategy == 0) {
+            require(
+                IZimu(zimuToken).transferFrom(
+                    msg.sender,
+                    address(this),
+                    plusAmount
+                ),
+                "ER12"
+            );
+        }
         emit ApplicationUpdate(
             taskId,
             tasks[taskId].amount,
