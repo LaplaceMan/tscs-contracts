@@ -7,9 +7,8 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.0;
 
-import "./interfaces/IVT.sol";
+import "./interfaces/IGuard.sol";
 import "./base/StrategyManager.sol";
-import "./interfaces/ISettlementStrategy.sol";
 
 contract Murmes is StrategyManager {
     /**
@@ -268,6 +267,19 @@ contract Murmes is StrategyManager {
             ),
             "ER5"
         );
+        // 通过申请者自设的对字幕制作者的要求
+        address guard = users[tasks[taskId].applicant].guard;
+        if (guard != address(0)) {
+            require(
+                IGuard(guard).check(
+                    msg.sender,
+                    users[msg.sender].reputation,
+                    users[msg.sender].deposit,
+                    languageId
+                ),
+                "ER5-2"
+            );
+        }
         // 字幕相似度检测
         if (
             address(detectionStrategy) != address(0) &&

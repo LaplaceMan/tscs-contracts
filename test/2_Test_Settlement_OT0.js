@@ -64,11 +64,11 @@ describe("Settlement_OT0_Test", function () {
     const onetime2Address = onetime2.address;
     await tscs.deployed();
     let tx;
-    tx = await tscsAsDeployer.setAuditStrategy(auditAddress);
+    tx = await tscsAsDeployer.setNormalStrategy(0, auditAddress);
     await tx.wait();
-    tx = await tscsAsDeployer.setAccessStrategy(accessAddress);
+    tx = await tscsAsDeployer.setNormalStrategy(1, accessAddress);
     await tx.wait();
-    tx = await tscsAsDeployer.setDetectionStrategy(detectionAddress);
+    tx = await tscsAsDeployer.setNormalStrategy(2, detectionAddress);
     await tx.wait();
     tx = await tscsAsDeployer.setSettlementStrategy(0, onetime0Address, "OT0");
     await tx.wait();

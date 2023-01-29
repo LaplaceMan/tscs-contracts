@@ -41,17 +41,19 @@ contract StrategyManager is EntityManager, SubtitleManager {
     /**
      * @notice 记录每个结算策略的信息
      * @param strategy 结算策略合约地址
-     * @param notes 结算策略合约注释说明
+     * @param note 结算策略合约注释说明
      */
     struct SettlementStruct {
         address strategy;
-        string notes;
+        string note;
     }
 
-    event SystemSetAudit(address newAudit);
-    event SystemSetAccess(address newAccess);
-    event SystemSetDetection(address newDetection);
-    event SystemSetSettlement(uint8 strategyId, address strategy, string notes);
+    event SystemSetNormalStrategy(uint8 note, address newAudit);
+    event SystemSetSettlementStrategy(
+        uint8 strategyId,
+        address strategy,
+        string note
+    );
 
     event SystemSetFee(uint16 old, uint16 fee);
     event SystemSetLockUpTime(uint256 time);
@@ -63,48 +65,32 @@ contract StrategyManager is EntityManager, SubtitleManager {
     mapping(uint8 => SettlementStruct) settlementStrategy;
 
     /**
-     * @notice 修改当前 Murmes 内的审核策略, 仅能由管理员调用
-     * @param newAudit 新的审核策略合约地址
+     * @notice 修改当前 Murmes 内的通过策略合约地址, 仅能由管理员调用
+     * @param note 修改策略合约的类型，0为审核策略，1为访问策略，2为相似度检测策略
+     * @param addr 新的审核策略合约地址
      */
-    function setAuditStrategy(IAuditStrategy newAudit) external onlyOwner {
-        require(address(newAudit) != address(0), "ER1");
-        auditStrategy = newAudit;
-        emit SystemSetAudit(address(newAudit));
-    }
-
-    /**
-     * @notice 修改当前 Murmes 内的访问策略, 仅能由管理员调用
-     * @param newAccess 新的访问策略合约地址
-     */
-    function setAccessStrategy(IAccessStrategy newAccess) external onlyOwner {
-        require(address(newAccess) != address(0), "ER1");
-        accessStrategy = newAccess;
-        emit SystemSetAccess(address(newAccess));
-    }
-
-    /**
-     * @notice 修改当前 Murmes 内的检测策略, 仅能由管理员调用
-     * @param newDetection 新的检测策略合约地址
-     */
-    function setDetectionStrategy(IDetectionStrategy newDetection)
-        external
-        onlyOwner
-    {
-        require(address(newDetection) != address(0), "ER1");
-        detectionStrategy = newDetection;
-        emit SystemSetDetection(address(newDetection));
+    function setNormalStrategy(uint8 note, address addr) external onlyOwner {
+        require(address(addr) != address(0), "ER1");
+        if (note == 0) {
+            auditStrategy = IAuditStrategy(addr);
+        } else if (note == 1) {
+            accessStrategy = IAccessStrategy(addr);
+        } else if (note == 2) {
+            detectionStrategy = IDetectionStrategy(addr);
+        }
+        emit SystemSetNormalStrategy(note, addr);
     }
 
     /**
      * @notice 添加或修改结算策略
      * @param strategyId 新的结算合约ID, 无顺位关系
      * @param strategy  新的结算合约地址
-     * @param notes 新的结算策略注释说明
+     * @param note 新的结算策略注释说明
      */
     function setSettlementStrategy(
         uint8 strategyId,
         address strategy,
-        string memory notes
+        string memory note
     ) external onlyOwner {
         require(strategy != address(0), "ER1");
         if (settlementStrategy[strategyId].strategy != address(0)) {
@@ -112,8 +98,8 @@ contract StrategyManager is EntityManager, SubtitleManager {
         }
         _setOperator(strategy);
         settlementStrategy[strategyId].strategy = strategy;
-        settlementStrategy[strategyId].notes = notes;
-        emit SystemSetSettlement(strategyId, strategy, notes);
+        settlementStrategy[strategyId].note = note;
+        emit SystemSetSettlementStrategy(strategyId, strategy, note);
     }
 
     /**
@@ -173,7 +159,7 @@ contract StrategyManager is EntityManager, SubtitleManager {
     {
         return (
             settlementStrategy[strategyId].strategy,
-            settlementStrategy[strategyId].notes
+            settlementStrategy[strategyId].note
         );
     }
 

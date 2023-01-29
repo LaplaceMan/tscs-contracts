@@ -85,9 +85,9 @@ const main = async () => {
   const arbitrationAddress = arbitration.address;
   console.log("arbitrationAddress", arbitrationAddress);
   // 主合约设置策略合约地址
-  const tx1 = await tscsExemple.setAuditStrategy(auditAddress);
-  const tx2 = await tscsExemple.setAccessStrategy(accessAddress);
-  const tx3 = await tscsExemple.setDetectionStrategy(detectionAddress);
+  const tx1 = await tscsExemple.setNormalStrategy(0, auditAddress);
+  const tx2 = await tscsExemple.setNormalStrategy(1, accessAddress);
+  const tx3 = await tscsExemple.setNormalStrategy(2, detectionAddress);
   const tx4 = await tscsExemple.setSettlementStrategy(
     0,
     onetime0Address,

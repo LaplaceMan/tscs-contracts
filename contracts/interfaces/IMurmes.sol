@@ -43,6 +43,8 @@ interface IMurmes {
         uint256 day
     ) external view returns (uint256);
 
+    function gutUserGuard(address usr) external view returns (address);
+
     function updateUser(
         address usr,
         int256 reputationSpread,

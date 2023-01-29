@@ -70,6 +70,7 @@ contract EntityManager is Ownable {
     struct User {
         uint256 reputation;
         uint256 operate;
+        address guard;
         int256 deposit;
         mapping(address => mapping(uint256 => uint256)) lock;
     }
@@ -298,6 +299,24 @@ contract EntityManager is Ownable {
         returns (uint256, int256)
     {
         return (users[usr].reputation, users[usr].deposit);
+    }
+
+    /**
+     * @notice 用户设置自己的用于筛选字幕制作者的守护合约
+     * @param guard 新的守护合约地址
+     */
+    function setGuard(address guard) external {
+        require(users[msg.sender].reputation > 0, "ER1");
+        users[msg.sender].guard = guard;
+    }
+
+    /**
+     * @notice 获得指定用户当前启用的守护合约地址
+     * @param usr 用户地址
+     * @return 当前使用的守护合约
+     */
+    function gutUserGuard(address usr) external view returns (address) {
+        return users[usr].guard;
     }
 
     /**
