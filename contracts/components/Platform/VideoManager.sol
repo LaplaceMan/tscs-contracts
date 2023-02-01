@@ -48,7 +48,8 @@ contract VideoManager {
         uint256 realId,
         uint256 id,
         string symbol,
-        address creator
+        address creator,
+        uint256 initializeView
     );
     event VideoCountsUpdate(address platform, uint256[] id, uint256[] counts);
 
@@ -58,13 +59,15 @@ contract VideoManager {
      * @param id 视频在 Platform 内的 ID
      * @param symbol 标识视频的符号
      * @param creator 视频创作者地址
+     * @param initialize 初始化时（开启服务前）视频播放量
      * @return 视频在 Murmes 内的顺位 ID
      */
     function _createVideo(
         address platform,
         uint256 id,
         string memory symbol,
-        address creator
+        address creator,
+        uint256 initialize
     ) internal returns (uint256) {
         totalVideos++;
         require(idReal2System[platform][id] == 0, "ER0");
@@ -72,8 +75,16 @@ contract VideoManager {
         videos[totalVideos].id = id;
         videos[totalVideos].symbol = symbol;
         videos[totalVideos].creator = creator;
+        videos[totalVideos].totalViewCouts = initialize;
         idReal2System[platform][id] = totalVideos;
-        emit VideoCreate(platform, id, totalVideos, symbol, creator);
+        emit VideoCreate(
+            platform,
+            id,
+            totalVideos,
+            symbol,
+            creator,
+            initialize
+        );
         return totalVideos;
     }
 

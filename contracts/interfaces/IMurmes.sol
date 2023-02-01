@@ -151,4 +151,7 @@ interface IMurmes {
             uint256,
             uint256
         );
+
+    function updateUsageCounts(uint256[] memory id, uint256[] memory ms)
+        external;
 }

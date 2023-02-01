@@ -2,20 +2,11 @@
 pragma solidity ^0.8.0;
 
 interface IPlatform {
+    // ***** VideoManager *****
     function totalVideos() external view returns (uint256);
 
-    function totalPlatforms() external view returns (uint256);
-
-    function getPlatformBaseInfo(address platform)
-        external
-        view
-        returns (
-            string memory,
-            string memory,
-            uint256,
-            uint16,
-            uint16
-        );
+    function updateViewCounts(uint256[] memory id, uint256[] memory vs)
+        external;
 
     function getVideoBaseInfo(uint256 videoId)
         external
@@ -29,6 +20,31 @@ interface IPlatform {
             uint256,
             uint256[] memory
         );
+
+    // ***** Platforms ****
+    function totalPlatforms() external view returns (uint256);
+
+    function getPlatformBaseInfo(address platform)
+        external
+        view
+        returns (
+            string memory,
+            string memory,
+            uint256,
+            uint16,
+            uint16
+        );
+
+    function platformRate(uint16 rate1, uint16 rate2)
+        external
+        returns (uint16, uint16);
+
+    function createVideo(
+        uint256 id,
+        string memory symbol,
+        address creator,
+        uint256 initialize
+    ) external returns (uint256);
 
     function updateVideoTasks(uint256 videoId, uint256[] memory tasks) external;
 

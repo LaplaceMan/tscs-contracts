@@ -146,15 +146,23 @@ contract Platforms is VideoManager {
      * @param id 视频在 Platform 内部的 ID
      * @param symbol 视频的 symbol
      * @param creator 视频创作者区块链地址
+     * @param initialize 初始化时（开启服务前）视频播放量
      * @return 视频在 Murmes 内的 ID
      */
     function createVideo(
         uint256 id,
         string memory symbol,
-        address creator
+        address creator,
+        uint256 initialize
     ) external returns (uint256) {
         require(platforms[msg.sender].rateCountsToProfit > 0, "ER1");
-        uint256 videoId = _createVideo(msg.sender, id, symbol, creator);
+        uint256 videoId = _createVideo(
+            msg.sender,
+            id,
+            symbol,
+            creator,
+            initialize
+        );
         return videoId;
     }
 

@@ -103,14 +103,15 @@ describe("Settlement_MIX_Test", function () {
         ethers.BigNumber.from("655")
       );
     // 创建视频
-    await expect(platformAsDeployer.createVideo(1, "test", user1.address))
+    await expect(platformAsDeployer.createVideo(1, "test", user1.address, 0))
       .to.emit(platform, "VideoCreate")
       .withArgs(
         owner.address,
         ethers.BigNumber.from("1"),
         ethers.BigNumber.from("1"),
         "test",
-        user1.address
+        user1.address,
+        ethers.BigNumber.from("0"),
       );
     // 提交第一个申请 (OT2)
     const date = "0x" + (parseInt(Date.now() / 1000) + 15778800).toString(16);
