@@ -21,6 +21,11 @@ interface IPlatform {
             uint256[] memory
         );
 
+    function getVideoOrderIdByRealId(address platfrom, uint256 realId)
+        external
+        view
+        returns (uint256);
+
     // ***** Platforms ****
     function totalPlatforms() external view returns (uint256);
 

@@ -10,6 +10,7 @@ pragma solidity ^0.8.0;
 import "./VideoManager.sol";
 import "../../interfaces/IVT.sol";
 import "../../interfaces/IMurmes.sol";
+import "../../interfaces/IAuthorityStrategy.sol";
 
 contract Platforms is VideoManager {
     /**
@@ -54,11 +55,11 @@ contract Platforms is VideoManager {
         Murmes = ms;
         // 当结算类型为一次性结算时, 默认字幕支持者分成 1/100
         platforms[ms].rateAuditorDivide = 655;
-        platforms[ms].name = "Default";
-        platforms[ms].symbol = "Default";
+        platforms[ms].name = "Murmes";
+        platforms[ms].symbol = "Murmes";
         // Default 索引为 0，但包括在总数内
         totalPlatforms += 1;
-        emit PlatformJoin(ms, 0, "Default", "Default", 0, 655);
+        emit PlatformJoin(ms, 0, "Murmes", "Murmes", 0, 655);
     }
 
     /**
@@ -155,7 +156,11 @@ contract Platforms is VideoManager {
         address creator,
         uint256 initialize
     ) external returns (uint256) {
-        require(platforms[msg.sender].rateCountsToProfit > 0, "ER1");
+        address authority = IMurmes(Murmes).authorityStrategy();
+        IAuthorityStrategy(authority).isOwnCreateVideoAuthority(
+            platforms[msg.sender].rateCountsToProfit,
+            msg.sender
+        );
         uint256 videoId = _createVideo(
             msg.sender,
             id,
@@ -187,6 +192,30 @@ contract Platforms is VideoManager {
         require(msg.sender == Murmes, "ER5");
         int256 unsettled = int256(videos[videoId].unsettled) + differ;
         videos[videoId].unsettled = unsettled > 0 ? uint256(unsettled) : 0;
+    }
+
+    /**
+     * @notice 更新视频播放量, 此处为新增量, 仅能由视频所属的 Platform 调用
+     * @param id 视频在 Murmes 内的 ID
+     * @param vs 新增播放量
+     */
+    function updateViewCounts(uint256[] memory id, uint256[] memory vs)
+        external
+    {
+        assert(id.length == vs.length);
+        address authority = IMurmes(Murmes).authorityStrategy();
+        for (uint256 i = 0; i < id.length; i++) {
+            uint256 amount = IAuthorityStrategy(authority)
+                .isOwnUpdateViewCountsAuthority(
+                    videos[id[i]].id,
+                    vs[i],
+                    videos[id[i]].platform,
+                    msg.sender
+                );
+            videos[id[i]].totalViewCouts += amount;
+            videos[id[i]].unsettled += amount;
+        }
+        emit VideoCountsUpdate(videos[id[0]].platform, id, vs);
     }
 
     /**

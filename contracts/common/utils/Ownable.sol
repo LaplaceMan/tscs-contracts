@@ -54,6 +54,14 @@ abstract contract Ownable {
         _multiSig = newMutliSig;
     }
 
+    function _setOperatorByTool(address old, address replace) internal {
+        if (old == address(0)) {
+            _setOperator(replace);
+        } else {
+            _replaceOperator(old, replace);
+        }
+    }
+
     function _replaceOperator(address old, address replace) internal {
         opeators[old] = false;
         opeators[replace] = true;

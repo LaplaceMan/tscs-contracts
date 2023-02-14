@@ -114,10 +114,16 @@ contract Murmes is StrategyManager {
         require(deadline > block.timestamp, "ER1");
         require(settlementStrategy[strategy].strategy != address(0), "ER6");
         totalTasks++;
+        authorityStrategy.isOwnApplyAuthority(
+            platform,
+            videoId,
+            source,
+            msg.sender,
+            strategy,
+            amount
+        );
         // 当平台地址为 0, 意味着使用默认一次性结算策略
         if (platform == address(this)) {
-            require(strategy == 0, "ER7");
-            require(bytes(source).length > 0, "ER7-2");
             // 一次性结算策略下, 需要用户提前授权主合约额度且只能使用 Zimu 代币支付
             require(
                 IZimu(zimuToken).transferFrom(
@@ -128,11 +134,8 @@ contract Murmes is StrategyManager {
                 "ER12"
             );
         } else {
-            (, , , address creator, , , uint256[] memory tasks_) = IPlatform(
-                platforms
-            ).getVideoBaseInfo(videoId);
-            // 当结算策略非一次性时, 与视频收益相关, 需要由视频创作者主动提起
-            require(creator == msg.sender, "ER5-2");
+            (, , , , , , uint256[] memory tasks_) = IPlatform(platforms)
+                .getVideoBaseInfo(videoId);
             // 下面是为了防止重复申请制作同一语言的字幕
             for (uint256 i = 0; i < tasks_.length; i++) {
                 uint256 taskId = tasks_[i];
@@ -145,6 +148,7 @@ contract Murmes is StrategyManager {
             );
             IPlatform(platforms).updateVideoTasks(videoId, newTasks);
         }
+        // 实际上这一部分也应该模块化，但考虑到结算策略应该不会再增加，目前先这样设计
         if (strategy == 2 || strategy == 0) {
             // 更新未结算稳定币数目
             ISettlementStrategy(settlementStrategy[strategy].strategy)

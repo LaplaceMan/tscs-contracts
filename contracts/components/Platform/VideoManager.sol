@@ -89,19 +89,16 @@ contract VideoManager {
     }
 
     /**
-     * @notice 更新视频播放量, 此处为新增量, 仅能由视频所属的 Platform 调用
-     * @param id 视频在 Murmes 内的 ID
-     * @param vs 新增播放量
+     * @notice 根据在第三方平台中的ID 获得在Murmes中的顺位视频 ID
+     * @param platfrom 第三方平台，视频所属平台
+     * @param realId 注册时所填写的视频在平台中的真实 ID
+     * @return 在Murmes中的顺位ID
      */
-    function updateViewCounts(uint256[] memory id, uint256[] memory vs)
-        external
+    function getVideoOrderIdByRealId(address platfrom, uint256 realId)
+        public
+        view
+        returns (uint256)
     {
-        assert(id.length == vs.length);
-        for (uint256 i = 0; i < id.length; i++) {
-            require(msg.sender == videos[id[i]].platform, "ER5");
-            videos[id[i]].totalViewCouts += vs[i];
-            videos[id[i]].unsettled += vs[i];
-        }
-        emit VideoCountsUpdate(videos[id[0]].platform, id, vs);
+        return idReal2System[platfrom][realId];
     }
 }

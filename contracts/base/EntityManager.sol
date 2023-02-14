@@ -75,7 +75,7 @@ contract EntityManager is Ownable {
         mapping(address => mapping(uint256 => uint256)) lock;
     }
 
-    event RegisterLanguage(string language, uint16 id);
+    event RegisterLanguage(string language, uint32 id);
     event UserJoin(address user, uint256 reputation, int256 deposit);
     event UserLockRewardUpdate(
         address user,
@@ -93,19 +93,14 @@ contract EntityManager is Ownable {
     /**
      * @notice 为了节省存储成本, 使用ID（uint16）代替语言文本（string）, 同时任何人可调用, 保证适用性
      * @param language 欲添加语言类型
-     * @return 新添加语言的ID
      */
-    function registerLanguage(string[] memory language)
-        external
-        returns (uint16)
-    {
+    function registerLanguage(string[] memory language) external {
         for (uint256 i = 0; i < language.length; i++) {
             languageNote.push(language[i]);
             require(languages[language[i]] == 0, "ER0");
-            languages[language[i]] = uint16(languageNote.length - 1);
-            emit RegisterLanguage(language[i], uint16(languageNote.length - 1));
+            languages[language[i]] = uint32(languageNote.length - 1);
+            emit RegisterLanguage(language[i], uint32(languageNote.length - 1));
         }
-        return uint16(languageNote.length - 1);
     }
 
     /**

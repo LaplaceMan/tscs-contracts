@@ -58,6 +58,8 @@ interface IMurmes {
 
     function detectionStrategy() external view returns (address);
 
+    function authorityStrategy() external view returns (address);
+
     function lockUpTime() external view returns (uint256);
 
     function getSettlementStrategyBaseInfo(uint8 strategyId)

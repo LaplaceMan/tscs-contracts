@@ -13,6 +13,7 @@ import "../interfaces/IVT.sol";
 import "../interfaces/IPlatform.sol";
 import "../interfaces/IAccessStrategy.sol";
 import "../interfaces/IAuditStrategy.sol";
+import "../interfaces/IAuthorityStrategy.sol";
 import "../interfaces/IDetectionStrategy.sol";
 import "../interfaces/ISettlementStrategy.sol";
 
@@ -30,6 +31,10 @@ contract StrategyManager is EntityManager, SubtitleManager {
      * @notice 检测策略合约, 字幕上传时携带了额外的指纹字段, 目前的设想是其为字幕的 Simhash 值, 该策略是根据已上传字幕的指纹信息判断新上传字幕是否抄袭
      */
     IDetectionStrategy public detectionStrategy;
+    /**
+     * @notice 用于部分功能调用时的权限检测
+     */
+    IAuthorityStrategy public authorityStrategy;
     /**
      * @notice 锁定期（审核期）
      */
@@ -77,6 +82,9 @@ contract StrategyManager is EntityManager, SubtitleManager {
             accessStrategy = IAccessStrategy(addr);
         } else if (note == 2) {
             detectionStrategy = IDetectionStrategy(addr);
+        } else if (note == 3) {
+            _setOperatorByTool(address(authorityStrategy), addr);
+            authorityStrategy = IAuthorityStrategy(addr);
         }
         emit SystemSetNormalStrategy(note, addr);
     }
@@ -93,10 +101,7 @@ contract StrategyManager is EntityManager, SubtitleManager {
         string memory note
     ) external onlyOwner {
         require(strategy != address(0), "ER1");
-        if (settlementStrategy[strategyId].strategy != address(0)) {
-            _replaceOperator(settlementStrategy[strategyId].strategy, strategy);
-        }
-        _setOperator(strategy);
+        _setOperatorByTool(settlementStrategy[strategyId].strategy, strategy);
         settlementStrategy[strategyId].strategy = strategy;
         settlementStrategy[strategyId].note = note;
         emit SystemSetSettlementStrategy(strategyId, strategy, note);
@@ -118,18 +123,10 @@ contract StrategyManager is EntityManager, SubtitleManager {
         } else if (note == 3) {
             vault = addr;
         } else if (note == 4) {
-            if (platforms != address(0)) {
-                _replaceOperator(platforms, addr);
-            } else {
-                _setOperator(addr);
-            }
+            _setOperatorByTool(platforms, addr);
             platforms = addr;
         } else if (note == 5) {
-            if (arbitration != address(0)) {
-                _replaceOperator(platforms, addr);
-            } else {
-                _setOperator(addr);
-            }
+            _setOperatorByTool(arbitration, addr);
             arbitration = addr;
         } else if (note == 6) {
             versionManagement = addr;
