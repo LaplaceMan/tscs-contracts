@@ -21,6 +21,11 @@ contract Platforms is VideoManager {
      * @notice 已加入的 Platform 总数
      */
     uint256 public totalPlatforms;
+
+    /**
+     * @notice 默认的第三方平台中涉及兑换代币（VT价值转换）时，要求的目标代币
+     */
+    address public tokenGlobal;
     /**
      * @notice Platform 地址与相应结构体的映射
      */
@@ -50,9 +55,11 @@ contract Platforms is VideoManager {
         uint16 rate2
     );
     event PlatformSetRate(address platform, uint16 rate1, uint16 rate2);
+    event PlatformSetTokenGlobal(address oldToken, address newToken);
 
-    constructor(address ms) {
+    constructor(address ms, address token) {
         Murmes = ms;
+        tokenGlobal = token;
         // 当结算类型为一次性结算时, 默认字幕支持者分成 1/100
         platforms[ms].rateAuditorDivide = 655;
         platforms[ms].name = "Murmes";
@@ -143,6 +150,17 @@ contract Platforms is VideoManager {
     }
 
     /**
+     * @notice 在第三方平台中涉及到VT的价值转换时，要求目标代币类型
+     * @param token 目标代币类型，默认为 Zimu
+     */
+    function setTokenGlobal(address token) external {
+        require(IMurmes(Murmes).owner() == msg.sender, "ER5");
+        address old = tokenGlobal;
+        tokenGlobal = token;
+        emit PlatformSetTokenGlobal(old, token);
+    }
+
+    /**
      * @notice 由平台 Platform 注册视频, 此后该视频支持链上结算（意味着更多结算策略的支持）
      * @param id 视频在 Platform 内部的 ID
      * @param symbol 视频的 symbol
@@ -214,37 +232,24 @@ contract Platforms is VideoManager {
                 );
             videos[id[i]].totalViewCouts += amount;
             videos[id[i]].unsettled += amount;
+            for (uint256 j; j < videos[id[i]].tasks.length; j++) {
+                uint256 taskId = videos[id[i]].tasks[j];
+                (uint8 strategy, , uint256[] memory ids) = IMurmes(Murmes)
+                    .getTaskPaymentStrategyAndSubtitles(taskId);
+                if (strategy == 1 && ids.length > 0) {
+                    uint16 rateCountsToProfit = platforms[
+                        videos[id[i]].platform
+                    ].rateCountsToProfit;
+                    IMurmes(Murmes).updateUsageCounts(
+                        taskId,
+                        vs[i],
+                        rateCountsToProfit
+                    );
+                }
+            }
         }
-        emit VideoCountsUpdate(videos[id[0]].platform, id, vs);
-    }
 
-    /**
-     * @notice 获得视频的基本信息
-     * @param videoId 视频 ID
-     * @return 获得视频的所属平台、在平台内的ID、特征符号、创作者、总播放量、未结算播放量和所有的字幕申请
-     */
-    function getVideoBaseInfo(uint256 videoId)
-        external
-        view
-        returns (
-            address,
-            uint256,
-            string memory,
-            address,
-            uint256,
-            uint256,
-            uint256[] memory
-        )
-    {
-        return (
-            videos[videoId].platform,
-            videos[videoId].id,
-            videos[videoId].symbol,
-            videos[videoId].creator,
-            videos[videoId].totalViewCouts,
-            videos[videoId].unsettled,
-            videos[videoId].tasks
-        );
+        emit VideoCountsUpdate(videos[id[0]].platform, id, vs);
     }
 
     /**
@@ -270,5 +275,18 @@ contract Platforms is VideoManager {
             platforms[platform].rateCountsToProfit,
             platforms[platform].rateAuditorDivide
         );
+    }
+
+    /**
+     * @notice 根据第三方平台的地址获得平台/代币 ID
+     * @param platform 平台地址
+     * @return 平台/代币 ID
+     */
+    function getPlatformIdByAddress(address platform)
+        external
+        view
+        returns (uint256)
+    {
+        return platforms[platform].platformId;
     }
 }

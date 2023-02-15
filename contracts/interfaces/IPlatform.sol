@@ -29,6 +29,8 @@ interface IPlatform {
     // ***** Platforms ****
     function totalPlatforms() external view returns (uint256);
 
+    function tokenGlobal() external view returns (address);
+
     function getPlatformBaseInfo(address platform)
         external
         view
@@ -39,6 +41,11 @@ interface IPlatform {
             uint16,
             uint16
         );
+
+    function getPlatformIdByAddress(address platform)
+        external
+        view
+        returns (uint256);
 
     function platformRate(uint16 rate1, uint16 rate2)
         external

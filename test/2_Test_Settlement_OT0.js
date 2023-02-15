@@ -27,6 +27,7 @@ describe("Settlement_OT0_Test", function () {
     const PLATFORM = await ethers.getContractFactory("Platforms");
     const ACCESS = await ethers.getContractFactory("AccessStrategy");
     const AUDIT = await ethers.getContractFactory("AuditStrategy");
+    const AUTHORITY = await ethers.getContractFactory("AuthorityStrategy");
     const DETECTION = await ethers.getContractFactory("DetectionStrategy");
     const DIVIDE1 = await ethers.getContractFactory("SettlementDivide1");
     const ONETIME0 = await ethers.getContractFactory("SettlementOneTime0");
@@ -47,13 +48,15 @@ describe("Settlement_OT0_Test", function () {
     const stAddress = st.address;
     const vault = await VAULTANDDEPOSIT.deploy(tscsAddress, deployerAddress);
     const vaultAddress = vault.address;
-    platform = await PLATFORM.deploy(tscsAddress);
+    platform = await PLATFORM.deploy(tscsAddress, zimuAddress);
     const platformAddress = platform.address;
     platformAsDeployer = platform.connect(deployer);
     access = await ACCESS.deploy(tscsAddress);
     const accessAddress = access.address;
     audit = await AUDIT.deploy(tscsAddress, 1);
     const auditAddress = audit.address;
+    const authority = await AUTHORITY.deploy(tscsAddress, "0x60Ae865ee4C725cd04353b5AAb364553f56ceF82");
+    const authorityAddress = await authority.address;
     detection = await DETECTION.deploy(tscsAddress, 5);
     const detectionAddress = detection.address;
     divide1 = await DIVIDE1.deploy(tscsAddress);
@@ -69,6 +72,8 @@ describe("Settlement_OT0_Test", function () {
     tx = await tscsAsDeployer.setNormalStrategy(1, accessAddress);
     await tx.wait();
     tx = await tscsAsDeployer.setNormalStrategy(2, detectionAddress);
+    await tx.wait();
+    tx = await tscsAsDeployer.setNormalStrategy(3, authorityAddress);
     await tx.wait();
     tx = await tscsAsDeployer.setSettlementStrategy(0, onetime0Address, "OT0");
     await tx.wait();

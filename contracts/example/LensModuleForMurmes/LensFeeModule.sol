@@ -9,6 +9,9 @@ import {FollowValidationModuleBase} from "./base/FollowValidationModuleBase.sol"
 import {IERC20} from "../../common/token/ERC20/IERC20.sol";
 import {SafeERC20} from "../../common/token/ERC20/extensions/SafeERC20.sol";
 import {IERC721} from "../../common/token/ERC721/IERC721.sol";
+import "../../interfaces/IPlatform.sol";
+import "../../interfaces/IMurmes.sol";
+import "../../interfaces/ILensFeeModuleForMurmes.sol";
 
 /**
  * @notice A struct containing the necessary data to execute collect actions on a publication.
@@ -30,23 +33,33 @@ struct ProfilePublicationData {
 contract LensFeeModuleForMurmes is
     FeeModuleBase,
     FollowValidationModuleBase,
-    ICollectModule
+    ICollectModule,
+    ILensFeeModuleForMurmes
 {
     using SafeERC20 for IERC20;
 
+    address public immutable Murmes;
+
     mapping(uint256 => mapping(uint256 => ProfilePublicationData))
         internal _dataByPublicationByProfile;
+    mapping(uint256 => mapping(uint256 => uint256))
+        internal _incomeForMurmesByPublicationByProfile;
 
-    constructor(address hub, address moduleGlobals)
-        FeeModuleBase(moduleGlobals)
-        ModuleBase(hub)
-    {}
+    constructor(
+        address hub,
+        address moduleGlobals,
+        address ms
+    ) FeeModuleBase(moduleGlobals) ModuleBase(hub) {
+        Murmes = ms;
+    }
 
-    function getTotalIncome(uint256 profileId, uint256 pubId)
+    function getTotalIncomeForMurmes(uint256 profileId, uint256 pubId)
         external
         view
         returns (uint256)
-    {}
+    {
+        return _incomeForMurmesByPublicationByProfile[profileId][pubId];
+    }
 
     /**
      * @notice This collect module levies a fee on collects and supports referrals. Thus, we need to decode data.
@@ -80,7 +93,8 @@ contract LensFeeModuleForMurmes is
             referralFee > BPS_MAX ||
             amount == 0
         ) revert Errors.InitParamsInvalid();
-
+        if (!_currencyWhitelistedInMurmes(currency))
+            revert Errors.InitParamsInvalid();
         _dataByPublicationByProfile[profileId][pubId].amount = amount;
         _dataByPublicationByProfile[profileId][pubId].currency = currency;
         _dataByPublicationByProfile[profileId][pubId].recipient = recipient;
@@ -89,6 +103,22 @@ contract LensFeeModuleForMurmes is
             .followerOnly = followerOnly;
 
         return data;
+    }
+
+    function _isOpenMurmes(uint256 profileId, uint256 pubId)
+        internal
+        view
+        returns (bool open)
+    {
+        uint256 realId = uint256(keccak256(abi.encode(profileId, pubId)));
+        address platforms = IMurmes(Murmes).platforms();
+        uint256 videoId = IPlatform(platforms).getVideoOrderIdByRealId(
+            HUB,
+            realId
+        );
+        (, , , , , , uint256[] memory tasks) = IPlatform(platforms)
+            .getVideoBaseInfo(videoId);
+        if (tasks.length > 0) open = true;
     }
 
     /**
@@ -135,6 +165,16 @@ contract LensFeeModuleForMurmes is
         return _dataByPublicationByProfile[profileId][pubId];
     }
 
+    function _currencyWhitelistedInMurmes(address currency)
+        internal
+        view
+        returns (bool result)
+    {
+        address platforms = IMurmes(Murmes).platforms();
+        address defaultCurrency = IPlatform(platforms).tokenGlobal();
+        if (defaultCurrency == currency) result = true;
+    }
+
     function _processCollect(
         address collector,
         uint256 profileId,
@@ -151,8 +191,25 @@ contract LensFeeModuleForMurmes is
             .recipient;
         uint256 treasuryAmount = (amount * treasuryFee) / BPS_MAX;
         uint256 adjustedAmount = amount - treasuryAmount;
+        bool open = _isOpenMurmes(profileId, pubId);
+        if (!open) {
+            IERC20(currency).safeTransferFrom(
+                collector,
+                recipient,
+                adjustedAmount
+            );
+        } else {
+            address murmesRecipient = IMurmes(Murmes).authorityStrategy();
+            IERC20(currency).safeTransferFrom(
+                collector,
+                murmesRecipient,
+                adjustedAmount
+            );
+            _incomeForMurmesByPublicationByProfile[profileId][
+                pubId
+            ] += adjustedAmount;
+        }
 
-        IERC20(currency).safeTransferFrom(collector, recipient, adjustedAmount);
         if (treasuryAmount > 0)
             IERC20(currency).safeTransferFrom(
                 collector,
@@ -203,8 +260,25 @@ contract LensFeeModuleForMurmes is
         }
         address recipient = _dataByPublicationByProfile[profileId][pubId]
             .recipient;
+        bool open = _isOpenMurmes(profileId, pubId);
+        if (!open) {
+            IERC20(currency).safeTransferFrom(
+                collector,
+                recipient,
+                adjustedAmount
+            );
+        } else {
+            address murmesRecipient = IMurmes(Murmes).authorityStrategy();
+            IERC20(currency).safeTransferFrom(
+                collector,
+                murmesRecipient,
+                adjustedAmount
+            );
+            _incomeForMurmesByPublicationByProfile[profileId][
+                pubId
+            ] += adjustedAmount;
+        }
 
-        IERC20(currency).safeTransferFrom(collector, recipient, adjustedAmount);
         if (treasuryAmount > 0)
             IERC20(currency).safeTransferFrom(
                 collector,

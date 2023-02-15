@@ -26,6 +26,7 @@ describe("MainSystem_Base_Test", function () {
         const PLATFORM = await ethers.getContractFactory("Platforms");
         const ACCESS = await ethers.getContractFactory("AccessStrategy");
         const AUDIT = await ethers.getContractFactory("AuditStrategy");
+        const AUTHORITY = await ethers.getContractFactory("AuthorityStrategy");
         const DETECTION = await ethers.getContractFactory("DetectionStrategy");
         const DIVIDE1 = await ethers.getContractFactory("SettlementDivide1");
         const ONETIME0 = await ethers.getContractFactory("SettlementOneTime0");
@@ -46,7 +47,9 @@ describe("MainSystem_Base_Test", function () {
         const stAddress = st.address;
         const vault = await VAULTANDDEPOSIT.deploy(tscsAddress, deployerAddress);
         const vaultAddress = vault.address;
-        platform = await PLATFORM.deploy(tscsAddress);
+        platform = await PLATFORM.deploy(tscsAddress, zimuAddress);
+        const authority = await AUTHORITY.deploy(tscsAddress, "0x60Ae865ee4C725cd04353b5AAb364553f56ceF82");
+        const authorityAddress = await authority.address;
         const platformAddress = platform.address;
         platformAsDeployer = platform.connect(deployer);
         access = await ACCESS.deploy(tscsAddress);
@@ -68,6 +71,8 @@ describe("MainSystem_Base_Test", function () {
         tx = await tscsAsDeployer.setNormalStrategy(1, accessAddress);
         await tx.wait();
         tx = await tscsAsDeployer.setNormalStrategy(2, detectionAddress);
+        await tx.wait();
+        tx = await tscsAsDeployer.setNormalStrategy(3, authorityAddress);
         await tx.wait();
         tx = await tscsAsDeployer.setSettlementStrategy(0, onetime0Address, "OT0");
         await tx.wait();
@@ -136,11 +141,11 @@ describe("MainSystem_Base_Test", function () {
 
     // 测试时将 AuditStrategy 中的审核次数从 10 => 2, 且 AuditTime = 0
     it("Test add language", async function () {
-        let tx = await tscsAsDeployer.registerLanguage(['cn', 'us', 'jp']);
+        let tx = await tscsAsDeployer.registerLanguage(['zh-CN', 'en-US', 'ja-JP']);
         await tx.wait();
-        let cnIndex = await tscsAsDeployer.getLanguageIdByNote('cn');
-        let enIndex = await tscsAsDeployer.getLanguageIdByNote('us');
-        let jpIndex = await tscsAsDeployer.getLanguageIdByNote('jp');
+        let cnIndex = await tscsAsDeployer.getLanguageIdByNote('zh-CN');
+        let enIndex = await tscsAsDeployer.getLanguageIdByNote('en-US');
+        let jpIndex = await tscsAsDeployer.getLanguageIdByNote('ja-JP');
         expect(cnIndex).to.equal(1);
         expect(enIndex).to.equal(2);
         expect(jpIndex).to.equal(3);
@@ -164,7 +169,7 @@ describe("MainSystem_Base_Test", function () {
     });
 
     it("Test upload subtitles", async function () {
-        let tx = await tscs.connect(user2).uploadSubtitle(1, "testtesttest", 1, "0x1a2b");
+        let tx = await tscs.connect(user2).uploadSubtitle(1, "testtesttest", 1, "0x1a2b3c");
         await tx.wait();
         let receipt = await ethers.provider.getTransactionReceipt(tx.hash);
         expect(receipt.status).to.equal(1);

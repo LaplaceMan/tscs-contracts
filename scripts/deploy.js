@@ -38,7 +38,7 @@ const main = async () => {
   console.log("vaultAndDepositAddress", vaultAndDepositAddress);
   //部署平台合约
   const PLATFORM = await ethers.getContractFactory("Platforms");
-  const platform = await PLATFORM.deploy(tscsAddress);
+  const platform = await PLATFORM.deploy(tscsAddress, zimuAddress);
   const platformAddress = platform.address;
   console.log("platformAddress", platformAddress);
   // 部署策略合约
@@ -52,6 +52,11 @@ const main = async () => {
   const audit = await AUDIT.deploy(tscsAddress, 1);
   const auditAddress = audit.address;
   console.log("auditAddress", auditAddress);
+  // 访问权限策略（Lens中间件）
+  const AUTHORITY = await ethers.getContractFactory("AuthorityStrategy");
+  const authority = await AUTHORITY.deploy(tscsAddress, "0x60Ae865ee4C725cd04353b5AAb364553f56ceF82");
+  const authorityAddress = await authority.address;
+  console.log("authorityAddress", authorityAddress);
   // 相似度检测策略
   const DETECTION = await ethers.getContractFactory("DetectionStrategy");
   const detection = await DETECTION.deploy(tscsAddress, 5); //owner 地址（DAO地址）, 阈值
@@ -88,41 +93,43 @@ const main = async () => {
   const tx1 = await tscsExemple.setNormalStrategy(0, auditAddress);
   const tx2 = await tscsExemple.setNormalStrategy(1, accessAddress);
   const tx3 = await tscsExemple.setNormalStrategy(2, detectionAddress);
-  const tx4 = await tscsExemple.setSettlementStrategy(
+  const tx4 = await tscsExemple.setNormalStrategy(3, authorityAddress);
+  const tx5 = await tscsExemple.setSettlementStrategy(
     0,
     onetime0Address,
     'OT0'
   );
-  const tx5 = await tscsExemple.setSettlementStrategy(1, divide1Address, 'D1');
-  const tx6 = await tscsExemple.setSettlementStrategy(
+  const tx6 = await tscsExemple.setSettlementStrategy(1, divide1Address, 'D1');
+  const tx7 = await tscsExemple.setSettlementStrategy(
     2,
     onetime2Address,
     'OTM2'
   );
   // 主合约设置代币合约地址
-  const tx7 = await tscsExemple.setComponentsAddress(0, zimuAddress);
-  const tx8 = await tscsExemple.setComponentsAddress(1, vtAddress);
-  const tx9 = await tscsExemple.setComponentsAddress(2, stAddress);
-  const tx10 = await tscsExemple.setComponentsAddress(3, vaultAndDepositAddress);
-  const tx11 = await tscsExemple.setComponentsAddress(4, platformAddress);
-  const tx12 = await tscsExemple.setComponentsAddress(5, arbitrationAddress);
-  const tx13 = await tscsExemple.setComponentsAddress(6, versionManagementAddress);
-  const tx14 = await tscsExemple.registerLanguage(['cn', 'us', 'jp', 'kr', 'de', 'fr', 'in', 'gb', 'ru', 'es', 'my', 'pt', 'th', 'bd', 'sa'])
+  const tx8 = await tscsExemple.setComponentsAddress(0, zimuAddress);
+  const tx9 = await tscsExemple.setComponentsAddress(1, vtAddress);
+  const tx10 = await tscsExemple.setComponentsAddress(2, stAddress);
+  const tx11 = await tscsExemple.setComponentsAddress(3, vaultAndDepositAddress);
+  const tx12 = await tscsExemple.setComponentsAddress(4, platformAddress);
+  const tx13 = await tscsExemple.setComponentsAddress(5, arbitrationAddress);
+  const tx14 = await tscsExemple.setComponentsAddress(6, versionManagementAddress);
+  const tx15 = await tscsExemple.registerLanguage(['zh-CN', 'en-US', 'zh-TW', 'zh-HK', 'en-GB', 'ja-JP', 'ko-KR', 'fr-CA', 'pt-PT', 'es-CL', 'it-IT'])
   console.log("\n");
   console.log("setAuditStrategy", tx1);
   console.log("setAccessStrategy", tx2);
   console.log("setDetectionStrategy", tx3);
-  console.log("setSettlementStrategy0", tx4);
-  console.log("setSettlementStrategy1", tx5);
-  console.log("setSettlementStrategy2", tx6);
-  console.log("setZimuToken", tx7);
-  console.log("setVideoToken", tx8);
-  console.log("setSubtitleToken", tx9);
-  console.log("setVault", tx10);
-  console.log("setPlatforms", tx11);
-  console.log("registerLanguage", tx12);
-  console.log("registerLanguage", tx13);
-  console.log("registerLanguage", tx14);
+  console.log("setAuthorityStrategy", tx4);
+  console.log("setSettlementStrategy0", tx5);
+  console.log("setSettlementStrategy1", tx6);
+  console.log("setSettlementStrategy2", tx7);
+  console.log("setZimuToken", tx8);
+  console.log("setVideoToken", tx9);
+  console.log("setSubtitleToken", tx10);
+  console.log("setVault", tx11);
+  console.log("platformAddress", tx12);
+  console.log("setArbitration", tx13);
+  console.log("setVersionManagement", tx14);
+  console.log("registerLanguage", tx15);
 };
 
 main()

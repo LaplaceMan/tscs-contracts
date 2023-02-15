@@ -101,4 +101,33 @@ contract VideoManager {
     {
         return idReal2System[platfrom][realId];
     }
+
+    /**
+     * @notice 获得视频的基本信息
+     * @param videoId 视频 ID
+     * @return 获得视频的所属平台、在平台内的ID、特征符号、创作者、总播放量、未结算播放量和所有的字幕申请
+     */
+    function getVideoBaseInfo(uint256 videoId)
+        external
+        view
+        returns (
+            address,
+            uint256,
+            string memory,
+            address,
+            uint256,
+            uint256,
+            uint256[] memory
+        )
+    {
+        return (
+            videos[videoId].platform,
+            videos[videoId].id,
+            videos[videoId].symbol,
+            videos[videoId].creator,
+            videos[videoId].totalViewCouts,
+            videos[videoId].unsettled,
+            videos[videoId].tasks
+        );
+    }
 }

@@ -120,29 +120,29 @@ contract PlatformKepper is ChainlinkClient, ConfirmedOwner {
      * @param applyId 字幕所属的申请ID
      * @return requestId Chainlink 请求ID
      */
-    function requestSubtitleUsageCounts(uint256 applyId)
-        public
-        returns (bytes32 requestId)
-    {
-        (, address platform, , , , , , , , ) = IMurmes(Murmes).tasks(applyId);
-        require(platform == address(this), "ER5");
+    // function requestSubtitleUsageCounts(uint256 applyId)
+    //     public
+    //     returns (bytes32 requestId)
+    // {
+    //     (, address platform, , , , , , , , ) = IMurmes(Murmes).tasks(applyId);
+    //     require(platform == address(this), "ER5");
 
-        Chainlink.Request memory req = buildChainlinkRequest(
-            jobId,
-            address(this),
-            this.fulfillSubtitleUsageCounts.selector
-        );
+    //     Chainlink.Request memory req = buildChainlinkRequest(
+    //         jobId,
+    //         address(this),
+    //         this.fulfillSubtitleUsageCounts.selector
+    //     );
 
-        string memory api = string(
-            abi.encodePacked("/getSubtitleUsageCountsAPI/", applyId)
-        );
+    //     string memory api = string(
+    //         abi.encodePacked("/getSubtitleUsageCountsAPI/", applyId)
+    //     );
 
-        req.add("get", api);
-        req.add("path", "0,counts");
-        requestId = sendChainlinkRequest(req, fee);
-        requestApplyIdMap[requestId] = applyId;
-        return requestId;
-    }
+    //     req.add("get", api);
+    //     req.add("path", "0,counts");
+    //     requestId = sendChainlinkRequest(req, fee);
+    //     requestApplyIdMap[requestId] = applyId;
+    //     return requestId;
+    // }
 
     /**
      * @notice 内部功能，调用Murmes协议 updateViewCounts 更新视频播放量
@@ -157,7 +157,7 @@ contract PlatformKepper is ChainlinkClient, ConfirmedOwner {
         );
         if (_counts > counts) {
             uint256[] memory update = new uint256[](1);
-            update[0] = _counts;
+            update[0] = _counts - counts;
             uint256[] memory id = new uint256[](1);
             id[0] = _id;
             IPlatform(platforms).updateViewCounts(id, update);
@@ -170,23 +170,23 @@ contract PlatformKepper is ChainlinkClient, ConfirmedOwner {
     /**
      * @notice 内部功能，调用Murmes协议 updateUsageCounts 更新字幕使用量
      */
-    function _updateSubtitleUsageCounts(uint256 _id, uint256 _counts)
-        internal
-        returns (bool)
-    {
-        uint256 latestUsage = latestSubtitleUsage[_id];
-        latestSubtitleUsage[_id] = _counts;
-        if (_counts - latestUsage > 0) {
-            uint256[] memory update = new uint256[](1);
-            update[0] = _counts;
-            uint256[] memory id = new uint256[](1);
-            id[0] = _id;
-            IMurmes(Murmes).updateUsageCounts(id, update);
-            return true;
-        } else {
-            return false;
-        }
-    }
+    // function _updateSubtitleUsageCounts(uint256 _id, uint256 _counts)
+    //     internal
+    //     returns (bool)
+    // {
+    //     uint256 latestUsage = latestSubtitleUsage[_id];
+    //     latestSubtitleUsage[_id] = _counts;
+    //     if (_counts - latestUsage > 0) {
+    //         uint256[] memory update = new uint256[](1);
+    //         update[0] = _counts;
+    //         uint256[] memory id = new uint256[](1);
+    //         id[0] = _id;
+    //         IMurmes(Murmes).updateUsageCounts(id, update);
+    //         return true;
+    //     } else {
+    //         return false;
+    //     }
+    // }
 
     /**
      * @notice 内部功能，调用Murmes协议 createVideo 创建视频和创作者的映射关系
@@ -241,14 +241,14 @@ contract PlatformKepper is ChainlinkClient, ConfirmedOwner {
      * @param _requestId Chainlink 请求ID
      * @param _counts 根据平台提供的API返回的特定字幕最新的使用量
      */
-    function fulfillSubtitleUsageCounts(bytes32 _requestId, uint256 _counts)
-        public
-        recordChainlinkFulfillment(_requestId)
-    {
-        uint256 applyId = requestApplyIdMap[_requestId];
-        bool result = _updateSubtitleUsageCounts(applyId, _counts);
-        emit RequestUpdateSubtitleUsageCounts(_requestId, _counts, result);
-    }
+    // function fulfillSubtitleUsageCounts(bytes32 _requestId, uint256 _counts)
+    //     public
+    //     recordChainlinkFulfillment(_requestId)
+    // {
+    //     uint256 applyId = requestApplyIdMap[_requestId];
+    //     bool result = _updateSubtitleUsageCounts(applyId, _counts);
+    //     emit RequestUpdateSubtitleUsageCounts(_requestId, _counts, result);
+    // }
 
     /**
      * @notice 由平台方提供服务，使用数字签名的方式更新视频播放量
@@ -278,29 +278,29 @@ contract PlatformKepper is ChainlinkClient, ConfirmedOwner {
      * @notice 由平台方提供服务，使用数字签名的方式更新字幕使用量
      * @return result 更新结果
      */
-    function updateSubtitleUsageCountsWithSignature(
-        uint256 applyId,
-        uint256 counts,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external returns (bool result) {
-        bytes32 digest = keccak256(
-            abi.encodePacked(
-                "\x19\x01",
-                DOMAIN_SEPARATOR,
-                keccak256(
-                    abi.encode(
-                        UPDATESUBTITLEUSAGECOUNTS_TYPEHASH,
-                        applyId,
-                        counts
-                    )
-                )
-            )
-        );
-        require(_checkSignature(digest, v, r, s), "ER5");
-        result = _updateSubtitleUsageCounts(applyId, counts);
-    }
+    // function updateSubtitleUsageCountsWithSignature(
+    //     uint256 applyId,
+    //     uint256 counts,
+    //     uint8 v,
+    //     bytes32 r,
+    //     bytes32 s
+    // ) external returns (bool result) {
+    //     bytes32 digest = keccak256(
+    //         abi.encodePacked(
+    //             "\x19\x01",
+    //             DOMAIN_SEPARATOR,
+    //             keccak256(
+    //                 abi.encode(
+    //                     UPDATESUBTITLEUSAGECOUNTS_TYPEHASH,
+    //                     applyId,
+    //                     counts
+    //                 )
+    //             )
+    //         )
+    //     );
+    //     require(_checkSignature(digest, v, r, s), "ER5");
+    //     result = _updateSubtitleUsageCounts(applyId, counts);
+    // }
 
     /**
      * @notice 由平台方提供服务，使用数字签名的方式创建视频和创作者的映射关系

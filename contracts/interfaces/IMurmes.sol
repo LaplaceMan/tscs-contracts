@@ -154,6 +154,20 @@ interface IMurmes {
             uint256
         );
 
-    function updateUsageCounts(uint256[] memory id, uint256[] memory ms)
-        external;
+    // function updateUsageCounts(uint256[] memory id, uint256[] memory ms)
+    //     external;
+    function updateUsageCounts(
+        uint256 taskId,
+        uint256 counts,
+        uint16 rateCountsToProfit
+    ) external;
+
+    function getTaskPaymentStrategyAndSubtitles(uint256 taskId)
+        external
+        view
+        returns (
+            uint8,
+            uint256,
+            uint256[] memory
+        );
 }

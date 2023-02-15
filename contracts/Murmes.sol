@@ -62,11 +62,7 @@ contract Murmes is StrategyManager {
         uint256 taskId,
         string src
     );
-    event SubtitleCountsUpdate(
-        address platform,
-        uint256[] subtitleId,
-        uint256[] counts
-    );
+    event SubtitleCountsUpdate(uint256 taskId, uint256 counts);
     event ApplicationCancel(uint256 taskId);
     event ApplicationRecover(uint256 taskId, uint256 amount, uint256 deadline);
     event ApplicationUpdate(
@@ -309,36 +305,53 @@ contract Murmes is StrategyManager {
 
     /**
      * @notice 由平台 Platform 更新其旗下视频中被确认字幕的使用量，目前只对于分成结算有用
-     * @param id 相应的申请 ID
-     * @param ms 新增使用量
+     * @param taskId 相应的申请 ID
+     * @param counts 新增使用量
      */
-    function updateUsageCounts(uint256[] memory id, uint256[] memory ms)
-        external
-    {
-        require(id.length == ms.length, "ER1");
-        for (uint256 i = 0; i < id.length; i++) {
-            if (tasks[id[i]].adopted > 0) {
-                (address platform, , , , , , ) = IPlatform(platforms)
-                    .getVideoBaseInfo(tasks[id[i]].videoId);
-                (, , , uint16 rateCountsToProfit, ) = IPlatform(platforms)
-                    .getPlatformBaseInfo(platform);
-                require(msg.sender == platform, "ER5");
-                require(
-                    tasks[id[i]].strategy != 0 && tasks[id[i]].strategy != 2,
-                    "ER1-2"
-                );
-                ISettlementStrategy(
-                    settlementStrategy[tasks[id[i]].strategy].strategy
-                ).updateDebtOrReward(
-                        id[i],
-                        ms[i],
-                        tasks[id[i]].amount,
-                        rateCountsToProfit
-                    );
-            }
-        }
-        emit SubtitleCountsUpdate(msg.sender, id, ms);
+    function updateUsageCounts(
+        uint256 taskId,
+        uint256 counts,
+        uint16 rateCountsToProfit
+    ) external {
+        require(isOperator(msg.sender), "ER5");
+        require(tasks[taskId].strategy == 1, "ER1");
+        ISettlementStrategy(settlementStrategy[tasks[taskId].strategy].strategy)
+            .updateDebtOrReward(
+                taskId,
+                counts,
+                tasks[taskId].amount,
+                rateCountsToProfit
+            );
+        emit SubtitleCountsUpdate(taskId, counts);
     }
+
+    // function updateUsageCounts(uint256[] memory id, uint256[] memory ms)
+    //     external
+    // {
+    //     require(id.length == ms.length, "ER1");
+    //     for (uint256 i = 0; i < id.length; i++) {
+    //         if (tasks[id[i]].adopted > 0) {
+    //             (address platform, , , , , , ) = IPlatform(platforms)
+    //                 .getVideoBaseInfo(tasks[id[i]].videoId);
+    //             (, , , uint16 rateCountsToProfit, ) = IPlatform(platforms)
+    //                 .getPlatformBaseInfo(platform);
+    //             require(msg.sender == platform, "ER5");
+    //             require(
+    //                 tasks[id[i]].strategy != 0 && tasks[id[i]].strategy != 2,
+    //                 "ER1-2"
+    //             );
+    //             ISettlementStrategy(
+    //                 settlementStrategy[tasks[id[i]].strategy].strategy
+    //             ).updateDebtOrReward(
+    //                     id[i],
+    //                     ms[i],
+    //                     tasks[id[i]].amount,
+    //                     rateCountsToProfit
+    //                 );
+    //         }
+    //     }
+    //     emit SubtitleCountsUpdate(msg.sender, id, ms);
+    // }
 
     /**
      * @notice 获得特定字幕与审核相关的信息
@@ -744,5 +757,21 @@ contract Murmes is StrategyManager {
     {
         require(tasks[taskId].applicant != address(0), "ER1");
         return tasks[taskId].platform;
+    }
+
+    function getTaskPaymentStrategyAndSubtitles(uint256 taskId)
+        public
+        view
+        returns (
+            uint8,
+            uint256,
+            uint256[] memory
+        )
+    {
+        return (
+            tasks[taskId].strategy,
+            tasks[taskId].amount,
+            tasks[taskId].subtitles
+        );
     }
 }
