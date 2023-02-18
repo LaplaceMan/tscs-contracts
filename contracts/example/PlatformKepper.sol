@@ -87,6 +87,7 @@ contract PlatformKepper is ChainlinkClient, ConfirmedOwner {
      * @notice 提交更新特定视频播放量的申请
      * @param videoId 根据注册顺序获得的视频ID
      * @return requestId Chainlink 请求ID
+     * label PK1
      */
     function requestVideoViewCounts(uint256 videoId)
         public
@@ -96,7 +97,7 @@ contract PlatformKepper is ChainlinkClient, ConfirmedOwner {
         (address platform, , , , , , ) = IPlatform(platforms).getVideoBaseInfo(
             videoId
         );
-        require(platform == address(this), "ER5");
+        require(platform == address(this), "PK1-5");
 
         Chainlink.Request memory req = buildChainlinkRequest(
             jobId,
@@ -146,6 +147,7 @@ contract PlatformKepper is ChainlinkClient, ConfirmedOwner {
 
     /**
      * @notice 内部功能，调用Murmes协议 updateViewCounts 更新视频播放量
+     * label PK2
      */
     function _updateVideoViewCounts(uint256 _id, uint256 _counts)
         internal
@@ -190,6 +192,7 @@ contract PlatformKepper is ChainlinkClient, ConfirmedOwner {
 
     /**
      * @notice 内部功能，调用Murmes协议 createVideo 创建视频和创作者的映射关系
+     * label PK3
      */
     function _openMurmesServiceForVideo(
         uint256 id,
@@ -202,12 +205,14 @@ contract PlatformKepper is ChainlinkClient, ConfirmedOwner {
             id,
             symbol,
             creator,
-            initialize
+            initialize,
+            address(0)
         );
         return videoId;
     }
 
     // 内部辅助功能，检查签名有效性
+    // label PK4
     function _checkSignature(
         bytes32 digest,
         uint8 v,
@@ -226,6 +231,7 @@ contract PlatformKepper is ChainlinkClient, ConfirmedOwner {
      * @notice Chainlink 返回特定视频ID的播放量
      * @param _requestId Chainlink 申请ID
      * @param _counts 根据平台提供的API返回的特定视频最新的播放量
+     * label PK5
      */
     function fulfillVideoViewCounts(bytes32 _requestId, uint256 _counts)
         public
@@ -253,6 +259,7 @@ contract PlatformKepper is ChainlinkClient, ConfirmedOwner {
     /**
      * @notice 由平台方提供服务，使用数字签名的方式更新视频播放量
      * @return result 更新结果
+     * label PK6
      */
     function updateVideoViewCountsWithSignature(
         uint256 videoId,
@@ -270,7 +277,7 @@ contract PlatformKepper is ChainlinkClient, ConfirmedOwner {
                 )
             )
         );
-        require(_checkSignature(digest, v, r, s), "ER5");
+        require(_checkSignature(digest, v, r, s), "PK6-5");
         result = _updateVideoViewCounts(videoId, counts);
     }
 
@@ -305,6 +312,7 @@ contract PlatformKepper is ChainlinkClient, ConfirmedOwner {
     /**
      * @notice 由平台方提供服务，使用数字签名的方式创建视频和创作者的映射关系
      * @return videoId 根据注册顺序获得的在 Murmes 中的视频ID
+     * label PK7
      */
     function openServiceForVideoWithSignature(
         uint256 realId,
@@ -330,7 +338,7 @@ contract PlatformKepper is ChainlinkClient, ConfirmedOwner {
                 )
             )
         );
-        require(_checkSignature(digest, v, r, s), "ER5");
+        require(_checkSignature(digest, v, r, s), "PK7-5");
         videoId = _openMurmesServiceForVideo(
             realId,
             symbol,
@@ -346,6 +354,7 @@ contract PlatformKepper is ChainlinkClient, ConfirmedOwner {
      * @param creator 视频创作者区块链地址
      * @param initialize 初始化时（开启服务前）视频播放量
      * @return videoId 视频在 Murmes 内的 ID
+     * label PK8
      */
     function openServiceForVideo(
         uint256 realId,
@@ -365,6 +374,7 @@ contract PlatformKepper is ChainlinkClient, ConfirmedOwner {
      * @notice 修改自己 Platform 内的比率, 请至少保证一个非 0, 避免无效修改
      * @param rateCountsToProfit 播放量和实际收益比例
      * @param rateAuditorDivide 字幕支持者分成比例
+     * label PK9
      */
     function setPlatfromRate(
         uint16 rateCountsToProfit,
@@ -379,6 +389,7 @@ contract PlatformKepper is ChainlinkClient, ConfirmedOwner {
 
     /**
      * @notice 提取合约内未用尽的 link 代币
+     * label PK10
      */
     function withdrawLink() public onlyOwner {
         LinkTokenInterface link = LinkTokenInterface(chainlinkTokenAddress());

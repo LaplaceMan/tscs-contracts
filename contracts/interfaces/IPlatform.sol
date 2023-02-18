@@ -55,7 +55,8 @@ interface IPlatform {
         uint256 id,
         string memory symbol,
         address creator,
-        uint256 initialize
+        uint256 initialize,
+        address from
     ) external returns (uint256);
 
     function updateVideoTasks(uint256 videoId, uint256[] memory tasks) external;

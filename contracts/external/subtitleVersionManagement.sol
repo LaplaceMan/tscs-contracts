@@ -51,6 +51,7 @@ contract SubtitleVersionManagement {
      * @param subtitleId ST ID
      * @param fingerprint 新版本字幕 Sinhash 指纹
      * @param source 新版本字幕源地址
+     * label SVM1
      */
     function updateSubtitleVersion(
         uint256 subtitleId,
@@ -65,15 +66,15 @@ contract SubtitleVersionManagement {
             (uint8 state, , , , ) = IMurmes(Murmes).getSubtitleBaseInfo(
                 subtitleId
             );
-            require(state < 2, "ER1");
+            require(state < 2, "SVM1-1");
         }
         address owner = IST(st).ownerOf(subtitleId);
-        require(owner == maker && msg.sender == owner, "ER5");
-        require(version0 != fingerprint && fingerprint != 0, "ER1-2");
+        require(owner == maker && msg.sender == owner, "SVM1-5");
+        require(version0 != fingerprint && fingerprint != 0, "SVM1-1-2");
         address detection = IMurmes(Murmes).detectionStrategy();
         require(
             IDetectionStrategy(detection).afterDetection(version0, fingerprint),
-            "ER12-1"
+            "SVM1-12"
         );
         if (subtitles[subtitleId].length > 0) {
             for (uint256 i = 0; i < subtitles[subtitleId].length; i++) {
@@ -84,7 +85,7 @@ contract SubtitleVersionManagement {
                             fingerprint,
                             subtitles[subtitleId][i].fingerprint
                         ),
-                        "ER12-2"
+                        "SVM1-12-2"
                     );
                 }
             }
@@ -104,11 +105,12 @@ contract SubtitleVersionManagement {
      * @notice 取消无效的字幕，一般是字幕源文件和 Simhash 指纹不匹配，注意，这将导致往后的已上传版本全部失效
      * @param subtitleId ST ID
      * @param versionId 无效的版本号
+     * label SVM2
      */
     function reportInvalidVersion(uint256 subtitleId, uint256 versionId)
         public
     {
-        require(IMurmes(Murmes).isOperator(msg.sender), "ER5");
+        require(IMurmes(Murmes).isOperator(msg.sender), "SVM2-5");
         for (uint256 i = versionId; i < subtitles[subtitleId].length; i++) {
             subtitles[subtitleId][i].invalid = true;
         }
@@ -118,13 +120,14 @@ contract SubtitleVersionManagement {
     /**
      * @notice 当字幕已经被删除时，它的所有版本都应该失效
      * @param subtitleId ST ID
+     * label SVM3
      */
     function deleteInvaildSubtitle(uint256 subtitleId) public {
         (uint8 state, , uint256 stateChangeTime, , ) = IMurmes(Murmes)
             .getSubtitleBaseInfo(subtitleId);
         uint256 lockUpTime = IMurmes(Murmes).lockUpTime();
-        require(state == 2, "ER1");
-        require(block.timestamp > stateChangeTime + 3 * lockUpTime, "ER5");
+        require(state == 2, "SVM3-1");
+        require(block.timestamp > stateChangeTime + 3 * lockUpTime, "SVM3-5");
         if (subtitles[subtitleId].length > 0) {
             for (uint256 i = 0; i < subtitles[subtitleId].length; i++) {
                 if (subtitles[subtitleId][i].invalid == false) {
@@ -140,6 +143,7 @@ contract SubtitleVersionManagement {
      * @param subtitleId ST ID
      * @param versionId 字幕的版本号
      * @return 特定版本字幕的详细信息
+     * label SVM4
      */
     function getSpecifyVersion(uint256 subtitleId, uint256 versionId)
         public
@@ -154,6 +158,7 @@ contract SubtitleVersionManagement {
      * @notice 获得字幕版本总数
      * @param subtitleId ST ID
      * @return 字幕有效的版本数，字幕所有的版本数
+     * label SVM5
      */
     function getVersionNumebr(uint256 subtitleId)
         public
@@ -177,6 +182,7 @@ contract SubtitleVersionManagement {
      * @notice 获得最新的有效字幕版本信息
      * @param subtitleId ST ID
      * @return 返回特定字幕最新的有效的版本的详细信息
+     * label SVM6
      */
     function getLatestValidVersion(uint256 subtitleId)
         public

@@ -75,6 +75,7 @@ contract SubtitleToken is ERC721, IST {
      * @param languageId 字幕所属语种的 ID
      * @param fingerprint 字幕指纹, 此处暂定为 Simhash
      * @return 字幕代币 ST（Subtitle Token） ID
+     * label ST1
      */
     function mintST(
         address maker,
@@ -83,7 +84,7 @@ contract SubtitleToken is ERC721, IST {
         uint16 languageId,
         uint256 fingerprint
     ) external override returns (uint256) {
-        require(msg.sender == Murmes, "ER5");
+        require(msg.sender == Murmes, "ST1-5");
         _tokenIdTracker++;
         _mint(maker, _tokenIdTracker);
         _tokenURI[_tokenIdTracker] = cid;
@@ -106,6 +107,7 @@ contract SubtitleToken is ERC721, IST {
      * @notice 获得字幕的指纹值
      * @param tokenId 字幕的 ID
      * @return 返回特定字幕的指纹值
+     * label ST2
      */
     function getSTFingerprint(uint256 tokenId)
         external
@@ -120,6 +122,7 @@ contract SubtitleToken is ERC721, IST {
      * @notice 获得字幕代币 ST 的基本信息
      * @param subtitleId ST ID
      * @return 获得字幕代币ST 的拥有者、所属的申请、语言类型和哈希指纹
+     * label ST3
      */
     function getSTBaseInfo(uint256 subtitleId)
         external

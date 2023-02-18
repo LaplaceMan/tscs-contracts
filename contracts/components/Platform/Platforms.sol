@@ -76,6 +76,7 @@ contract Platforms is VideoManager {
      * @param symbol Platform符号
      * @param rate1 rateCountsToProfit 值必须大于0
      * @param rate2 rateAuditorDivide 值必须大于0
+     * label P1
      */
     function platfromJoin(
         address platfrom,
@@ -84,9 +85,9 @@ contract Platforms is VideoManager {
         uint16 rate1,
         uint16 rate2
     ) external {
-        require(IMurmes(Murmes).owner() == msg.sender, "ER5");
-        require(platforms[platfrom].rateCountsToProfit == 0, "ER0");
-        require(rate1 > 0 && rate2 > 0, "ER1");
+        require(IMurmes(Murmes).owner() == msg.sender, "P1-5");
+        require(platforms[platfrom].rateCountsToProfit == 0, "P1-0");
+        require(rate1 > 0 && rate2 > 0, "P1-1");
         platforms[platfrom] = (
             Platform({
                 name: name,
@@ -119,13 +120,14 @@ contract Platforms is VideoManager {
      * @param rate1 rateCountsToProfit
      * @param rate2 rateAuditorDivide
      * @return 平台Platform当前最新比率信息
+     * label P2
      */
     function platformRate(uint16 rate1, uint16 rate2)
         external
         returns (uint16, uint16)
     {
-        require(rate1 != 0 || rate2 != 0, "ER1");
-        require(platforms[msg.sender].rateCountsToProfit != 0, "ER2");
+        require(rate1 != 0 || rate2 != 0, "P2-1");
+        require(platforms[msg.sender].rateCountsToProfit != 0, "P2-2");
         if (rate1 != 0) {
             platforms[msg.sender].rateCountsToProfit = rate1;
         }
@@ -142,9 +144,10 @@ contract Platforms is VideoManager {
     /**
      * @notice 设置一次性结算时 Murmes 中审核员的分成比例
      * @param auditorDivide 新的分成比例
+     * label P3
      */
     function setMurmesAuditorDivideRate(uint16 auditorDivide) external {
-        require(IMurmes(Murmes).owner() == msg.sender, "ER5");
+        require(IMurmes(Murmes).owner() == msg.sender, "P3-5");
         platforms[Murmes].rateAuditorDivide = auditorDivide;
         emit PlatformSetRate(Murmes, 0, auditorDivide);
     }
@@ -152,9 +155,10 @@ contract Platforms is VideoManager {
     /**
      * @notice 在第三方平台中涉及到VT的价值转换时，要求目标代币类型
      * @param token 目标代币类型，默认为 Zimu
+     * label P4
      */
     function setTokenGlobal(address token) external {
-        require(IMurmes(Murmes).owner() == msg.sender, "ER5");
+        require(IMurmes(Murmes).owner() == msg.sender, "P4-5");
         address old = tokenGlobal;
         tokenGlobal = token;
         emit PlatformSetTokenGlobal(old, token);
@@ -167,25 +171,22 @@ contract Platforms is VideoManager {
      * @param creator 视频创作者区块链地址
      * @param initialize 初始化时（开启服务前）视频播放量
      * @return 视频在 Murmes 内的 ID
+     * label P5
      */
     function createVideo(
         uint256 id,
         string memory symbol,
         address creator,
-        uint256 initialize
+        uint256 initialize,
+        address from
     ) external returns (uint256) {
         address authority = IMurmes(Murmes).authorityStrategy();
         IAuthorityStrategy(authority).isOwnCreateVideoAuthority(
             platforms[msg.sender].rateCountsToProfit,
             msg.sender
         );
-        uint256 videoId = _createVideo(
-            msg.sender,
-            id,
-            symbol,
-            creator,
-            initialize
-        );
+        if (!IMurmes(Murmes).isOperator(msg.sender)) from = msg.sender;
+        uint256 videoId = _createVideo(from, id, symbol, creator, initialize);
         return videoId;
     }
 
@@ -193,11 +194,12 @@ contract Platforms is VideoManager {
      * @notice 更新视频的申请信息
      * @param videoId 视频 ID
      * @param tasks 包括新申请在内且根据结算类型排序好的所有申请 ID
+     * label P6
      */
     function updateVideoTasks(uint256 videoId, uint256[] memory tasks)
         external
     {
-        require(msg.sender == Murmes, "ER5");
+        require(msg.sender == Murmes, "P6-5");
         videos[videoId].tasks = tasks;
     }
 
@@ -205,9 +207,10 @@ contract Platforms is VideoManager {
      * @notice 更新视频的未结算播放量
      * @param videoId 视频 ID
      * @param differ 未结算播放量变化
+     * label P7
      */
     function updateVideoUnsettled(uint256 videoId, int256 differ) external {
-        require(msg.sender == Murmes, "ER5");
+        require(msg.sender == Murmes, "P7-5");
         int256 unsettled = int256(videos[videoId].unsettled) + differ;
         videos[videoId].unsettled = unsettled > 0 ? uint256(unsettled) : 0;
     }
@@ -216,6 +219,7 @@ contract Platforms is VideoManager {
      * @notice 更新视频播放量, 此处为新增量, 仅能由视频所属的 Platform 调用
      * @param id 视频在 Murmes 内的 ID
      * @param vs 新增播放量
+     * label P8
      */
     function updateViewCounts(uint256[] memory id, uint256[] memory vs)
         external
@@ -256,6 +260,7 @@ contract Platforms is VideoManager {
      * @notice 获得平台的基本信息
      * @param platform 平台所有者地址
      * @return 获得平台的名称、符号、ID、播放量收益比、审核员分成比例
+     * label P9
      */
     function getPlatformBaseInfo(address platform)
         external
@@ -281,6 +286,7 @@ contract Platforms is VideoManager {
      * @notice 根据第三方平台的地址获得平台/代币 ID
      * @param platform 平台地址
      * @return 平台/代币 ID
+     * label P10
      */
     function getPlatformIdByAddress(address platform)
         external

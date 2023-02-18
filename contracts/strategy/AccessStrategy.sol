@@ -59,9 +59,9 @@ contract AccessStrategy is IAccessStrategy {
     event SystemSetRewardToken(uint256 newRewardToken);
     event SystemSetPunishmentToken(uint256 newPunishmentToken);
     event SystemSetMultiplier(uint8 newMultiplier);
-
+    // label ASS1
     modifier onlyOwner() {
-        require(MurmesInterface(Murmes).owner() == msg.sender, "ER5");
+        require(MurmesInterface(Murmes).owner() == msg.sender, "ASS1-5");
         _;
     }
 
@@ -79,6 +79,7 @@ contract AccessStrategy is IAccessStrategy {
      * @notice 基于用户当前信誉度, 获得奖励时新增的数值, 信誉度越高获得的奖励越多
      * @param reputation 当前信誉度分数
      * @return 可获得的奖励数值
+     * label ASS2
      */
     function reward(uint256 reputation) public pure returns (uint256) {
         return (reputation / BASE_REPUTATION);
@@ -88,6 +89,7 @@ contract AccessStrategy is IAccessStrategy {
      * @notice 基于用户当前信誉度, 获得惩罚时扣除的数值, 信誉度越低惩罚的力度越大
      * @param reputation 当前信誉度分数
      * @return 被扣除的惩罚数值
+     * label ASS3
      */
     function punishment(uint256 reputation) public pure returns (uint256) {
         return (BASE_RATIO / reputation);
@@ -97,6 +99,7 @@ contract AccessStrategy is IAccessStrategy {
      * @notice 当信誉度过低时，需要质押一定数目的 Zimu 代币，且信誉度越低需要质押的数目越多
      * @param reputation 用户当前信誉度分数
      * @return 应（最少）质押 Zimu 代币数
+     * label ASS4
      */
     function deposit(uint256 reputation) public view returns (uint256) {
         if (reputation > depositThreshold) {
@@ -112,6 +115,7 @@ contract AccessStrategy is IAccessStrategy {
      * @param reputation 用户当前信誉度分数
      * @param flag 奖惩标志位, 1 为奖励, 2 为惩罚
      * @return 奖励/扣除信誉度分数, 奖励/扣除 Zimu 数目, 字幕制作者受到的奖励/惩罚力度放大倍数
+     * label ASS5
      */
     function spread(uint256 reputation, uint8 flag)
         external
@@ -140,6 +144,7 @@ contract AccessStrategy is IAccessStrategy {
      * @param reputation 用户当前信誉度分数
      * @param deposit_ 用户当前质押 Zimu 数
      * @return 返回 false 表示用户被禁止使用 Murmes 提供的服务, 反之可以继续使用
+     * label ASS6
      */
     function access(uint256 reputation, int256 deposit_)
         external
@@ -162,6 +167,7 @@ contract AccessStrategy is IAccessStrategy {
      * @notice 在用户状态非危险的情况下，判断是否有审核/评价权限
      * @param deposit_ 质押的Zimu代币数
      * @return 是否有资格
+     * label ASS7
      */
     function auditable(int256 deposit_) external view override returns (bool) {
         if (deposit_ < int256(minDeposit)) {
@@ -173,6 +179,7 @@ contract AccessStrategy is IAccessStrategy {
 
     /**
      * @notice 求平方根
+     * label ASS8
      */
     function _sqrt(uint256 x) internal pure returns (uint256) {
         uint256 z = (x + 1) / 2;
@@ -189,6 +196,7 @@ contract AccessStrategy is IAccessStrategy {
      * @param reputation 当前信誉度分数
      * @param flag 信誉度变化的事件
      * @return 上一个状态（事件发生前）的信誉度
+     * label ASS9
      */
     function lastReputation(uint256 reputation, uint8 flag)
         public
@@ -210,12 +218,14 @@ contract AccessStrategy is IAccessStrategy {
 
     /**
      * @notice 以下均为对策略内关键参数的修改功能, 一般将 opeator 设置为 DAO 合约
+     * label ASS10
      */
     function setDepoitThreshold(uint8 newDepoitThreshold) external onlyOwner {
         depositThreshold = newDepoitThreshold;
         emit SystemSetDepoitThreshold(newDepoitThreshold);
     }
 
+    // label ASS11
     function setBlacklistThreshold(uint8 newBlacklistThreshold)
         external
         onlyOwner
@@ -224,21 +234,25 @@ contract AccessStrategy is IAccessStrategy {
         emit SystemSetBlacklistThreshold(newBlacklistThreshold);
     }
 
+    // label ASS12
     function setMinDeposit(uint256 newMinDeposit) external onlyOwner {
         minDeposit = newMinDeposit;
         emit SystemSetMinDeposit(newMinDeposit);
     }
 
+    // label ASS13
     function setRewardToken(uint256 newRewardToken) external onlyOwner {
         rewardToken = newRewardToken;
         emit SystemSetRewardToken(newRewardToken);
     }
 
+    // label ASS14
     function setPunishmentToken(uint256 newPunishmentToken) external onlyOwner {
         punishmentToken = newPunishmentToken;
         emit SystemSetPunishmentToken(newPunishmentToken);
     }
 
+    // label ASS15
     function setMultiplier(uint8 newMultiplier) external onlyOwner {
         multiplier = newMultiplier;
         emit SystemSetMultiplier(newMultiplier);

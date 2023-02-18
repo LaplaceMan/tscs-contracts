@@ -53,6 +53,7 @@ contract DepositMining is Vault, ReentrancyGuard {
     }
 
     // 开平方根
+    // label DM1
     function _sqrt(uint256 x) public pure returns (uint256) {
         uint256 z = (x + 1) / 2;
         uint256 y = x;
@@ -69,6 +70,7 @@ contract DepositMining is Vault, ReentrancyGuard {
      * @param number 要质押的 Zimu 代币数量
      * @param duration 要质押的时间
      * @return 所占的份额
+         // label DM2
      */
     function join(
         uint256 subtitleId,
@@ -76,22 +78,22 @@ contract DepositMining is Vault, ReentrancyGuard {
         uint128 duration
     ) public returns (uint256) {
         // 质押代币数量应当大于 0
-        require(number > 0, "ER1");
+        require(number > 0, "DM2-1");
         // 质押时间应当大于平台设置的最小质押时间
-        require(duration > min, "ER1-2");
+        require(duration > min, "DM2-1-2");
         // 质押的字幕 ST 没有处于冷却期
-        require(block.timestamp > cooling[subtitleId], "ER1-3");
+        require(block.timestamp > cooling[subtitleId], "DM2-1-3");
         // 手续费已经开启
-        require(IMurmes(Murmes).fee() > 0, "ER5");
+        require(IMurmes(Murmes).fee() > 0, "DM2-5");
         (uint8 state, , uint256 change, , ) = IMurmes(Murmes)
             .getSubtitleBaseInfo(subtitleId);
         // 质押的字幕 ST 是合法的，即被确认且经过了一定的时间（审核期）
         uint256 lockUpTime = IMurmes(Murmes).lockUpTime();
-        require(state == 1 && block.timestamp > change + lockUpTime, "ER1-4");
+        require(state == 1 && block.timestamp > change + lockUpTime, "DM2-1-3");
         address zimu = IMurmes(Murmes).zimuToken();
         require(
             IZimu(zimu).transferFrom(msg.sender, address(this), number),
-            "ER12"
+            "DM2-12"
         );
         cooling[subtitleId] = block.timestamp + 2 * duration;
         uint256 add = _sqrt(number * duration);
@@ -121,12 +123,13 @@ contract DepositMining is Vault, ReentrancyGuard {
     /**
      * @notice 取出质押的代币和奖励
      * @return 总计的额外 Zimu 代币和 VT 代币收入
+     * label DM3
      */
     function exit() public nonReentrant returns (uint256, uint256) {
         require(
             block.timestamp >
                 deposits[msg.sender].start + deposits[msg.sender].duration,
-            "ER5"
+            "DM3-5"
         );
         address zimu = IMurmes(Murmes).zimuToken();
         uint256 fee0 = (feeIncome[0] * deposits[msg.sender].parts) / points;
@@ -136,11 +139,11 @@ contract DepositMining is Vault, ReentrancyGuard {
                 msg.sender,
                 deposits[msg.sender].tokens + (fee0 - fee0 / 4)
             ),
-            "ER12"
+            "DM3-12"
         );
         require(
             IZimu(zimu).transferFrom(address(this), feeTo, fee0 / 4),
-            "ER12"
+            "DM3-12-2"
         );
         feeIncome[0] -= fee0;
 
@@ -187,9 +190,10 @@ contract DepositMining is Vault, ReentrancyGuard {
     /**
      * @notice 设置新的费用接收地址
      * @param newFeeTo 新的费用接收地址
+     * label DM4
      */
     function setFeeTo(address newFeeTo) external {
-        require(IMurmes(Murmes).multiSig() == msg.sender, "ER5");
+        require(IMurmes(Murmes).multiSig() == msg.sender, "DM4-5");
         feeTo = newFeeTo;
     }
 }

@@ -25,9 +25,10 @@ contract DetectionStrategy is IDetectionStrategy {
 
     /**
      * @notice 仅能由 opeator 调用
+     * label DNS1
      */
     modifier onlyOwner() {
-        require(MurmesInterface(Murmes).owner() == msg.sender, "ER5");
+        require(MurmesInterface(Murmes).owner() == msg.sender, "DNS1-5");
         _;
     }
 
@@ -43,6 +44,7 @@ contract DetectionStrategy is IDetectionStrategy {
      * @param a 字幕文本 1
      * @param b 字幕文本 2
      * @return 汉明度距离
+     * label DNS2
      */
     function hammingDistance(uint256 a, uint256 b)
         public
@@ -66,6 +68,7 @@ contract DetectionStrategy is IDetectionStrategy {
      * @param origin 新上传字幕文本 Simhash
      * @param history 相应申请下已上传所有字幕的 Simhash
      * @return 返回 false 表示新上传字幕与已上传字幕相似度过高, 禁止上传, 反之可以上传
+     * label DNS3
      */
     function beforeDetection(uint256 origin, uint256[] memory history)
         external
@@ -87,6 +90,7 @@ contract DetectionStrategy is IDetectionStrategy {
      * @param newUpload 新版本字幕的 Simhash
      * @param oldUpload 旧版本字幕的 Simhash
      * @return 返回 true 表示通过检测, 可以上传, 反之禁止上传
+     * label DNS4
      */
     function afterDetection(uint256 newUpload, uint256 oldUpload)
         external
@@ -104,6 +108,7 @@ contract DetectionStrategy is IDetectionStrategy {
     /**
      * @notice 由操作员修改策略中的阈值参数
      * @param newDistanceThreshold 新的汉明距离阈值
+     * label DNS5
      */
     function setDistanceThreshold(uint8 newDistanceThreshold)
         external

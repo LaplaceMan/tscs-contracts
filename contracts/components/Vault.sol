@@ -48,15 +48,17 @@ contract Vault is IVault {
 
     /**
      * @notice 仅能由主合约 Murmes 调用
+     * label V1
      */
     modifier auth() {
-        require(msg.sender == Murmes, "Vault-ER5");
+        require(msg.sender == Murmes, "V1-5");
         _;
     }
 
     /**
      * @notice Murmes 内罚没 Zimu 资产
      * @param amount 新增罚没 Zimu 数量
+     * label V2
      */
     function changePenalty(uint256 amount) public auth {
         penalty += amount;
@@ -66,6 +68,7 @@ contract Vault is IVault {
      * @notice 新增手续费，内部功能
      * @param platformId 新增手续费来源平台
      * @param amount 新增手续费数量
+     * label V3
      */
     function addFee(uint256 platformId, uint256 amount) public auth {
         feeIncome[platformId] += amount;
@@ -75,6 +78,7 @@ contract Vault is IVault {
      * @notice 提取平台内产生的罚款
      * @param to Zimu 代币接收地址
      * @param amount 提取罚款数量
+     * label V4
      */
     function transferPenalty(
         address token,
@@ -84,11 +88,11 @@ contract Vault is IVault {
         require(
             IMurmes(Murmes).isOperator(msg.sender) ||
                 IMurmes(Murmes).owner() == msg.sender,
-            "Vault-ER5"
+            "V4-5"
         );
         if (amount > penalty) amount = penalty;
         penalty -= amount;
-        require(IZimu(token).transferFrom(address(this), to, amount), "ER12");
+        require(IZimu(token).transferFrom(address(this), to, amount), "V4-12");
         emit WithdrawPenalty(to, amount);
     }
 
@@ -96,6 +100,7 @@ contract Vault is IVault {
      * @notice 获得指定平台所拥有的资产数（收费情况）
      * @param platformId 指定 platform 的 ID
      * @return 指定平台所拥有的资产数
+     * label V5
      */
     function getFeeIncome(uint256 platformId) public view returns (uint256) {
         return feeIncome[platformId];
@@ -106,31 +111,33 @@ contract Vault is IVault {
      * @param token Zimu 代币合约
      * @param to 提币地址
      * @param amount 提币数量
+     * label V6
      */
     function withdrawDeposit(
         address token,
         address to,
         uint256 amount
     ) external auth {
-        require(IZimu(token).transferFrom(address(this), to, amount), "ER12");
+        require(IZimu(token).transferFrom(address(this), to, amount), "V6-12");
     }
 
     /**
      * @notice 当罚金数量超过上限时，多余的转移给 Zimu 代币合约，用于社区激励
      * @param token Zimu 代币合约
+     * label V7
      */
     function donation(address token) external {
         require(
             IMurmes(Murmes).multiSig() == msg.sender ||
                 IMurmes(Murmes).owner() == msg.sender,
-            "Vault-ER5"
+            "V7-5"
         );
-        require(penalty > penaltyUpperLimit, "Vault-ER5-2");
+        require(penalty > penaltyUpperLimit, "V7-5-2");
         uint256 overflow = penalty - penaltyUpperLimit;
         penalty = penaltyUpperLimit;
         require(
             IZimu(token).transferFrom(address(this), token, overflow),
-            "ER12"
+            "V7-12"
         );
     }
 

@@ -20,21 +20,23 @@ abstract contract Ownable {
     );
 
     event MutliSigTransferred(address previousMutliSig, address newMutliSig);
-
+    // label O1
     modifier onlyOwner() {
-        require(msg.sender == _owner, "Own-ER5");
+        require(msg.sender == _owner, "O15");
         _;
     }
-
+    // label O2
     modifier auth() {
-        require(opeators[msg.sender] == true, "Own-ER5");
+        require(opeators[msg.sender] == true, "O25");
         _;
     }
 
+    // label O3
     function owner() public view virtual returns (address) {
         return _owner;
     }
 
+    // label O4
     function multiSig() public view returns (address) {
         return _multiSig;
     }
@@ -43,17 +45,20 @@ abstract contract Ownable {
         return opeators[operator];
     }
 
+    // label O5
     function transferOwnership(address newOwner) external virtual onlyOwner {
-        require(newOwner != address(0), "Own-ER1");
+        require(newOwner != address(0), "O51");
         _setOwner(newOwner);
     }
 
+    // label O6
     function transferMutliSig(address newMutliSig) external {
-        require(msg.sender == _multiSig, "Own-ER5");
-        require(newMutliSig != address(0), "Own-ER1");
+        require(msg.sender == _multiSig, "O65");
+        require(newMutliSig != address(0), "O61");
         _multiSig = newMutliSig;
     }
 
+    // label O7
     function _setOperatorByTool(address old, address replace) internal {
         if (old == address(0)) {
             _setOperator(replace);
@@ -62,21 +67,25 @@ abstract contract Ownable {
         }
     }
 
+    // label O8
     function _replaceOperator(address old, address replace) internal {
         opeators[old] = false;
         opeators[replace] = true;
     }
 
+    // label O9
     function _setOperator(address newOperator) internal {
         opeators[newOperator] = true;
     }
 
+    // label O10
     function _setOwner(address newOwner) internal {
         address oldOwner = _owner;
         _owner = newOwner;
         emit OwnershipTransferred(oldOwner, newOwner);
     }
 
+    // label O11
     function _setMutliSig(address newMutliSig) internal {
         address oldMutliSig = _multiSig;
         _multiSig = newMutliSig;

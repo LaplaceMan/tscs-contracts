@@ -31,9 +31,10 @@ contract SettlementOneTime0 is ISettlementStrategy {
     }
     /**
      * @notice 仅能由 Murmes 调用
+     * label SO01
      */
     modifier auth() {
-        require(msg.sender == Murmes, "ER5");
+        require(msg.sender == Murmes, "SO01-5");
         _;
     }
 
@@ -49,6 +50,7 @@ contract SettlementOneTime0 is ISettlementStrategy {
      * @param auditorDivide 该 Platform 设置的审核员分成字幕制作者收益的比例
      * @param supporters 申请下被采纳字幕的支持者们
      * @return 本次结算所支付的字幕制作费用
+     * label SO02
      */
     function settlement(
         uint256 taskId,
@@ -79,6 +81,7 @@ contract SettlementOneTime0 is ISettlementStrategy {
      * @notice 更新相应申请下被采纳字幕的预期收益情况
      * @param taskId 结算策略为一次性结算（策略 ID 为 0）的申请 ID
      * @param amount 新增未结算稳定币，申请中设置的支付代币数
+     * label SO03
      */
     function updateDebtOrReward(
         uint256 taskId,
@@ -93,6 +96,7 @@ contract SettlementOneTime0 is ISettlementStrategy {
      * @notice 更改特定申请的未结算代币数，为仲裁服务
      * @param taskId 申请的 ID
      * @param amount 恢复的代币数量
+     * label SO04
      */
     function resetSettlement(uint256 taskId, uint256 amount) external auth {
         settlements[taskId].unsettled += amount;
@@ -103,6 +107,7 @@ contract SettlementOneTime0 is ISettlementStrategy {
      * @notice 获得特定申请（任务）的最新结算情况
      * @param taskId 申请的 ID
      * @return 已结算代币数和未结算代币数
+     * label SO05
      */
     function getSettlementBaseInfo(uint256 taskId)
         external

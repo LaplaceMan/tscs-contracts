@@ -43,7 +43,7 @@ contract Murmes is StrategyManager {
     constructor(address dao, address mutliSig) {
         _setOwner(dao);
         _setMutliSig(mutliSig);
-        languageNote.push("Default");
+        languageNote.push("None");
     }
 
     /**
@@ -87,6 +87,7 @@ contract Murmes is StrategyManager {
      * @param amount 支付金额/比例
      * @param language 申请所需要语言的 ID
      * @return 在 Murmes 内发出申请的顺位, taskId
+     * label M1
      */
     function submitApplication(
         address platform,
@@ -105,10 +106,10 @@ contract Murmes is StrategyManager {
                 users[msg.sender].reputation,
                 users[msg.sender].deposit
             ),
-            "ER5"
+            "15"
         );
-        require(deadline > block.timestamp, "ER1");
-        require(settlementStrategy[strategy].strategy != address(0), "ER6");
+        require(deadline > block.timestamp, "11");
+        require(settlementStrategy[strategy].strategy != address(0), "16");
         totalTasks++;
         authorityStrategy.isOwnApplyAuthority(
             platform,
@@ -127,7 +128,7 @@ contract Murmes is StrategyManager {
                     address(this),
                     amount
                 ),
-                "ER12"
+                "112"
             );
         } else {
             (, , , , , , uint256[] memory tasks_) = IPlatform(platforms)
@@ -135,7 +136,7 @@ contract Murmes is StrategyManager {
             // 下面是为了防止重复申请制作同一语言的字幕
             for (uint256 i = 0; i < tasks_.length; i++) {
                 uint256 taskId = tasks_[i];
-                require(tasks[taskId].language != language, "ER0");
+                require(tasks[taskId].language != language, "10");
             }
             uint256[] memory newTasks = _sortStrategyPriority(
                 tasks_,
@@ -185,6 +186,7 @@ contract Murmes is StrategyManager {
      * @param spot 新申请的策略
      * @param id 新申请的 id
      * @return 从小到大（策略结算优先级）顺序的申请序列
+     * label M2
      */
     function _sortStrategyPriority(
         uint256[] memory arr,
@@ -218,6 +220,7 @@ contract Murmes is StrategyManager {
      * @notice 获得特定申请下所有已上传字幕的指纹, 暂定为 Simhash
      * @param taskId 申请在 Murmes 内的顺位 ID
      * @return 该申请下所有已上传字幕的 fingerprint
+     * label M3
      */
     function _getHistoryFingerprint(uint256 taskId)
         internal
@@ -242,6 +245,7 @@ contract Murmes is StrategyManager {
      * @param languageId 字幕所属语种的 ID
      * @param fingerprint 字幕指纹值, 暂定为 Simhash
      * @return 字幕 ST ID
+     * label M4
      */
     function uploadSubtitle(
         uint256 taskId,
@@ -250,13 +254,13 @@ contract Murmes is StrategyManager {
         uint256 fingerprint
     ) external returns (uint256) {
         // 无法为已被确认的申请上传字幕, 防止资金和制作力浪费
-        require(tasks[taskId].adopted == 0, "ER3");
+        require(tasks[taskId].adopted == 0, "43");
         // 期望截至日期前没有字幕上传则申请被冻结
         if (tasks[taskId].subtitles.length == 0) {
-            require(block.timestamp <= tasks[taskId].deadline, "ER3-2");
+            require(block.timestamp <= tasks[taskId].deadline, "432");
         }
         // 确保字幕的语言与申请所需的语言一致
-        require(languageId == tasks[taskId].language, "ER9");
+        require(languageId == tasks[taskId].language, "49");
         // 若调用者未主动加入 Murmes, 则自动初始化用户的信誉度和质押数（质押数自动设置为 0）
         _userInitialization(msg.sender, 0);
         // 根据信誉度和质押 Zimu 数判断用户是否有权限使用 Murmes 提供的服务
@@ -265,7 +269,7 @@ contract Murmes is StrategyManager {
                 users[msg.sender].reputation,
                 users[msg.sender].deposit
             ),
-            "ER5"
+            "45"
         );
         // 通过申请者自设的对字幕制作者的要求
         address guard = users[tasks[taskId].applicant].guard;
@@ -277,7 +281,7 @@ contract Murmes is StrategyManager {
                     users[msg.sender].deposit,
                     languageId
                 ),
-                "ER5-2"
+                "452"
             );
         }
         // 字幕相似度检测
@@ -288,7 +292,7 @@ contract Murmes is StrategyManager {
             uint256[] memory history = _getHistoryFingerprint(taskId);
             require(
                 detectionStrategy.beforeDetection(fingerprint, history),
-                "ER10"
+                "410"
             );
         }
         // ERC721 Token 生成
@@ -307,14 +311,15 @@ contract Murmes is StrategyManager {
      * @notice 由平台 Platform 更新其旗下视频中被确认字幕的使用量，目前只对于分成结算有用
      * @param taskId 相应的申请 ID
      * @param counts 新增使用量
+     * label M5
      */
     function updateUsageCounts(
         uint256 taskId,
         uint256 counts,
         uint16 rateCountsToProfit
     ) external {
-        require(isOperator(msg.sender), "ER5");
-        require(tasks[taskId].strategy == 1, "ER1");
+        require(isOperator(msg.sender), "55");
+        require(tasks[taskId].strategy == 1, "51");
         ISettlementStrategy(settlementStrategy[tasks[taskId].strategy].strategy)
             .updateDebtOrReward(
                 taskId,
@@ -357,6 +362,7 @@ contract Murmes is StrategyManager {
      * @notice 获得特定字幕与审核相关的信息
      * @param subtitleId 字幕 ID
      * @return 同一申请下已上传字幕数, 该字幕获得的支持数, 该字幕获得的反对数, 同一申请下已上传字幕获得支持数的和
+     * label M6
      */
     function getSubtitleAuditInfo(uint256 subtitleId)
         public
@@ -389,6 +395,7 @@ contract Murmes is StrategyManager {
      * @notice 批量更新用户信誉度和质押信息, 字幕状态发生变化时被调用
      * @param subtitleId 字幕 ID
      * @param flag 1 表示字幕被采用（奖励）, 2 表示字幕被认定为恶意字幕（惩罚）
+     * label M7
      */
     function _updateUsers(uint256 subtitleId, uint8 flag) internal {
         int8 newFlag = 1;
@@ -448,12 +455,13 @@ contract Murmes is StrategyManager {
      * @notice 评价/审核字幕
      * @param subtitleId 字幕 ST ID
      * @param attitude 态度, 0 表示积极/支持, 1 表示消极/反对
+     * label M8
      */
     function evaluateSubtitle(uint256 subtitleId, uint8 attitude) external {
         // 无法为已被确认的申请上传字幕, 防止资金和制作力浪费
-        require(tasks[subtitleNFT[subtitleId].taskId].adopted == 0, "ER3");
+        require(tasks[subtitleNFT[subtitleId].taskId].adopted == 0, "83");
         // ST 存在
-        require(subtitleNFT[subtitleId].stateChangeTime > 0, "ER1");
+        require(subtitleNFT[subtitleId].stateChangeTime > 0, "81");
         // 若调用者未主动加入 Murmes, 则自动初始化用户的信誉度和质押数（质押数自动设置为 0）
         _userInitialization(msg.sender, 0);
         // 根据信誉度和质押 ETH 数判断用户是否有权限使用 Murmes 提供的服务
@@ -462,9 +470,9 @@ contract Murmes is StrategyManager {
                 users[msg.sender].reputation,
                 users[msg.sender].deposit
             ),
-            "ER5"
+            "85"
         );
-        require(accessStrategy.auditable(users[msg.sender].deposit), "ER5-2");
+        require(accessStrategy.auditable(users[msg.sender].deposit), "852");
         _evaluateST(subtitleId, attitude, msg.sender);
         // 基于字幕审核信息和审核策略判断字幕状态改变
         (
@@ -496,9 +504,10 @@ contract Murmes is StrategyManager {
     /**
      * @notice 预结算（视频和字幕）收益, 此处仅适用于结算策略为一次性结算（0）的申请
      * @param taskId 申请 ID
+     * label M9
      */
     function preExtract0(uint256 taskId) external {
-        require(tasks[taskId].strategy == 0, "ER6");
+        require(tasks[taskId].strategy == 0, "96");
         _userInitialization(msg.sender, 0);
         (, , , , uint16 rateAuditorDivide) = IPlatform(platforms)
             .getPlatformBaseInfo(address(this));
@@ -517,6 +526,7 @@ contract Murmes is StrategyManager {
      * @param videoId 视频在 Murmes 内的 ID
      * @param unsettled 未结算稳定币数
      * @return 本次预结算支付字幕制作费用后剩余的稳定币数目
+     * label M10
      */
     function _ergodic(uint256 videoId, uint256 unsettled)
         internal
@@ -555,6 +565,7 @@ contract Murmes is StrategyManager {
      * @notice 预结算（视频和字幕）收益, 仍需优化, 实现真正的模块化
      * @param videoId 视频在 Murmes 内的 ID
      * @return 本次结算稳定币数目
+     * label M11
      */
     function preExtractOther(uint256 videoId) external returns (uint256) {
         (
@@ -566,7 +577,7 @@ contract Murmes is StrategyManager {
             uint256 unsettled,
 
         ) = IPlatform(platforms).getVideoBaseInfo(videoId);
-        require(unsettled > 0, "ER11");
+        require(unsettled > 0, "1111");
         _userInitialization(msg.sender, 0);
         // 获得相应的代币计价
         (, , uint256 platformId, uint16 rateCountsToProfit, ) = IPlatform(
@@ -592,6 +603,7 @@ contract Murmes is StrategyManager {
      * @param platform 所属平台 Platform 区块链地址
      * @param to 收益接收方
      * @param amount 新增数目
+     * label M12
      */
     function preDivide(
         address platform,
@@ -606,6 +618,7 @@ contract Murmes is StrategyManager {
      * @param platform 所属平台 Platform 区块链地址
      * @param to 收益接收方
      * @param amount 新增数目
+     * label M13
      */
     function preDivideBatch(
         address platform,
@@ -620,6 +633,7 @@ contract Murmes is StrategyManager {
      * @param platform 要提取的平台 Platform 的区块链地址
      * @param day 要提取 天 的集合
      * @return 本次总共提取的（由相应平台背书的）稳定币数
+     * label M14
      */
     function withdraw(address platform, uint256[] memory day)
         external
@@ -650,7 +664,7 @@ contract Murmes is StrategyManager {
                             vault,
                             thisFee
                         ),
-                        "ER12"
+                        "1412"
                     );
                 }
                 IVault(vault).addFee(platformId, thisFee);
@@ -658,7 +672,7 @@ contract Murmes is StrategyManager {
             if (platform != address(this)) {
                 IVT(videoToken).mintStableToken(platformId, msg.sender, all);
             } else {
-                require(IZimu(zimuToken).transfer(msg.sender, all), "ER12");
+                require(IZimu(zimuToken).transfer(msg.sender, all), "14122");
             }
         }
         emit UserWithdraw(msg.sender, platform, day, all);
@@ -668,14 +682,15 @@ contract Murmes is StrategyManager {
     /**
      * @notice 取消申请（仅支持一次性结算策略, 其它的自动冻结）
      * @param taskId 申请 ID
+     * label M15
      */
     function cancel(uint256 taskId) external {
-        require(msg.sender == tasks[taskId].applicant, "ER5");
+        require(msg.sender == tasks[taskId].applicant, "155");
         require(
             tasks[taskId].adopted == 0 &&
                 tasks[taskId].subtitles.length == 0 &&
                 tasks[taskId].deadline <= block.timestamp,
-            "ER5-2"
+            "1552"
         );
         tasks[taskId].deadline = 0;
         if (tasks[taskId].strategy == 0) {
@@ -685,7 +700,7 @@ contract Murmes is StrategyManager {
                     msg.sender,
                     tasks[taskId].amount
                 ),
-                "ER12"
+                "1512"
             );
         }
         emit ApplicationCancel(taskId);
@@ -696,21 +711,22 @@ contract Murmes is StrategyManager {
      * @param taskId 申请顺位 ID
      * @param plusAmount 增加支付额度
      * @param plusTime 延长到期时间
+     * label M16
      */
     function updateApplication(
         uint256 taskId,
         uint256 plusAmount,
         uint256 plusTime
     ) public {
-        require(msg.sender == tasks[taskId].applicant, "ER5");
-        require(tasks[taskId].adopted == 0, "ER6");
+        require(msg.sender == tasks[taskId].applicant, "165");
+        require(tasks[taskId].adopted == 0, "166");
         if (tasks[taskId].deadline <= block.timestamp) {
             emit ApplicationRecover(taskId, plusAmount, plusTime);
         }
         if (tasks[taskId].deadline == 0) {
             tasks[taskId].amount = plusAmount;
             tasks[taskId].deadline = plusTime;
-            require(plusTime > block.timestamp + 1 days, "ER1");
+            require(plusTime > block.timestamp + 1 days, "161");
         } else {
             tasks[taskId].amount += plusAmount;
             tasks[taskId].deadline += plusTime;
@@ -722,7 +738,7 @@ contract Murmes is StrategyManager {
                     address(this),
                     plusAmount
                 ),
-                "ER12"
+                "1612"
             );
         }
         emit ApplicationUpdate(
@@ -736,6 +752,7 @@ contract Murmes is StrategyManager {
      * @notice 该功能服务于后续的仲裁法庭，取消被确认的恶意字幕，相当于重新发出申请
      * @param taskId 被重置的申请 ID
      * @param amount 恢复的代币奖励数量（注意这里以代币计价）
+     * label M17
      */
     function resetApplication(uint256 taskId, uint256 amount) public auth {
         delete tasks[taskId].adopted;
@@ -749,16 +766,18 @@ contract Murmes is StrategyManager {
      * @notice 根据申请 ID 获得其所属的平台
      * @param taskId 申请/任务 ID
      * @return 申请所属的平台
+     * label M18
      */
     function getPlatformByTaskId(uint256 taskId)
         external
         view
         returns (address)
     {
-        require(tasks[taskId].applicant != address(0), "ER1");
+        require(tasks[taskId].applicant != address(0), "181");
         return tasks[taskId].platform;
     }
 
+    // label M19
     function getTaskPaymentStrategyAndSubtitles(uint256 taskId)
         public
         view

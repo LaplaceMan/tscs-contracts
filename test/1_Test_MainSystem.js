@@ -200,7 +200,7 @@ describe("MainSystem_Other_Test", function () {
     });
 
     it("Test platform add (create) video", async function () {
-        await expect(platformAsDeployer.createVideo(1, "test", user1.address, 0))
+        await expect(platformAsDeployer.createVideo(1, "test", user1.address, 0, user1.address))
             .to.emit(platform, "VideoCreate")
             .withArgs(
                 owner.address,

@@ -42,9 +42,10 @@ contract ZimuToken is ERC20, IZimu {
      * @notice 为用户铸造一定数目的平台币
      * @param to 平台币接收方
      * @param amount 铸造平台币数目
+     * label ZM1
      */
     function mintReward(address to, uint256 amount) external override {
-        require(msg.sender == Murmes, "Zimu-ER5");
+        require(msg.sender == Murmes, "ZM1-5");
         if (balanceOf(address(this)) > amount) {
             _transfer(address(this), to, amount);
         }
@@ -54,9 +55,10 @@ contract ZimuToken is ERC20, IZimu {
      * @notice 为用户销毁一定数目的平台币
      * @param owner 平台币持有方
      * @param amount 销毁平台币数目
+     * label ZM2
      */
     function burnReward(address owner, uint256 amount) public {
-        require(msg.sender == owner, "Zimu-ER5");
+        require(msg.sender == owner, "ZM2-5");
         _burn(owner, amount);
     }
 }

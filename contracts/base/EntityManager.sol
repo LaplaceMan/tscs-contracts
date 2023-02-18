@@ -93,11 +93,12 @@ contract EntityManager is Ownable {
     /**
      * @notice 为了节省存储成本, 使用ID（uint16）代替语言文本（string）, 同时任何人可调用, 保证适用性
      * @param language 欲添加语言类型
+     * label E1
      */
     function registerLanguage(string[] memory language) external {
         for (uint256 i = 0; i < language.length; i++) {
             languageNote.push(language[i]);
-            require(languages[language[i]] == 0, "ER0");
+            require(languages[language[i]] == 0, "E10");
             languages[language[i]] = uint32(languageNote.length - 1);
             emit RegisterLanguage(language[i], uint32(languageNote.length - 1));
         }
@@ -107,6 +108,7 @@ contract EntityManager is Ownable {
      * @notice 根据 ID 获得相应语言的文字类型
      * @param languageId 欲查询语言 Id
      * @return 语言类型
+     * label E2
      */
     function getLanguageNoteById(uint16 languageId)
         external
@@ -120,6 +122,7 @@ contract EntityManager is Ownable {
      * @notice 根据类型 Type 获得相应语言的 ID
      * @param language 语言的类型（文字描述）
      * @return 语言注册 ID
+     * label E3
      */
     function getLanguageIdByNote(string memory language)
         external
@@ -133,6 +136,7 @@ contract EntityManager is Ownable {
      * @notice 为用户初始化User结构
      * @param usr 用户区块链地址
      * @param amount 质押代币数
+     * label E4
      */
     function _userInitialization(address usr, int256 amount) internal {
         if (users[usr].reputation == 0) {
@@ -146,12 +150,13 @@ contract EntityManager is Ownable {
     /**
      * @notice 主动加入TSCS, 并质押一定数目的 Zimu
      * @param usr 用户区块链地址
+     * label E5
      */
     function userJoin(address usr, uint256 deposit_) external {
         if (deposit_ > 0) {
             require(
                 IZimu(zimuToken).transferFrom(msg.sender, vault, deposit_),
-                "ER12"
+                "E512"
             );
         }
 
@@ -176,6 +181,7 @@ contract EntityManager is Ownable {
      * @param day 天 的Unix格式
      * @param amount 有正负（新增或扣除）的稳定币数量（为锁定状态）
      * @param usr 用户区块链地址
+     * label E6
      */
     function updateLockReward(
         address platform,
@@ -183,7 +189,7 @@ contract EntityManager is Ownable {
         int256 amount,
         address usr
     ) public auth {
-        require(users[usr].reputation != 0, "ER0");
+        require(users[usr].reputation != 0, "E60");
         uint256 current = users[usr].lock[platform][day];
         int256 newLock = int256(current) + amount;
         users[usr].lock[platform][day] = (newLock > 0 ? uint256(newLock) : 0);
@@ -195,6 +201,7 @@ contract EntityManager is Ownable {
      * @param usr 用户区块链地址
      * @param reputationSpread 有正负（增加或扣除）的信誉度分数
      * @param tokenSpread 有正负的（增加或扣除）Zimu 数量
+     * label E7
      */
     function updaterUser(
         address usr,
@@ -204,6 +211,7 @@ contract EntityManager is Ownable {
         _updateUser(usr, reputationSpread, tokenSpread);
     }
 
+    // label E8
     function _updateUser(
         address usr,
         int256 reputationSpread,
@@ -240,6 +248,7 @@ contract EntityManager is Ownable {
     /**
      * @notice 根据区块链时间戳获得 当天 的Unix格式
      * @return 天 Unix格式
+     * label E9
      */
     function _day() internal view returns (uint256) {
         return block.timestamp / 86400;
@@ -250,6 +259,7 @@ contract EntityManager is Ownable {
      * @param platform Platform地址
      * @param to 用户区块链地址
      * @param amount 新增稳定币数量（为锁定状态）
+     * label E10
      */
     function _preDivide(
         address platform,
@@ -261,6 +271,7 @@ contract EntityManager is Ownable {
 
     /**
      * @notice 同_preDivide(), 只不过同时改变多个用户的状态
+     * label E11
      */
     function _preDivideBatch(
         address platform,
@@ -275,6 +286,7 @@ contract EntityManager is Ownable {
     /**
      * @notice 更改 Murmes 内质押的 Zimu 数量
      * @param amount 变化数量
+     * label E12
      */
     function _changeDespoit(int256 amount) internal {
         if (amount != 0) {
@@ -287,6 +299,7 @@ contract EntityManager is Ownable {
      * @notice 获得特定用户当前信誉度分数和质押 Zimu 数量
      * @param usr 欲查询用户的区块链地址
      * @return 信誉度分数, 质押 Zimu 数
+     * label E13
      */
     function getUserBaseInfo(address usr)
         external
@@ -299,9 +312,10 @@ contract EntityManager is Ownable {
     /**
      * @notice 用户设置自己的用于筛选字幕制作者的守护合约
      * @param guard 新的守护合约地址
+     * label E14
      */
     function setGuard(address guard) external {
-        require(users[msg.sender].reputation > 0, "ER1");
+        require(users[msg.sender].reputation > 0, "E141");
         users[msg.sender].guard = guard;
     }
 
@@ -309,6 +323,7 @@ contract EntityManager is Ownable {
      * @notice 获得指定用户当前启用的守护合约地址
      * @param usr 用户地址
      * @return 当前使用的守护合约
+     * label E15
      */
     function gutUserGuard(address usr) external view returns (address) {
         return users[usr].guard;
@@ -320,6 +335,7 @@ contract EntityManager is Ownable {
      * @param platform 特定Platform地址
      * @param day 指定天
      * @return 锁定稳定币数量
+     * label E16
      */
     function getUserLockReward(
         address usr,

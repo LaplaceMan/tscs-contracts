@@ -61,6 +61,7 @@ contract VideoManager {
      * @param creator 视频创作者地址
      * @param initialize 初始化时（开启服务前）视频播放量
      * @return 视频在 Murmes 内的顺位 ID
+     * label V1
      */
     function _createVideo(
         address platform,
@@ -70,7 +71,7 @@ contract VideoManager {
         uint256 initialize
     ) internal returns (uint256) {
         totalVideos++;
-        require(idReal2System[platform][id] == 0, "ER0");
+        require(idReal2System[platform][id] == 0, "V1-0");
         videos[totalVideos].platform = platform;
         videos[totalVideos].id = id;
         videos[totalVideos].symbol = symbol;
@@ -93,6 +94,7 @@ contract VideoManager {
      * @param platfrom 第三方平台，视频所属平台
      * @param realId 注册时所填写的视频在平台中的真实 ID
      * @return 在Murmes中的顺位ID
+     * label V2
      */
     function getVideoOrderIdByRealId(address platfrom, uint256 realId)
         public
@@ -106,6 +108,7 @@ contract VideoManager {
      * @notice 获得视频的基本信息
      * @param videoId 视频 ID
      * @return 获得视频的所属平台、在平台内的ID、特征符号、创作者、总播放量、未结算播放量和所有的字幕申请
+     * label V3
      */
     function getVideoBaseInfo(uint256 videoId)
         external

@@ -73,9 +73,10 @@ contract StrategyManager is EntityManager, SubtitleManager {
      * @notice 修改当前 Murmes 内的通过策略合约地址, 仅能由管理员调用
      * @param note 修改策略合约的类型，0为审核策略，1为访问策略，2为相似度检测策略
      * @param addr 新的审核策略合约地址
+     * label S1
      */
     function setNormalStrategy(uint8 note, address addr) external onlyOwner {
-        require(address(addr) != address(0), "ER1");
+        require(address(addr) != address(0), "S11");
         if (note == 0) {
             auditStrategy = IAuditStrategy(addr);
         } else if (note == 1) {
@@ -94,13 +95,14 @@ contract StrategyManager is EntityManager, SubtitleManager {
      * @param strategyId 新的结算合约ID, 无顺位关系
      * @param strategy  新的结算合约地址
      * @param note 新的结算策略注释说明
+     * label S2
      */
     function setSettlementStrategy(
         uint8 strategyId,
         address strategy,
         string memory note
     ) external onlyOwner {
-        require(strategy != address(0), "ER1");
+        require(strategy != address(0), "S21");
         _setOperatorByTool(settlementStrategy[strategyId].strategy, strategy);
         settlementStrategy[strategyId].strategy = strategy;
         settlementStrategy[strategyId].note = note;
@@ -111,9 +113,10 @@ contract StrategyManager is EntityManager, SubtitleManager {
      * @notice 设置 Murmes 组件的合约地址
      * @param note 0 为 Zimu 代币合约地址；1 为 VT 代币合约地址；2 为 ST 代币合约地址；3 为金库合约地址；4 为平台管理合约地址；5 为仲裁合约地址
      * @param addr 新的合约地址
+     * label S3
      */
     function setComponentsAddress(uint8 note, address addr) external onlyOwner {
-        require(addr != address(0), "ER1");
+        require(addr != address(0), "S31");
         if (note == 0) {
             zimuToken = addr;
         } else if (note == 1) {
@@ -137,9 +140,10 @@ contract StrategyManager is EntityManager, SubtitleManager {
     /**
      * @notice 设置/修改锁定期（审核期）
      * @param time 新的锁定时间（审核期）
+     * label S4
      */
     function setLockUpTime(uint256 time) external onlyOwner {
-        require(time > 0, "ER1");
+        require(time > 0, "S41");
         lockUpTime = time;
         emit SystemSetLockUpTime(time);
     }
@@ -148,6 +152,7 @@ contract StrategyManager is EntityManager, SubtitleManager {
      * @notice 返回指定结算策略的基本信息
      * @param strategyId 策略 ID
      * @return 结算策略合约地址和注释说明
+     * label S5
      */
     function getSettlementStrategyBaseInfo(uint8 strategyId)
         external
@@ -163,6 +168,7 @@ contract StrategyManager is EntityManager, SubtitleManager {
     /**
      * @notice 当 DAO 判定字幕为恶意时，删除字幕，由于加密思想，我们并没有在链上删掉ST的信息，而是在本系统内作标记，将不再认可它
      * @param id 恶意ST ID
+     * label S6
      */
     function holdSubtitleStateByDAO(uint256 id, uint8 state) external auth {
         assert(state == 0 || state == 2);
@@ -172,12 +178,13 @@ contract StrategyManager is EntityManager, SubtitleManager {
     /**
      * @notice 提取质押的 Zimu 代币
      * @param amount 欲提取 Zimu 代币数
+     * label S7
      */
     function withdrawDeposit(uint256 amount) external {
-        require(users[msg.sender].deposit > 0, "ER1");
+        require(users[msg.sender].deposit > 0, "S71");
         require(
             users[msg.sender].operate + 2 * lockUpTime < block.timestamp,
-            "ER5"
+            "S75"
         );
         if (amount > uint256(users[msg.sender].deposit)) {
             amount = uint256(users[msg.sender].deposit);
@@ -194,6 +201,7 @@ contract StrategyManager is EntityManager, SubtitleManager {
     /**
      * @notice 设置手续费，大于0时开启，等于0时关闭
      * @param rate 手续费比率，若为1%，应设置为100，因为计算后的值为 100/BASE_FEE_RATE
+     * label S8
      */
     function setFee(uint16 rate) external onlyOwner {
         uint16 old = fee;

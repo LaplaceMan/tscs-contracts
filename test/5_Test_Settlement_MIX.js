@@ -108,7 +108,7 @@ describe("Settlement_MIX_Test", function () {
         ethers.BigNumber.from("655")
       );
     // 创建视频
-    await expect(platformAsDeployer.createVideo(1, "test", user1.address, 0))
+    await expect(platformAsDeployer.createVideo(1, "test", user1.address, 0, user1.address))
       .to.emit(platform, "VideoCreate")
       .withArgs(
         owner.address,

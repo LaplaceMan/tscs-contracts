@@ -22,9 +22,9 @@ interface IVT is IERC1155 {
         uint256 amount
     ) external;
 
-    function burnStableToken(
-        uint256 platformId,
+    function burn(
         address from,
+        uint256 platformId,
         uint256 amount
     ) external;
 }

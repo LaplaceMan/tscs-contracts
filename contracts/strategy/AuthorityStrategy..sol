@@ -12,7 +12,7 @@ import {ILensHub} from "../interfaces/ILensHub.sol";
 import "../interfaces/IMurmes.sol";
 import "../interfaces/IAuthorityStrategy.sol";
 import "../interfaces/ILensFeeModuleForMurmes.sol";
-import "../common/token/ERC1155/IERC1155.sol";
+import "../interfaces/IVT.sol";
 import "../common/token/ERC20/IERC20.sol";
 
 contract AuthorityStrategy is IAuthorityStrategy {
@@ -70,6 +70,7 @@ contract AuthorityStrategy is IAuthorityStrategy {
      * @param caller 调用者
      * @param strategy 结算策略
      * @param amount 支付数量/比例
+     * label AYS1
      */
     function isOwnApplyAuthority(
         address platform,
@@ -79,40 +80,40 @@ contract AuthorityStrategy is IAuthorityStrategy {
         uint8 strategy,
         uint256 amount
     ) external {
-        require(msg.sender == Murmes, "ER5");
+        require(msg.sender == Murmes, "AYS1-5");
         if (strategy == 1) {
             require(
                 uint16(amount) + occupied[videoId] < MAX_TOTAL_DIVIDED,
-                "ER1"
+                "AYS1-1"
             );
             occupied[videoId] += uint16(amount);
         }
         if (platform == Murmes) {
-            require(strategy == 0, "ER7");
-            require(bytes(source).length > 0, "ER7-2");
+            require(strategy == 0, "AYS1-7");
+            require(bytes(source).length > 0, "AYS1-7-2");
         } else if (platform == Lens) {
             (uint256 profileId, bool result) = _stringToUint256(source);
-            require(result, "ER1");
+            require(result, "AYS1-1-2");
             address owner = ILensHub(Lens).ownerOf(profileId);
-            require(owner == caller, "ER5-2");
+            require(owner == caller, "AYS1-5-2");
             address module = ILensHub(Lens).getCollectModule(
                 profileId,
                 videoId
             );
-            require(whitelistedLensModule[module] = true, "ER5");
+            require(whitelistedLensModule[module] = true, "AYS1-5-3");
             uint256 realId = uint256(keccak256(abi.encode(profileId, videoId)));
             address platforms = IMurmes(Murmes).platforms();
             uint256 orderId = IPlatform(platforms).getVideoOrderIdByRealId(
                 platform,
                 realId
             );
-
             if (orderId == 0) {
                 IPlatform(platforms).createVideo(
                     realId,
                     string(abi.encodePacked(source, "-", videoId)),
                     caller,
-                    0
+                    0,
+                    Lens
                 );
                 videoLensMap[realId].profileId = profileId;
                 videoLensMap[realId].pubId = videoId;
@@ -121,7 +122,7 @@ contract AuthorityStrategy is IAuthorityStrategy {
             address platforms = IMurmes(Murmes).platforms();
             (, , , address creator, , , ) = IPlatform(platforms)
                 .getVideoBaseInfo(videoId);
-            require(creator == caller, "ER5-2");
+            require(creator == caller, "AYS1-5-3");
         }
     }
 
@@ -129,15 +130,14 @@ contract AuthorityStrategy is IAuthorityStrategy {
      * @notice 判断调用者是否有创建视频的权限
      * @param flag rateCountsToProfit 判断平台的有效性
      * @param caller 调用者
+     * label AYS2
      */
     function isOwnCreateVideoAuthority(uint256 flag, address caller)
         external
         view
     {
-        if (caller != Lens) {
-            require(flag > 0, "ER5");
-        } else {
-            require(IMurmes(caller).isOperator(caller), "ER5");
+        if (caller != address(this)) {
+            require(flag > 0, "AYS2-5");
         }
     }
 
@@ -148,6 +148,7 @@ contract AuthorityStrategy is IAuthorityStrategy {
      * @param platform 第三方平台地址
      * @param caller 调用者
      * @return 可更新的播放量/收益
+     * label AYS3
      */
     function isOwnUpdateViewCountsAuthority(
         uint256 realId,
@@ -159,14 +160,16 @@ contract AuthorityStrategy is IAuthorityStrategy {
             uint256 profileId = videoLensMap[realId].profileId;
             uint256 pubId = videoLensMap[realId].pubId;
             address module = ILensHub(Lens).getCollectModule(profileId, pubId);
-            require(whitelistedLensModule[module] = true, "ER5");
+            require(whitelistedLensModule[module] = true, "AYS3-5");
             uint256 amount = ILensFeeModuleForMurmes(module)
                 .getTotalIncomeForMurmes(profileId, pubId);
-            uint256 increase = amount - videoLensMap[realId].income;
+            uint256 increase = amount > videoLensMap[realId].income
+                ? amount - videoLensMap[realId].income
+                : 0;
             videoLensMap[realId].income = amount;
             return increase;
         } else {
-            require(platform == caller, "ER5");
+            require(platform == caller, "AYS3-5-2");
             return counts;
         }
     }
@@ -174,37 +177,32 @@ contract AuthorityStrategy is IAuthorityStrategy {
     /**
      * @notice 使用相应的VT兑换Lens作品的创作者的收益
      * @param amount 欲兑换数量，保持1:1
+     * label AYS4
      */
     function swapInLens(uint256 amount) external {
         address platforms = IMurmes(Murmes).platforms();
         uint256 tokenId = IPlatform(platforms).getPlatformIdByAddress(Lens);
         address token = IPlatform(platforms).tokenGlobal();
         address vt = IMurmes(Murmes).videoToken();
-        IERC1155(vt).safeTransferFrom(
-            msg.sender,
-            address(0),
-            tokenId,
-            amount,
-            ""
-        );
-        require(
-            IERC20(token).transferFrom(address(this), msg.sender, amount),
-            "ER12"
-        );
+        IVT(vt).burn(msg.sender, tokenId, amount);
+        require(IERC20(token).transfer(msg.sender, amount), "AYS4-12");
     }
 
     /**
      * @notice 设置Murmes兼容的在Lens中的Module
      * @param module collectModule 地址
      * @param usability 可用性
+     * label AYS5
      */
     function setWhitelistedLensModule(address module, bool usability) external {
+        require(IMurmes(Murmes).owner() == msg.sender, "AYS5-5");
         whitelistedLensModule[module] = usability;
         emit SetWhitelistedLensModule(module, usability);
     }
 
     /**
      * @notice 内部功能，string 转 uint256
+     * label AYS6
      */
     function _stringToUint256(string memory str)
         internal

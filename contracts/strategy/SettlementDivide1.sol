@@ -32,9 +32,10 @@ contract SettlementDivide1 is ISettlementStrategy {
     }
     /**
      * @notice 仅能由 Murmes 调用
+     * label SD1
      */
     modifier auth() {
-        require(msg.sender == Murmes, "ER5");
+        require(msg.sender == Murmes, "SD1-5");
         _;
     }
 
@@ -51,6 +52,7 @@ contract SettlementDivide1 is ISettlementStrategy {
      * @param auditorDivide 该 Platform 设置的审核员分成字幕制作者收益的比例
      * @param supporters 申请下被采纳字幕的支持者们
      * @return 本次结算所支付的字幕制作费用
+     * label SD2
      */
     function settlement(
         uint256 taskId,
@@ -89,6 +91,7 @@ contract SettlementDivide1 is ISettlementStrategy {
      * @param number 新增视频播放量
      * @param amount 申请中设置的支付代币数
      * @param rateCountsToProfit 平台Platform设定的审核人员分成比例
+     * label SD3
      */
     function updateDebtOrReward(
         uint256 taskId,
@@ -106,6 +109,7 @@ contract SettlementDivide1 is ISettlementStrategy {
      * @notice 更改特定申请的未结算代币数，为仲裁服务
      * @param taskId 申请的 ID
      * @param amount 恢复的代币数量
+     * label SD4
      */
     function resetSettlement(uint256 taskId, uint256 amount) external auth {
         settlements[taskId].unsettled += amount;
@@ -116,6 +120,7 @@ contract SettlementDivide1 is ISettlementStrategy {
      * @notice 获得特定申请（任务）的最新结算情况
      * @param taskId 申请的 ID
      * @return 已结算代币数和未结算代币数
+     * label SD5
      */
     function getSettlementBaseInfo(uint256 taskId)
         external

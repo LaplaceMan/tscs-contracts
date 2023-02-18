@@ -88,6 +88,7 @@ contract Arbitration {
      * @param subtitleId 被举报字幕 ST ID
      * @param uintProof 证明材料，类型为 UINT
      * @param stringProof 证明材料，类型为 STRING
+     * label A1
      */
     function report(
         Reason reason,
@@ -100,20 +101,23 @@ contract Arbitration {
                 .getUserBaseInfo(msg.sender);
             address st = IMurmes(Murmes).subtitleToken();
             address access = IMurmes(Murmes).accessStrategy();
-            require(IAccessStrategy(access).access(reputation, deposit), "ER5");
+            require(
+                IAccessStrategy(access).access(reputation, deposit),
+                "A1-5"
+            );
             require(
                 deposit >= int256(IAccessStrategy(access).minDeposit()),
-                "ER5-2"
+                "A1-5-2"
             );
-            require(IST(st).ownerOf(subtitleId) != address(0), "ER1");
+            require(IST(st).ownerOf(subtitleId) != address(0), "A1-1");
             (uint8 state, , uint256 changeTime, , ) = IMurmes(Murmes)
                 .getSubtitleBaseInfo(subtitleId);
             uint256 lockUpTime = IMurmes(Murmes).lockUpTime();
-            require(block.timestamp <= changeTime + lockUpTime, "ER6");
+            require(block.timestamp <= changeTime + lockUpTime, "A1-6");
             if (reason != Reason.MISTAKEN) {
-                require(state == 1, "ER1-2");
+                require(state == 1, "A1-1-2");
             } else {
-                require(state == 2, "ER1-3");
+                require(state == 2, "A1-1-3");
             }
         }
         if (subtitleReports[subtitleId].length > 0) {
@@ -139,6 +143,7 @@ contract Arbitration {
      * @param resultProof 由链下 DAO 成员共识产生的摘要聚合而成的证明材料
      * @param result 审核结果，true 表示举报合理，通过
      * @param params 为了节省链上结算成本和优化逻辑，一些必要的参数由链下提供，这里指的是已经支付的字幕制作费用
+     * label A2
      */
     function uploadDAOVerificationResult(
         uint256 reportId,
@@ -149,7 +154,7 @@ contract Arbitration {
         require(
             IMurmes(Murmes).multiSig() == msg.sender ||
                 IMurmes(Murmes).owner() == msg.sender,
-            "ER5"
+            "A2-5"
         );
         reports[reportId].resultProof = resultProof;
         reports[reportId].result = result;
@@ -200,6 +205,7 @@ contract Arbitration {
      * @notice 当举报经由 DAO 审核不通过时，相应的 reporter 受到惩罚，这是为了防止恶意攻击的举措
      * @param reportId 举报 ID
      * @param access Murmes 合约的 access 策略合约地址
+     * label A3
      */
     function _punishRepoter(uint256 reportId, address access) internal {
         (uint256 reputation, ) = IMurmes(Murmes).getUserBaseInfo(msg.sender);
@@ -219,6 +225,7 @@ contract Arbitration {
     /**
      * @notice 删除恶意字幕，并撤销后续版本的有效性
      * @param subtitleId 被举报字幕 ST ID
+     * label A4
      */
     function _deleteSubtitle(uint256 subtitleId) internal {
         IMurmes(Murmes).holdSubtitleStateByDAO(subtitleId, 2);
@@ -229,6 +236,7 @@ contract Arbitration {
     /**
      * @notice 当字幕是被恶意举报导致删除时，用于恢复字幕的有效性，由于无法确定对后续版本的影响，并未对版本状态作更新，所以字幕制作者可能蒙受损失
      * @param subtitleId 被举报的 ST ID
+     * label A5
      */
     function _recoverSubtitle(uint256 subtitleId) internal {
         IMurmes(Murmes).holdSubtitleStateByDAO(subtitleId, 0);
@@ -238,6 +246,7 @@ contract Arbitration {
      * @notice 清算恶意评价者
      * @param access Murmes 合约的 access 策略合约地址
      * @param suppoters 恶意评价者
+     * label A6
      */
     function _liquidatingMaliciousUser(
         address access,
@@ -280,6 +289,7 @@ contract Arbitration {
      * @notice 恢复诚实评价者被系统扣除的信誉度和代币
      * @param access Murmes 合约的 access 策略合约地址
      * @param dissenters 诚实评价者
+     * label A7
      */
     function _liquidatingNormalUser(address access, address[] memory dissenters)
         internal
@@ -311,6 +321,7 @@ contract Arbitration {
      * @notice 清算恶意字幕制作者
      * @param maker 恶意字幕制作者
      * @param reportId 举报 ID
+     * label A8
      */
     function _liquidatingSubtitleMaker(address maker, uint256 reportId)
         internal
@@ -334,6 +345,7 @@ contract Arbitration {
      * @notice 奖励举报人，当举报验证通过时
      * @param deposit 恶意字幕制作者被扣除的 Zimu 代币数
      * @param reportId 举报 ID
+     * label A9
      */
     function _rewardRepoter(uint256 deposit, uint256 reportId) internal {
         address vault = IMurmes(Murmes).vault();
@@ -349,6 +361,7 @@ contract Arbitration {
      * @notice 当字幕被恶意举报导致删除时，恢复字幕制作者被扣除的信誉度和代币
      * @param maker 字幕制作者
      * @param access Murmes 合约的 access 策略合约地址
+     * label A10
      */
     function _recoverSubtitleMaker(address maker, address access) internal {
         (uint256 reputation, ) = IMurmes(Murmes).getUserBaseInfo(maker);
@@ -388,6 +401,7 @@ contract Arbitration {
      * @param suppoters 字幕的支持者，分成收益的评价者
      * @param maker 字幕制作者
      * @param day 结算发生的日期
+     * label A11
      */
     function _processRevenue(
         address platform,
@@ -399,7 +413,7 @@ contract Arbitration {
         address maker,
         uint256 day
     ) internal {
-        require(share * suppoters.length + main == all, "ER1");
+        require(share * suppoters.length + main == all, "A11-1");
         for (uint256 i = 0; i < suppoters.length; i++) {
             IMurmes(Murmes).updateLockReward(
                 platform,

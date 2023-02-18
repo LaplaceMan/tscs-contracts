@@ -15,6 +15,11 @@ module.exports = {
     },
   },
   networks: {
+    hardhat: {
+      forking: {
+        url: process.env.POLYGON_TESTNET_URI,
+      }
+    },
     localhost: {
       url: process.env.LOCALHOST_URL,
     },

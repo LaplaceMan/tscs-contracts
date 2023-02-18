@@ -37,6 +37,7 @@ contract AuditStrategy is IAuditStrategy {
      * @param against 单个字幕获得的反对（举报）数
      * @param allSupport 相应申请下所有字幕获得支持数的和
      * @return 返回 0 表示字幕状态不变化, 返回 1 表示字幕被采纳（申请被确认）
+     * label ATS1
      */
     function _adopt(
         uint256 uploaded,
@@ -69,6 +70,7 @@ contract AuditStrategy is IAuditStrategy {
      * @param support 单个字幕获得的支持数
      * @param against 单个字幕获得的反对（举报）数
      * @return 返回 0 表示字幕状态不变化, 返回 2 表示字幕被认定为恶意字幕
+     * label ATS2
      */
     function _delete(uint256 support, uint256 against)
         internal
@@ -97,6 +99,7 @@ contract AuditStrategy is IAuditStrategy {
      * @param uploadTime 字幕上传时间
      * @param lockUpTime Murmes 内设置的锁定期/审核期
      * @return 返回 0 表示状态不变化, 返回 1 表示字幕被采纳（申请被采纳）, 返回 2 表示字幕被认定为恶意字幕
+     * label ATS3
      */
     function auditResult(
         uint256 uploaded,
@@ -123,9 +126,10 @@ contract AuditStrategy is IAuditStrategy {
     /**
      * @notice 修改基本（最小）审核数量
      * @param newAuditUnit 新的基本（最小）审核数量
+     * label ATS4
      */
     function changeAuditUnit(uint256 newAuditUnit) external {
-        require(MurmesInterface(Murmes).owner() == msg.sender, "ER5");
+        require(MurmesInterface(Murmes).owner() == msg.sender, "ATS4-5");
         auditUnit = newAuditUnit;
         emit SystemChangeAuditUnit(newAuditUnit);
     }

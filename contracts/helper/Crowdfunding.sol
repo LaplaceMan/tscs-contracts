@@ -102,6 +102,7 @@ contract Crowdfunding {
      * @param language 所需字幕的语言 ID
      * @param end 众筹申请的截至时间（未凑齐款项时取消申请）
      * @return 众筹申请 ID
+     * label CF1
      */
     function initiate(
         string memory source,
@@ -111,13 +112,13 @@ contract Crowdfunding {
         uint32 language,
         uint256 end
     ) external returns (uint256) {
-        require(target > 0 && end > block.timestamp, "ER1");
+        require(target > 0 && end > block.timestamp, "CF1-1");
         all++;
         if (initial > 0) {
             address zimu = IMurmes(Murmes).zimuToken();
             require(
                 IZimu(zimu).transferFrom(msg.sender, address(this), initial),
-                "ER12"
+                "CF1-12"
             );
             crowds[all].raised += initial;
             crowds[all].helper.push(msg.sender);
@@ -138,6 +139,7 @@ contract Crowdfunding {
      * @notice 参与捐赠
      * @param index 众筹申请的 ID
      * @param number 捐赠/贡献的代币数目
+     * label CF2
      */
     function donation(uint256 index, uint112 number)
         external
@@ -147,13 +149,13 @@ contract Crowdfunding {
             !crowds[index].frozen &&
                 crowds[index].target > 0 &&
                 block.timestamp < crowds[index].end,
-            "ER5"
+            "CF2-5"
         );
-        require(number > 0, "ER1");
+        require(number > 0, "CF2-1");
         address zimu = IMurmes(Murmes).zimuToken();
         require(
             IZimu(zimu).transferFrom(msg.sender, address(this), number),
-            "ER12"
+            "CF2-12"
         );
         crowds[index].helper.push(msg.sender);
         crowds[index].token.push(number);
@@ -168,15 +170,16 @@ contract Crowdfunding {
      * @notice 当筹集到预期的款项时在 Murmes 协议中发起申请
      * @param index 众筹申请 ID
      * @return 在 Murmes 协议中发出申请后返回的申请 ID
+     * label CF3
      */
     function success(uint256 index) external returns (uint256) {
         require(
             crowds[index].raised >= crowds[index].target &&
                 block.timestamp < crowds[index].end,
-            "ER5"
+            "CF3-5"
         );
         address zimu = IMurmes(Murmes).zimuToken();
-        require(IZimu(zimu).approve(Murmes, crowds[index].raised), "ER12");
+        require(IZimu(zimu).approve(Murmes, crowds[index].raised), "CF3-12");
         uint256 id = IMurmes(Murmes).submitApplication(
             Murmes,
             0,
@@ -202,12 +205,13 @@ contract Crowdfunding {
      * @notice 由于未筹集够金额（超时）而取消申请
      * @param index 众筹申请 ID
      * @param refund 如果调用者为利益相关者，可提取自己捐赠的额度
+     * label CF4
      */
     function cancel(uint256 index, uint256 refund) external {
         require(
             block.timestamp > crowds[index].end &&
                 crowds[index].frozen == false,
-            "ER5"
+            "CF4-5"
         );
         crowds[index].frozen = true;
         if (crowds[index].helper[refund] == msg.sender) {
@@ -218,7 +222,7 @@ contract Crowdfunding {
                     msg.sender,
                     crowds[index].token[refund]
                 ),
-                "ER12"
+                "CF4-12"
             );
             crowds[index].token[refund] = 0;
         }
@@ -230,16 +234,17 @@ contract Crowdfunding {
      * @param index 众筹申请 ID
      * @param or 是取消还是恢复
      * @param number 若取消时是利益相关者的捐赠顺位，恢复时是额外补充的资金
+     * label CF5
      */
     function cancel2OrContinue(
         uint256 index,
         bool or,
         uint112 number
     ) external {
-        require(participated[msg.sender][index] = true, "ER5");
+        require(participated[msg.sender][index] = true, "CF5-5");
         require(
             crowds[index].frozen == true && crowds[index].applyId != 0,
-            "ER5-2"
+            "CF5-5-2"
         );
         (
             ,
@@ -255,7 +260,7 @@ contract Crowdfunding {
         ) = IMurmes(Murmes).tasks(crowds[index].applyId);
         require(
             subtitles.length == 0 && adopted == 0 && block.timestamp > deadline,
-            "ER5-3"
+            "CF5-5-3"
         );
         if (or == true) {
             IMurmes(Murmes).cancel(crowds[index].applyId);
@@ -267,7 +272,7 @@ contract Crowdfunding {
                         msg.sender,
                         crowds[index].token[number]
                     ),
-                    "ER12"
+                    "CF5-12"
                 );
                 crowds[index].token[number] = 0;
                 emit CancelWithMurmesOvertime(
@@ -282,9 +287,9 @@ contract Crowdfunding {
                 address zimu = IMurmes(Murmes).zimuToken();
                 require(
                     IZimu(zimu).transferFrom(msg.sender, address(this), number),
-                    "ER12"
+                    "CF5-12-2"
                 );
-                require(IZimu(zimu).approve(Murmes, number), "ER12-2");
+                require(IZimu(zimu).approve(Murmes, number), "CF5-12-3");
                 crowds[index].helper.push(msg.sender);
                 crowds[index].token.push(number);
                 emit NewDonation(msg.sender, index, number);
@@ -306,20 +311,21 @@ contract Crowdfunding {
      * @notice 当众筹申请被取消时，提取自己的捐赠额度
      * @param index 众筹申请 ID
      * @param refund 在捐赠者中的索引
+     * label CF6
      */
     function exit(uint256 index, uint256[] memory refund) external {
-        require(crowds[index].frozen && crowds[index].applyId == 0, "ER1");
+        require(crowds[index].frozen && crowds[index].applyId == 0, "CF6-1");
         address zimu = IMurmes(Murmes).zimuToken();
         uint256 amount;
         for (uint256 i = 0; i < refund.length; i++) {
-            require(crowds[index].helper[refund[i]] == msg.sender, "ER5");
+            require(crowds[index].helper[refund[i]] == msg.sender, "CF6-5");
             amount += crowds[index].token[refund[i]];
             crowds[index].token[refund[i]] = 0;
         }
         if (amount > 0) {
             require(
                 IZimu(zimu).transferFrom(address(this), msg.sender, amount),
-                "ER12"
+                "CF6-12"
             );
         }
         emit ExtractAfterCancle(msg.sender, index, amount);
@@ -327,9 +333,10 @@ contract Crowdfunding {
 
     /**
      * @notice 提取所有成功发起众筹申请后所获得的 ID 为 0 的代币
+     * label CF7
      */
     function reward() external {
-        require(contribution[msg.sender] > 0, "ER5");
+        require(contribution[msg.sender] > 0, "CF7-5");
         address vt = IMurmes(Murmes).videoToken();
         uint256 balance = IVT(vt).balanceOf(address(this), 0);
         uint256 amount = (balance * contribution[msg.sender]) / cumulative;

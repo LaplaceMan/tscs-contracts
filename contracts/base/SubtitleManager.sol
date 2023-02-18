@@ -61,6 +61,7 @@ contract SubtitleManager {
      * @param languageId 字幕所属语种的 ID
      * @param fingerprint 字幕指纹, 此处暂定为 Simhash
      * @return 字幕代币 ST（Subtitle Token） ID
+     * label S1
      */
     function _createST(
         address maker,
@@ -85,6 +86,7 @@ contract SubtitleManager {
      * @notice 更改字幕状态, 0 为无变化, 1 为被确认, 2 为被删除（即被认定为恶意字幕）, 内部功能
      * @param id ST（Subtitle Token） ID
      * @param state 新状态
+     * label S2
      */
     function _changeST(uint256 id, uint8 state) internal {
         subtitleNFT[id].state = state;
@@ -97,18 +99,19 @@ contract SubtitleManager {
      * @param subtitleId ST（Subtitle Token） ID
      * @param attitude 评价态度, 0 为支持（积极的）, 1 为反对（消极的）
      * @param evaluator 评价者（观众、审核员）区块链地址
+     * label S3
      */
     function _evaluateST(
         uint256 subtitleId,
         uint8 attitude,
         address evaluator
     ) internal {
-        require(subtitleNFT[subtitleId].state == 0, "ER3");
-        require(evaluated[evaluator][subtitleId] == false, "ER4");
+        require(subtitleNFT[subtitleId].state == 0, "S33");
+        require(evaluated[evaluator][subtitleId] == false, "S34");
         if (attitude == 0) {
             require(
                 adopted[evaluator][subtitleNFT[subtitleId].taskId] == 0,
-                "ER4-2"
+                "S32"
             );
             subtitleNFT[subtitleId].supporters.push(evaluator);
             adopted[evaluator][subtitleNFT[subtitleId].taskId] = subtitleId;
@@ -123,6 +126,7 @@ contract SubtitleManager {
      * @notice 获得字幕 ST 的基本信息
      * @param subtitleId 字幕 ID
      * @return 返回字幕状态（1 为确认，2 为被删除）、所属申请 ID、状态改变时间、支持者和反对者信息
+     * label S4
      */
     function getSubtitleBaseInfo(uint256 subtitleId)
         external

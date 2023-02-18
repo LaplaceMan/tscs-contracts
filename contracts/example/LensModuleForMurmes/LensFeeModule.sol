@@ -105,8 +105,8 @@ contract LensFeeModuleForMurmes is
         return data;
     }
 
-    function _isOpenMurmes(uint256 profileId, uint256 pubId)
-        internal
+    function isOpenMurmes(uint256 profileId, uint256 pubId)
+        public
         view
         returns (bool open)
     {
@@ -191,7 +191,7 @@ contract LensFeeModuleForMurmes is
             .recipient;
         uint256 treasuryAmount = (amount * treasuryFee) / BPS_MAX;
         uint256 adjustedAmount = amount - treasuryAmount;
-        bool open = _isOpenMurmes(profileId, pubId);
+        bool open = isOpenMurmes(profileId, pubId);
         if (!open) {
             IERC20(currency).safeTransferFrom(
                 collector,
@@ -260,7 +260,7 @@ contract LensFeeModuleForMurmes is
         }
         address recipient = _dataByPublicationByProfile[profileId][pubId]
             .recipient;
-        bool open = _isOpenMurmes(profileId, pubId);
+        bool open = isOpenMurmes(profileId, pubId);
         if (!open) {
             IERC20(currency).safeTransferFrom(
                 collector,
