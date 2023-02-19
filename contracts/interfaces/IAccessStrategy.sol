@@ -34,4 +34,6 @@ interface IAccessStrategy {
         external
         pure
         returns (uint256);
+
+    function deposit(uint256 reputation) external view returns (uint256);
 }
