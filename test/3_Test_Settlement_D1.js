@@ -93,7 +93,7 @@ describe("Settlement_DR1_Test", function () {
     await tx.wait();
     await zimu.deployed();
     // 注册语言
-    tx = await tscsAsDeployer.registerLanguage(['cn', 'us', 'jp']);
+    tx = await tscsAsDeployer.registerLanguage(['zh-CN', 'en-US', 'ja-JP']);
     await tx.wait();
     // 添加平台
     await expect(

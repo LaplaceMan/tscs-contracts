@@ -46,7 +46,7 @@ contract SubtitleToken is ERC721, IST {
     struct Subtitle {
         address maker;
         uint256 taskId;
-        uint16 languageId;
+        uint32 languageId;
         uint256 fingerprint;
     }
     /**
@@ -63,7 +63,7 @@ contract SubtitleToken is ERC721, IST {
         uint256 taskId,
         uint256 subtitleId,
         string cid,
-        uint16 languageId,
+        uint32 languageId,
         uint256 fingerprint
     );
 
@@ -81,7 +81,7 @@ contract SubtitleToken is ERC721, IST {
         address maker,
         uint256 taskId,
         string memory cid,
-        uint16 languageId,
+        uint32 languageId,
         uint256 fingerprint
     ) external override returns (uint256) {
         require(msg.sender == Murmes, "ST1-5");
@@ -131,7 +131,7 @@ contract SubtitleToken is ERC721, IST {
         returns (
             address,
             uint256,
-            uint16,
+            uint32,
             uint256
         )
     {

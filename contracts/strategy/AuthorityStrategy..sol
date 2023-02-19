@@ -179,13 +179,14 @@ contract AuthorityStrategy is IAuthorityStrategy {
      * @param amount 欲兑换数量，保持1:1
      * label AYS4
      */
-    function swapInLens(uint256 amount) external {
+    function swapInLens(uint256 amount) external returns (bool) {
         address platforms = IMurmes(Murmes).platforms();
         uint256 tokenId = IPlatform(platforms).getPlatformIdByAddress(Lens);
         address token = IPlatform(platforms).tokenGlobal();
         address vt = IMurmes(Murmes).videoToken();
         IVT(vt).burn(msg.sender, tokenId, amount);
         require(IERC20(token).transfer(msg.sender, amount), "AYS4-12");
+        return true;
     }
 
     /**
@@ -221,5 +222,26 @@ contract AuthorityStrategy is IAuthorityStrategy {
                 10**(bytes(str).length - i - 1);
         }
         return (value, true);
+    }
+
+    /**
+     * @notice 获得可结算的代币数量
+     * @param videoId 在Murmes协议内的视频顺位ID
+     * @return 可结算的代币数量
+     */
+    function getSettlableInLens(uint256 videoId) public view returns (uint256) {
+        address paltforms = IMurmes(Murmes).platforms();
+        (address platform, uint256 realId, , , , , ) = IPlatform(paltforms)
+            .getVideoBaseInfo(videoId);
+        require(platform == Lens, "AYS6-1");
+        uint256 profileId = videoLensMap[realId].profileId;
+        uint256 pubId = videoLensMap[realId].pubId;
+        address module = ILensHub(Lens).getCollectModule(profileId, pubId);
+        uint256 amount = ILensFeeModuleForMurmes(module)
+            .getTotalIncomeForMurmes(profileId, pubId);
+        uint256 increase = amount > videoLensMap[realId].income
+            ? amount - videoLensMap[realId].income
+            : 0;
+        return increase;
     }
 }

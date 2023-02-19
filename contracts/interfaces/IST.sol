@@ -11,7 +11,7 @@ interface IST is IERC721 {
         address maker,
         uint256 taskId,
         string memory cid,
-        uint16 languageId,
+        uint32 languageId,
         uint256 fingerprint
     ) external returns (uint256);
 
@@ -23,7 +23,7 @@ interface IST is IERC721 {
         returns (
             address,
             uint256,
-            uint16,
+            uint32,
             uint256
         );
 }

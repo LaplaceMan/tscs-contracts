@@ -54,7 +54,7 @@ const main = async () => {
   console.log("auditAddress", auditAddress);
   // 访问权限策略（Lens中间件）
   const AUTHORITY = await ethers.getContractFactory("AuthorityStrategy");
-  const authority = await AUTHORITY.deploy(tscsAddress, "0x60Ae865ee4C725cd04353b5AAb364553f56ceF82");
+  const authority = await AUTHORITY.deploy(tscsAddress, "0x7582177F9E536aB0b6c721e11f383C326F2Ad1D5");
   const authorityAddress = await authority.address;
   console.log("authorityAddress", authorityAddress);
   // 相似度检测策略
@@ -83,7 +83,7 @@ const main = async () => {
   const VERSIONMANAGEMENT = await ethers.getContractFactory("SubtitleVersionManagement");
   const versionManagement = await VERSIONMANAGEMENT.deploy(tscsAddress);
   const versionManagementAddress = versionManagement.address;
-  console.log(versionManagementAddress);
+  console.log("versionManagement", versionManagementAddress);
   //部署仲裁合约
   const ARBITRATION = await ethers.getContractFactory("Arbitration");
   const arbitration = await ARBITRATION.deploy(tscsAddress);

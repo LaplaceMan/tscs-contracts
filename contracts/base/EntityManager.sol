@@ -110,7 +110,7 @@ contract EntityManager is Ownable {
      * @return 语言类型
      * label E2
      */
-    function getLanguageNoteById(uint16 languageId)
+    function getLanguageNoteById(uint32 languageId)
         external
         view
         returns (string memory)

@@ -10,14 +10,14 @@ module.exports = {
     settings: {
       optimizer: {
         enabled: true,
-        runs: 20,
+        runs: 2,
       },
     },
   },
   networks: {
     hardhat: {
       forking: {
-        url: process.env.POLYGON_TESTNET_URI,
+        url: process.env.MUMBAI_URL,
       }
     },
     localhost: {
@@ -31,10 +31,19 @@ module.exports = {
       ],
       gasPrice: 1000000000
     },
+    mumbai: {
+      chainId: 80001,
+      url: process.env.MUMBAI_URL,
+      accounts: [
+        process.env.ACCOUNT,
+      ],
+      gasPrice: 1500000000
+    },
   },
   etherscan: {
     apiKey: {
-      goerli: process.env.EHTERSCAN_GOERLI_API
+      goerli: process.env.EHTERSCAN_GOERLI_API,
+      polygonMumbai: process.env.POLYGONSCANSCAN_MUMBAI_API
     },
     customChains: [
       {

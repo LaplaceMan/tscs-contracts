@@ -66,6 +66,9 @@ describe("Settlement_MIX_Test", function () {
     onetime2 = await ONETIME2.deploy(tscsAddress);
     const onetime2Address = onetime2.address;
     await tscs.deployed();
+    console.log("tscs", tscsAddress);
+    console.log("platform", platformAddress);
+    console.log("ST", stAddress);
     let tx;
     tx = await tscsAsDeployer.setNormalStrategy(0, auditAddress);
     await tx.wait();
@@ -92,7 +95,7 @@ describe("Settlement_MIX_Test", function () {
     tx = await tscsAsDeployer.setComponentsAddress(4, platformAddress);
     await tx.wait();
     // 注册语言
-    tx = await tscsAsDeployer.registerLanguage(['cn', 'us', 'jp']);
+    tx = await tscsAsDeployer.registerLanguage(['zh-CN', 'en-US', 'ja-JP']);
     await tx.wait();
     // 添加平台
     await expect(
@@ -214,40 +217,40 @@ describe("Settlement_MIX_Test", function () {
     let tx = await tscs.connect(user2).preExtractOther("1");
     await tx.wait();
     let user1Reward = await vt.connect(user1).balanceOf(user1.address, 1);
-    console.log("User1 get reward:", user1Reward);
-    let user2PreRewardState = await tscsAsDeployer.getUserLockReward(
-      user2.address,
-      owner.address,
-      now
-    );
-    console.log("User2 pre reward state:", user2PreRewardState);
-    let user3PreRewardState = await tscsAsDeployer.getUserLockReward(
-      user3.address,
-      owner.address,
-      now
-    );
-    console.log("User3 pre reward state:", user3PreRewardState);
-    let user4PreRewardState = await tscsAsDeployer.getUserLockReward(
-      user4.address,
-      owner.address,
-      now
-    );
-    console.log("User4 pre reward state:", user4PreRewardState);
+    // console.log("User1 get reward:", user1Reward);
+    // let user2PreRewardState = await tscsAsDeployer.getUserLockReward(
+    //   user2.address,
+    //   owner.address,
+    //   now
+    // );
+    // console.log("User2 pre reward state:", user2PreRewardState);
+    // let user3PreRewardState = await tscsAsDeployer.getUserLockReward(
+    //   user3.address,
+    //   owner.address,
+    //   now
+    // );
+    // console.log("User3 pre reward state:", user3PreRewardState);
+    // let user4PreRewardState = await tscsAsDeployer.getUserLockReward(
+    //   user4.address,
+    //   owner.address,
+    //   now
+    // );
+    // console.log("User4 pre reward state:", user4PreRewardState);
   });
 
   it("Test extract reward:", async function () {
     let tx;
     tx = await tscs.connect(user2).withdraw(owner.address, [now]);
     await tx.wait();
-    let user2BalanceNow = await vt.connect(user2).balanceOf(user2.address, 1);
-    console.log("User2 get reward:", user2BalanceNow);
-    tx = await tscs.connect(user3).withdraw(owner.address, [now]);
-    await tx.wait();
-    let user3BalanceNow = await vt.connect(user3).balanceOf(user3.address, 1);
-    console.log("User3 get reward:", user3BalanceNow);
-    tx = await tscs.connect(user4).withdraw(owner.address, [now]);
-    await tx.wait();
-    let user4BalanceNow = await vt.connect(user4).balanceOf(user4.address, 1);
-    console.log("User4 get reward:", user4BalanceNow);
+    // let user2BalanceNow = await vt.connect(user2).balanceOf(user2.address, 1);
+    // console.log("User2 get reward:", user2BalanceNow);
+    // tx = await tscs.connect(user3).withdraw(owner.address, [now]);
+    // await tx.wait();
+    // let user3BalanceNow = await vt.connect(user3).balanceOf(user3.address, 1);
+    // console.log("User3 get reward:", user3BalanceNow);
+    // tx = await tscs.connect(user4).withdraw(owner.address, [now]);
+    // await tx.wait();
+    // let user4BalanceNow = await vt.connect(user4).balanceOf(user4.address, 1);
+    // console.log("User4 get reward:", user4BalanceNow);
   });
 });

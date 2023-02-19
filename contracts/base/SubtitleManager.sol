@@ -67,7 +67,7 @@ contract SubtitleManager {
         address maker,
         uint256 taskId,
         string memory cid,
-        uint16 languageId,
+        uint32 languageId,
         uint256 fingerprint
     ) internal returns (uint256) {
         uint256 id = IST(subtitleToken).mintST(

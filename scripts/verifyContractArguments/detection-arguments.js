@@ -1,4 +1,4 @@
 module.exports = [
-    "0xD18bD5B3439c7994988534F2Bdbb64A0556085BB", // Murmes合约地址
+    "0x54A902e28c6301D54ad6E8e46815E1Baddd36D4f", // Murmes合约地址
     5 // 相似度阈值
 ]

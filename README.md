@@ -76,7 +76,7 @@ TSCS: A Blockchain-Based Tokenized Subtitle Crowdsourcing System (Old Name)
 
 ## Deployed Contracts
 
-### Goerli - 0x5
+### Ethereum Goerli - 0x5
 
 #### v0.2.0
 
@@ -94,3 +94,25 @@ TSCS: A Blockchain-Based Tokenized Subtitle Crowdsourcing System (Old Name)
 | Settlement-Divide (DR1)            | 0x2c7EFFBc537E3a9404d0637297C6E3C22Ee00217 |
 | Settlement-Onetime (OT0)           | 0x61F10AbA9e6087c1EA315d1651BF09977ee466d7 |
 | Settlement-Onetime Mortgage (OTM2) | 0xbBdD22dFE991F5366AC6895B18c6A2Fe11c892f1 |
+
+### Polygon Mumbai - 0x80001
+
+#### v0.4.0
+
+| Name                               | Contract Address                           |
+| ---------------------------------- | ------------------------------------------ |
+| Murmes                             | 0x54A902e28c6301D54ad6E8e46815E1Baddd36D4f |
+| Zimu Token                         | 0xAAA6490eE20Fb1407e67E59F0e1B45Dab912B3aE |
+| Video Token                        | 0x84FA4d6b5885E78FC757e3196bb8F14aa8F44858 |
+| Subtitle Token                     | 0xD18bD5B3439c7994988534F2Bdbb64A0556085BB |
+| Vault Manager                      | 0x195D1F8BC906f1129a1Ab177E7536CAe9b7E142b |
+| Platform Manager                   | 0xF0D5f127AC8e8582a2C3fE228203c1015c397d3E |
+| Access Strategy                    | 0x223dbc19cA1636cCd044F8eef5c0d829fA632C4c |
+| Audit Strategy                     | 0xE9aF9E85E0D3aD5c38Fb3cd71fecAb694030787e |
+| Authority Strategy                 | 0xcf757954A689834dE86182476E38e22A3fE645d4 |
+| Detection Strategy                 | 0x8bA47eBcc3877ddE208de5abE5a5Cb973CF44437 |
+| Settlement-Divide (D1)             | 0xb3963a71d52E6270Bc6C066fC36DB94B20F6fE92 |
+| Settlement-Onetime (OT0)           | 0x90b2573320191040E05471FECE0305cDd6700cB2 |
+| Settlement-Onetime Mortgage (OTM2) | 0x2c7EFFBc537E3a9404d0637297C6E3C22Ee00217 |
+| Subtitle Version Manager           | 0x61F10AbA9e6087c1EA315d1651BF09977ee466d7 |
+| Arbitration                        | 0xbBdD22dFE991F5366AC6895B18c6A2Fe11c892f1 |

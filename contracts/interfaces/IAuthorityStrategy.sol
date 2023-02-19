@@ -21,4 +21,13 @@ interface IAuthorityStrategy {
         address platform,
         address caller
     ) external returns (uint256);
+
+    function swapInLens(uint256 amount) external returns (bool);
+
+    function setWhitelistedLensModule(address module, bool usability) external;
+
+    function getSettlableInLens(uint256 videoId)
+        external
+        view
+        returns (uint256);
 }

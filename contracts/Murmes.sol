@@ -250,7 +250,7 @@ contract Murmes is StrategyManager {
     function uploadSubtitle(
         uint256 taskId,
         string memory cid,
-        uint16 languageId,
+        uint32 languageId,
         uint256 fingerprint
     ) external returns (uint256) {
         // 无法为已被确认的申请上传字幕, 防止资金和制作力浪费

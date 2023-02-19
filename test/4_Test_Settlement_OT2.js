@@ -92,7 +92,7 @@ describe("Settlement_OT2_Test", function () {
     tx = await tscsAsDeployer.setComponentsAddress(4, platformAddress);
     await tx.wait();
     // 注册语言
-    tx = await tscsAsDeployer.registerLanguage(['cn', 'us', 'jp']);
+    tx = await tscsAsDeployer.registerLanguage(['zh-CN', 'en-US', 'ja-JP']);
     await tx.wait();
     // 添加平台
     await expect(
