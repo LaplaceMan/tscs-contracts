@@ -61,31 +61,21 @@ abstract contract Ownable {
     // label O7
     function _setOperatorByTool(address old, address replace) internal {
         if (old == address(0)) {
-            _setOperator(replace);
+            opeators[replace] = true;
         } else {
-            _replaceOperator(old, replace);
+            opeators[old] = false;
+            opeators[replace] = true;
         }
     }
 
     // label O8
-    function _replaceOperator(address old, address replace) internal {
-        opeators[old] = false;
-        opeators[replace] = true;
-    }
-
-    // label O9
-    function _setOperator(address newOperator) internal {
-        opeators[newOperator] = true;
-    }
-
-    // label O10
     function _setOwner(address newOwner) internal {
         address oldOwner = _owner;
         _owner = newOwner;
         emit OwnershipTransferred(oldOwner, newOwner);
     }
 
-    // label O11
+    // label O9
     function _setMutliSig(address newMutliSig) internal {
         address oldMutliSig = _multiSig;
         _multiSig = newMutliSig;

@@ -84,7 +84,7 @@ contract DepositMining is Vault, ReentrancyGuard {
         // 质押的字幕 ST 没有处于冷却期
         require(block.timestamp > cooling[subtitleId], "DM2-1-3");
         // 手续费已经开启
-        require(IMurmes(Murmes).fee() > 0, "DM2-5");
+        require(fee > 0, "DM2-5");
         (uint8 state, , uint256 change, , ) = IMurmes(Murmes)
             .getSubtitleBaseInfo(subtitleId);
         // 质押的字幕 ST 是合法的，即被确认且经过了一定的时间（审核期）

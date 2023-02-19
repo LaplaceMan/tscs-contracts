@@ -37,7 +37,6 @@ contract SubtitleManager {
      * @notice 与传统 ERC721 代币相比 每个 ST（Subtitle Token）都有相应的 Subtitle 结构记录字幕的详细信息, 因为观众评价（审核）机制的引入, ST 是动态的 NFT
      */
     mapping(uint256 => Subtitle) subtitleNFT;
-
     /**
      * @notice 限制每个用户只能对每个字幕评价一次, 用户区块链地址 => ST ID => 是否评价（true 为已参与评价）
      */

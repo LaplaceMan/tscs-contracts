@@ -70,6 +70,7 @@ contract AuthorityStrategy is IAuthorityStrategy {
      * @param caller 调用者
      * @param strategy 结算策略
      * @param amount 支付数量/比例
+     * @return 视频在协议内的 ID
      * label AYS1
      */
     function isOwnApplyAuthority(
@@ -79,7 +80,7 @@ contract AuthorityStrategy is IAuthorityStrategy {
         address caller,
         uint8 strategy,
         uint256 amount
-    ) external {
+    ) external returns (uint256) {
         require(msg.sender == Murmes, "AYS1-5");
         if (strategy == 1) {
             require(
@@ -91,6 +92,7 @@ contract AuthorityStrategy is IAuthorityStrategy {
         if (platform == Murmes) {
             require(strategy == 0, "AYS1-7");
             require(bytes(source).length > 0, "AYS1-7-2");
+            return videoId;
         } else if (platform == Lens) {
             (uint256 profileId, bool result) = _stringToUint256(source);
             require(result, "AYS1-1-2");
@@ -108,9 +110,9 @@ contract AuthorityStrategy is IAuthorityStrategy {
                 realId
             );
             if (orderId == 0) {
-                IPlatform(platforms).createVideo(
+                orderId = IPlatform(platforms).createVideo(
                     realId,
-                    string(abi.encodePacked(source, "-", videoId)),
+                    source,
                     caller,
                     0,
                     Lens
@@ -118,11 +120,13 @@ contract AuthorityStrategy is IAuthorityStrategy {
                 videoLensMap[realId].profileId = profileId;
                 videoLensMap[realId].pubId = videoId;
             }
+            return orderId;
         } else {
             address platforms = IMurmes(Murmes).platforms();
             (, , , address creator, , , ) = IPlatform(platforms)
                 .getVideoBaseInfo(videoId);
             require(creator == caller, "AYS1-5-3");
+            return videoId;
         }
     }
 
@@ -184,8 +188,11 @@ contract AuthorityStrategy is IAuthorityStrategy {
         uint256 tokenId = IPlatform(platforms).getPlatformIdByAddress(Lens);
         address token = IPlatform(platforms).tokenGlobal();
         address vt = IMurmes(Murmes).videoToken();
-        IVT(vt).burn(msg.sender, tokenId, amount);
-        require(IERC20(token).transfer(msg.sender, amount), "AYS4-12");
+        amount = amount / (10**6);
+        if (amount > 0) {
+            IVT(vt).burn(msg.sender, tokenId, amount);
+            require(IERC20(token).transfer(msg.sender, amount), "AYS4-12");
+        }
         return true;
     }
 
@@ -199,6 +206,27 @@ contract AuthorityStrategy is IAuthorityStrategy {
         require(IMurmes(Murmes).owner() == msg.sender, "AYS5-5");
         whitelistedLensModule[module] = usability;
         emit SetWhitelistedLensModule(module, usability);
+    }
+
+    /**
+     * @notice 获得可结算的代币数量
+     * @param videoId 在Murmes协议内的视频顺位ID
+     * @return 可结算的代币数量
+     */
+    function getSettlableInLens(uint256 videoId) public view returns (uint256) {
+        address paltforms = IMurmes(Murmes).platforms();
+        (address platform, uint256 realId, , , , , ) = IPlatform(paltforms)
+            .getVideoBaseInfo(videoId);
+        require(platform == Lens, "AYS6-1");
+        uint256 profileId = videoLensMap[realId].profileId;
+        uint256 pubId = videoLensMap[realId].pubId;
+        address module = ILensHub(Lens).getCollectModule(profileId, pubId);
+        uint256 amount = ILensFeeModuleForMurmes(module)
+            .getTotalIncomeForMurmes(profileId, pubId);
+        uint256 increase = amount > videoLensMap[realId].income
+            ? amount - videoLensMap[realId].income
+            : 0;
+        return increase;
     }
 
     /**
@@ -222,26 +250,5 @@ contract AuthorityStrategy is IAuthorityStrategy {
                 10**(bytes(str).length - i - 1);
         }
         return (value, true);
-    }
-
-    /**
-     * @notice 获得可结算的代币数量
-     * @param videoId 在Murmes协议内的视频顺位ID
-     * @return 可结算的代币数量
-     */
-    function getSettlableInLens(uint256 videoId) public view returns (uint256) {
-        address paltforms = IMurmes(Murmes).platforms();
-        (address platform, uint256 realId, , , , , ) = IPlatform(paltforms)
-            .getVideoBaseInfo(videoId);
-        require(platform == Lens, "AYS6-1");
-        uint256 profileId = videoLensMap[realId].profileId;
-        uint256 pubId = videoLensMap[realId].pubId;
-        address module = ILensHub(Lens).getCollectModule(profileId, pubId);
-        uint256 amount = ILensFeeModuleForMurmes(module)
-            .getTotalIncomeForMurmes(profileId, pubId);
-        uint256 increase = amount > videoLensMap[realId].income
-            ? amount - videoLensMap[realId].income
-            : 0;
-        return increase;
     }
 }

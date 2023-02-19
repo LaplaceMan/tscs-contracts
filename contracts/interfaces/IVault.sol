@@ -2,6 +2,8 @@
 pragma solidity ^0.8.0;
 
 interface IVault {
+    function fee() external view returns (uint16);
+
     function penalty() external view returns (uint256);
 
     function Murmes() external view returns (address);

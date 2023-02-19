@@ -197,7 +197,7 @@ describe("Test Murmes With Lens", function () {
     })
 
     it("Update Revenue", async function () {
-        const updateRevenue = await platform.connect(user1).updateViewCounts([1], [100000]);
+        const updateRevenue = await platform.connect(user1).updateViewCounts([1], [0]);
         await updateRevenue.wait();
     });
 

@@ -63,8 +63,7 @@ contract Murmes is StrategyManager {
         string src
     );
     event SubtitleCountsUpdate(uint256 taskId, uint256 counts);
-    event ApplicationCancel(uint256 taskId);
-    event ApplicationRecover(uint256 taskId, uint256 amount, uint256 deadline);
+    // event ApplicationCancel(uint256 taskId);
     event ApplicationUpdate(
         uint256 taskId,
         uint256 newAmount,
@@ -111,7 +110,7 @@ contract Murmes is StrategyManager {
         require(deadline > block.timestamp, "11");
         require(settlementStrategy[strategy].strategy != address(0), "16");
         totalTasks++;
-        authorityStrategy.isOwnApplyAuthority(
+        uint256 orderId = authorityStrategy.isOwnApplyAuthority(
             platform,
             videoId,
             source,
@@ -132,18 +131,17 @@ contract Murmes is StrategyManager {
             );
         } else {
             (, , , , , , uint256[] memory tasks_) = IPlatform(platforms)
-                .getVideoBaseInfo(videoId);
+                .getVideoBaseInfo(orderId);
             // 下面是为了防止重复申请制作同一语言的字幕
             for (uint256 i = 0; i < tasks_.length; i++) {
-                uint256 taskId = tasks_[i];
-                require(tasks[taskId].language != language, "10");
+                require(tasks[tasks_[i]].language != language, "10");
             }
             uint256[] memory newTasks = _sortStrategyPriority(
                 tasks_,
                 strategy,
                 totalTasks
             );
-            IPlatform(platforms).updateVideoTasks(videoId, newTasks);
+            IPlatform(platforms).updateVideoTasks(orderId, newTasks);
         }
         // 实际上这一部分也应该模块化，但考虑到结算策略应该不会再增加，目前先这样设计
         if (strategy == 2 || strategy == 0) {
@@ -153,7 +151,7 @@ contract Murmes is StrategyManager {
         }
         // 上面都是对不同支付策略时申请变化的判断，也可以或者说应该模块化设计
         tasks[totalTasks].applicant = msg.sender;
-        tasks[totalTasks].videoId = videoId;
+        tasks[totalTasks].videoId = orderId;
         tasks[totalTasks].strategy = strategy;
         tasks[totalTasks].amount = amount;
         tasks[totalTasks].language = language;
@@ -169,7 +167,7 @@ contract Murmes is StrategyManager {
         emit ApplicationSubmit(
             msg.sender,
             platform,
-            videoId,
+            orderId,
             strategy,
             amount,
             language,
@@ -652,6 +650,7 @@ contract Murmes is StrategyManager {
         if (all > 0) {
             (, , uint256 platformId, , ) = IPlatform(platforms)
                 .getPlatformBaseInfo(platform);
+            uint256 fee = IVault(vault).fee();
             if (fee > 0) {
                 uint256 thisFee = (all * fee) / BASE_FEE_RATE;
                 all -= thisFee;
@@ -703,7 +702,7 @@ contract Murmes is StrategyManager {
                 "1512"
             );
         }
-        emit ApplicationCancel(taskId);
+        // emit ApplicationCancel(taskId);
     }
 
     /**
@@ -720,9 +719,6 @@ contract Murmes is StrategyManager {
     ) public {
         require(msg.sender == tasks[taskId].applicant, "165");
         require(tasks[taskId].adopted == 0, "166");
-        if (tasks[taskId].deadline <= block.timestamp) {
-            emit ApplicationRecover(taskId, plusAmount, plusTime);
-        }
         if (tasks[taskId].deadline == 0) {
             tasks[taskId].amount = plusAmount;
             tasks[taskId].deadline = plusTime;

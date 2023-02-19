@@ -9,7 +9,7 @@ interface IAuthorityStrategy {
         address caller,
         uint8 strategy,
         uint256 amount
-    ) external;
+    ) external returns (uint256);
 
     function isOwnCreateVideoAuthority(uint256 flag, address caller)
         external

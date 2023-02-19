@@ -15,11 +15,11 @@ module.exports = {
     },
   },
   networks: {
-    hardhat: {
-      forking: {
-        url: process.env.MUMBAI_URL,
-      }
-    },
+    // hardhat: {
+    //   forking: {
+    //     url: process.env.MUMBAI_URL,
+    //   }
+    // },
     localhost: {
       url: process.env.LOCALHOST_URL,
     },

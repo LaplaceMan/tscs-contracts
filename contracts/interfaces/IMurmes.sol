@@ -18,14 +18,12 @@ interface IMurmes {
 
     function platforms() external view returns (address);
 
-    function fee() external view returns (uint16);
-
     function despoit() external view returns (uint256);
 
-    function getLanguageNoteById(uint16 languageId)
-        external
-        view
-        returns (string memory);
+    // function getLanguageNoteById(uint16 languageId)
+    //     external
+    //     view
+    //     returns (string memory);
 
     function getLanguageIdByNote(string memory note)
         external

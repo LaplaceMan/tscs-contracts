@@ -1,4 +1,4 @@
 module.exports = [
-    "0x54A902e28c6301D54ad6E8e46815E1Baddd36D4f", //Murmes合约地址
-    "0xAAA6490eE20Fb1407e67E59F0e1B45Dab912B3aE" // Zimu 代币合约
+    "0x87042950BFCE9b365E3C1E21C5DD343Cb8AcDA95", // Murmes合约地址
+    "0x8928C5568a7Bc0da7F0f2CF6027AC7F3f8bf68f3" // Zimu 代币合约
 ]

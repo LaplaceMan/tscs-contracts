@@ -246,7 +246,7 @@ contract Platforms is VideoManager {
                     ].rateCountsToProfit;
                     IMurmes(Murmes).updateUsageCounts(
                         taskId,
-                        vs[i],
+                        amount,
                         rateCountsToProfit
                     );
                 }

@@ -41,10 +41,6 @@ contract EntityManager is Ownable {
      */
     string[] languageNote;
     /**
-     * @notice 手续费用比率
-     */
-    uint16 public fee;
-    /**
      * @notice Murmes 内用户初始化时的信誉度分数, 精度为 1 即 100.0
      */
     uint16 constant baseReputation = 1000;
@@ -246,15 +242,6 @@ contract EntityManager is Ownable {
     }
 
     /**
-     * @notice 根据区块链时间戳获得 当天 的Unix格式
-     * @return 天 Unix格式
-     * label E9
-     */
-    function _day() internal view returns (uint256) {
-        return block.timestamp / 86400;
-    }
-
-    /**
      * @notice 预结算（分发）稳定币, 因为是先记录, 当达到特定天数后才能正式提取, 所以是 "预"
      * @param platform Platform地址
      * @param to 用户区块链地址
@@ -266,7 +253,7 @@ contract EntityManager is Ownable {
         address to,
         uint256 amount
     ) internal {
-        updateLockReward(platform, _day(), int256(amount), to);
+        updateLockReward(platform, block.timestamp / 86400, int256(amount), to);
     }
 
     /**
@@ -279,7 +266,12 @@ contract EntityManager is Ownable {
         uint256 amount
     ) internal {
         for (uint256 i = 0; i < to.length; i++) {
-            updateLockReward(platform, _day(), int256(amount), to[i]);
+            updateLockReward(
+                platform,
+                block.timestamp / 86400,
+                int256(amount),
+                to[i]
+            );
         }
     }
 

@@ -14,6 +14,10 @@ import "../interfaces/IMurmes.sol";
 
 contract Vault is IVault {
     /**
+     * @notice 手续费用比率
+     */
+    uint16 public fee;
+    /**
      * @notice TSCS内产生的罚款总数（以Zimu计价）
      */
     uint256 public penalty;
@@ -38,6 +42,7 @@ contract Vault is IVault {
         uint256[] ids,
         uint256[] amounts
     );
+    event SystemSetFee(uint16 old, uint16 fee);
 
     // event WithdrawPlatformFee(address to, uint256 amount);
 
@@ -139,6 +144,18 @@ contract Vault is IVault {
             IZimu(token).transferFrom(address(this), token, overflow),
             "V7-12"
         );
+    }
+
+    /**
+     * @notice 设置手续费，大于0时开启，等于0时关闭
+     * @param rate 手续费比率，若为1%，应设置为100，因为计算后的值为 100/BASE_FEE_RATE
+     * label V8
+     */
+    function setFee(uint16 rate) external {
+        require(IMurmes(Murmes).owner() == msg.sender, "V8-5");
+        uint16 old = fee;
+        fee = rate;
+        emit SystemSetFee(old, rate);
     }
 
     /**
