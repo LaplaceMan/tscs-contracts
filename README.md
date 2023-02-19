@@ -116,3 +116,4 @@ TSCS: A Blockchain-Based Tokenized Subtitle Crowdsourcing System (Old Name)
 | Settlement-Onetime Mortgage (OTM2) | 0x2c7EFFBc537E3a9404d0637297C6E3C22Ee00217 |
 | Subtitle Version Manager           | 0x61F10AbA9e6087c1EA315d1651BF09977ee466d7 |
 | Arbitration                        | 0xbBdD22dFE991F5366AC6895B18c6A2Fe11c892f1 |
+| Lens Fee Collect Module For Murmes | 0xf40b0a312A791A48e7550EC810Be0Ac82d708B3d |
