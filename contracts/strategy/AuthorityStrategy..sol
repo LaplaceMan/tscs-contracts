@@ -188,10 +188,10 @@ contract AuthorityStrategy is IAuthorityStrategy {
         uint256 tokenId = IPlatform(platforms).getPlatformIdByAddress(Lens);
         address token = IPlatform(platforms).tokenGlobal();
         address vt = IMurmes(Murmes).videoToken();
-        amount = amount / (10**6);
-        if (amount > 0) {
+        uint256 fix = amount / (10**6);
+        if (fix > 0) {
             IVT(vt).burn(msg.sender, tokenId, amount);
-            require(IERC20(token).transfer(msg.sender, amount), "AYS4-12");
+            require(IERC20(token).transfer(msg.sender, fix), "AYS4-12");
         }
         return true;
     }

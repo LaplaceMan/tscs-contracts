@@ -109,7 +109,7 @@ TSCS: A Blockchain-Based Tokenized Subtitle Crowdsourcing System (Old Name)
 | Platform Manager                   | 0xa671E667552218A495B2F5a53ec0B681f1c965c5 |
 | Access Strategy                    | 0x4915Fb358464A9b7Ab1E41834de6476baa7Fc1C3 |
 | Audit Strategy                     | 0x990214635329D55e4Cc3C7d6e32a400b22A5a31e |
-| Authority Strategy                 | 0x7AAD4638e45542fCCEBed5Aa65F7327Ee1a2704E |
+| Authority Strategy                 | 0x7851CB87dbDF86Dd76ee1e8BD1D6Cfe95446d2Ed |
 | Detection Strategy                 | 0x75629924914ba13A15c949b44e2e565D8103fC70 |
 | Settlement-Divide (D1)             | 0x6040AeF09e463aE01E6d9439a0fFfa11aD6B874f |
 | Settlement-Onetime (OT0)           | 0x7cE090BfD917c5eE49FA04a42A14c35f4237D296 |

@@ -206,8 +206,8 @@ contract AccessStrategy is IAccessStrategy {
         uint256 last = 0;
         if (flag == 2) {
             uint256 _4ac = 4 * BASE_RATIO;
-            uint256 _sqrtb2_4ac = _sqrt(reputation * reputation - _4ac);
-            last = reputation + _sqrtb2_4ac / 2;
+            uint256 _sqrtb2_4ac = _sqrt(reputation * reputation + _4ac);
+            last = (reputation + _sqrtb2_4ac) / 2;
         } else if (flag == 1) {
             uint256 _base = BASE_REPUTATION + 1;
             uint256 _up = reputation * BASE_REPUTATION;

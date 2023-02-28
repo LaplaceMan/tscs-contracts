@@ -14,7 +14,7 @@ const createCollectData = (token, price) => {
     const setData = coder.encode(["address", "uint256"], [token, price]);
     console.log(setData);
 }
-// createPostData(collectPrice, zimu, "0x7E489eCAD625e8e29C0cF77434c89DBef2c3c2b4");
+// createPostData(collectPrice, zimu, "0x3f204Fcde7E2434FbC2BCdfF370e10065e499374");
 createCollectData(zimu, collectPrice);
 
 
