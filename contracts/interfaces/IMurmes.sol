@@ -20,6 +20,8 @@ interface IMurmes {
 
     function despoit() external view returns (uint256);
 
+    function componentGlobal() external view returns (address);
+
     // function getLanguageNoteById(uint16 languageId)
     //     external
     //     view

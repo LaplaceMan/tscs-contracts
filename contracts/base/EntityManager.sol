@@ -6,75 +6,28 @@
  */
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.0;
-
-import "../interfaces/IZimu.sol";
+import "./Ownable.sol";
 import "../interfaces/IVault.sol";
-import "../common/utils/Ownable.sol";
+import "../interfaces/IModuleGlobal.sol";
+import "../interfaces/IComponentGlobal.sol";
+import {DataTypes} from "../libraries/DataTypes.sol";
 
 contract EntityManager is Ownable {
-    /**
-     * @notice TSCS代币 ERC20合约地址
-     */
-    address public zimuToken;
-    /**
-     * @notice Platform稳定币 ERC1155合约地址
-     */
-    address public videoToken;
-    /**
-     * @notice Murmes 金库
-     */
-    address public vault;
-    /**
-     * @notice 管理 Platform 和 Video
-     */
-    address public platforms;
-    /**
-     * @notice Murmers DAO 仲裁合约
-     */
-    address public arbitration;
-    /**
-     * @notice 用户加入生态时在 Murmes 内质押的 Zimu 总数
-     */
-    uint256 public deposit;
-    /**
-     * @notice 根据语言 ID 获得语言类型
-     */
-    string[] languageNote;
-    /**
-     * @notice Murmes 内用户初始化时的信誉度分数, 精度为 1 即 100.0
-     */
-    uint16 constant baseReputation = 1000;
-    /**
-     * @notice 计算费用时的除数
-     */
-    uint16 constant BASE_FEE_RATE = 10000;
-    /**
-     * @notice 语言名称与对应ID（注册顺序）的映射, 从1开始（ISO 3166-1 alpha-2 code）
-     */
-    mapping(string => uint32) languages;
-    /**
-     * @notice 每个区块链地址与 User 结构的映射
-     */
-    mapping(address => User) users;
-    /**
-     * @notice 每个用户在TSCS内的行为记录
-     * @param reputation 信誉度分数
-     * @param operate 用户在协议内执行重要操作的时间
-     * @param deposit 已质押以太数, 为负表示负债
-     * @param lock 平台区块链地址 => 天（Unix）=> 锁定稳定币数量，Default 为 0x0
-     */
-    struct User {
-        uint256 reputation;
-        uint256 operate;
-        address guard;
-        int256 deposit;
-        mapping(address => mapping(uint256 => uint256)) lock;
-    }
+    address public moduleGlobal;
+    address public componentGlobal;
 
-    event RegisterLanguage(string language, uint32 id);
-    event UserJoin(address user, uint256 reputation, int256 deposit);
+    uint16 constant BASE_RATE = 10000;
+    uint16 constant BASE_REPUTATION = 1000;
+
+    string[] requiresNoteById;
+    mapping(string => uint256) requiresIdByNote;
+
+    mapping(address => DataTypes.UserStruct) users;
+
+    event RegisterRepuire(string require, uint256 id);
+    event UserJoin(address usr, uint256 reputation, int256 deposit);
     event UserLockRewardUpdate(
-        address user,
+        address usr,
         address platform,
         uint256 day,
         int256 reward
@@ -84,63 +37,25 @@ contract EntityManager is Ownable {
         int256 reputationSpread,
         int256 tokenSpread
     );
-    event UserWithdrawDespoit(address user, uint256 amount, uint256 balance);
+    event UserWithdrawDespoit(address usr, uint256 amount, uint256 balance);
 
-    /**
-     * @notice 为了节省存储成本, 使用ID（uint16）代替语言文本（string）, 同时任何人可调用, 保证适用性
-     * @param language 欲添加语言类型
-     * label E1
-     */
-    function registerLanguage(string[] memory language) external {
-        for (uint256 i = 0; i < language.length; i++) {
-            languageNote.push(language[i]);
-            require(languages[language[i]] == 0, "E10");
-            languages[language[i]] = uint32(languageNote.length - 1);
-            emit RegisterLanguage(language[i], uint32(languageNote.length - 1));
+    function registerRequires(string[] memory notes) external {
+        for (uint256 i = 0; i < notes.length; i++) {
+            requiresNoteById.push(notes[i]);
+            require(requiresIdByNote[notes[i]] == 0, "E10");
+            requiresIdByNote[notes[i]] = requiresNoteById.length - 1;
+            emit RegisterRepuire(notes[i], requiresNoteById.length - 1);
         }
     }
 
     /**
-     * @notice 根据 ID 获得相应语言的文字类型
-     * @param languageId 欲查询语言 Id
-     * @return 语言类型
-     * label E2
+     * @notice 用户设置自己的用于筛选字幕制作者的守护合约
+     * @param guard 新的守护合约地址
+     * label E14
      */
-    function getLanguageNoteById(uint32 languageId)
-        external
-        view
-        returns (string memory)
-    {
-        return languageNote[languageId];
-    }
-
-    /**
-     * @notice 根据类型 Type 获得相应语言的 ID
-     * @param language 语言的类型（文字描述）
-     * @return 语言注册 ID
-     * label E3
-     */
-    function getLanguageIdByNote(string memory language)
-        external
-        view
-        returns (uint32)
-    {
-        return languages[language];
-    }
-
-    /**
-     * @notice 为用户初始化User结构
-     * @param usr 用户区块链地址
-     * @param amount 质押代币数
-     * label E4
-     */
-    function _userInitialization(address usr, int256 amount) internal {
-        if (users[usr].reputation == 0) {
-            users[usr].reputation = baseReputation;
-            users[usr].deposit = amount;
-            emit UserJoin(usr, users[usr].reputation, users[usr].deposit);
-        }
-        users[usr].operate = block.timestamp;
+    function setGuard(address guard) external {
+        require(users[msg.sender].reputation > 0, "E141");
+        users[msg.sender].guard = guard;
     }
 
     /**
@@ -148,21 +63,19 @@ contract EntityManager is Ownable {
      * @param usr 用户区块链地址
      * label E5
      */
-    function userJoin(address usr, uint256 deposit_) external {
-        if (deposit_ > 0) {
-            require(
-                IZimu(zimuToken).transferFrom(msg.sender, vault, deposit_),
-                "E512"
-            );
+    function userJoin(address usr, uint256 deposit) external {
+        if (deposit > 0) {
+            // 质押平台要求的代币
+            // require(
+            //     IZimu(zimuToken).transferFrom(msg.sender, vault, deposit_),
+            //     "E512"
+            // );
         }
 
         if (users[usr].reputation == 0) {
-            _changeDespoit(int256(deposit_));
-            _userInitialization(usr, int256(deposit_));
+            _userInitialization(usr, int256(deposit));
         } else {
-            //当已加入时, 仍可调用此功能增加质押 Zimu 数
-            users[usr].deposit += int256(deposit_);
-            _changeDespoit(int256(deposit_));
+            users[usr].deposit += int256(deposit);
             emit UserInfoUpdate(
                 usr,
                 int256(users[usr].reputation),
@@ -172,24 +85,27 @@ contract EntityManager is Ownable {
     }
 
     /**
-     * @notice 更新用户在平台内的锁定稳定币数量（每个Platform都有属于自己的稳定币, 各自背书）
-     * @param platform 平台地址, 地址0指TSCS本身
-     * @param day 天 的Unix格式
-     * @param amount 有正负（新增或扣除）的稳定币数量（为锁定状态）
-     * @param usr 用户区块链地址
-     * label E6
+     * @notice 提取质押的 Zimu 代币
+     * @param amount 欲提取 Zimu 代币数
+     * label S7
      */
-    function updateLockReward(
-        address platform,
-        uint256 day,
-        int256 amount,
-        address usr
-    ) public auth {
-        require(users[usr].reputation != 0, "E60");
-        uint256 current = users[usr].lock[platform][day];
-        int256 newLock = int256(current) + amount;
-        users[usr].lock[platform][day] = (newLock > 0 ? uint256(newLock) : 0);
-        emit UserLockRewardUpdate(usr, platform, day, amount);
+    function withdrawDeposit(uint256 amount) external {
+        require(users[msg.sender].deposit > 0, "S71");
+        uint256 lockUpTime = IComponentGlobal(componentGlobal).lockUpTime();
+        require(
+            users[msg.sender].operate + 2 * lockUpTime < block.timestamp,
+            "S75"
+        );
+        if (amount > uint256(users[msg.sender].deposit)) {
+            amount = uint256(users[msg.sender].deposit);
+        }
+        users[msg.sender].deposit -= int256(amount);
+        // IVault(vault).withdrawDeposit(zimuToken, msg.sender, amount);
+        emit UserWithdrawDespoit(
+            msg.sender,
+            amount,
+            uint256(users[msg.sender].deposit)
+        );
     }
 
     /**
@@ -207,38 +123,25 @@ contract EntityManager is Ownable {
         _updateUser(usr, reputationSpread, tokenSpread);
     }
 
-    // label E8
-    function _updateUser(
-        address usr,
-        int256 reputationSpread,
-        int256 tokenSpread
-    ) internal {
-        int256 newReputation = int256(users[usr].reputation) + reputationSpread;
-        users[usr].reputation = (
-            newReputation > 0 ? uint256(newReputation) : 0
-        );
-        if (tokenSpread < 0) {
-            //小于0意味着惩罚操作, 扣除质押Zimu数
-            int256 despoit_ = tokenSpread;
-            uint256 penalty_ = uint256(tokenSpread * -1);
-            if (users[usr].deposit > 0) {
-                if (users[usr].deposit + tokenSpread < 0) {
-                    penalty_ = uint256(users[usr].deposit);
-                    despoit_ = users[usr].deposit * -1;
-                }
-                IVault(vault).changePenalty(penalty_);
-                _changeDespoit(despoit_);
-            }
-            users[usr].deposit = users[usr].deposit + tokenSpread;
-        } else {
-            //此处待定, 临时设计为奖励操作时, 给与特定数目的平台币Zimu Token
-            IZimu(zimuToken).mintReward(usr, uint256(tokenSpread));
-        }
-        //用户的最小信誉度为1, 这样是为了便于判断用户是否已加入系统（User结构已经初始化过）
-        if (users[usr].reputation == 0) {
-            users[usr].reputation = 1;
-        }
-        emit UserInfoUpdate(usr, reputationSpread, tokenSpread);
+    /**
+     * @notice 更新用户在平台内的锁定稳定币数量（每个Platform都有属于自己的稳定币, 各自背书）
+     * @param platform 平台地址, 地址0指TSCS本身
+     * @param day 天 的Unix格式
+     * @param amount 有正负（新增或扣除）的稳定币数量（为锁定状态）
+     * @param usr 用户区块链地址
+     * label E6
+     */
+    function updateLockReward(
+        address platform,
+        uint256 day,
+        int256 amount,
+        address usr
+    ) public auth {
+        require(users[usr].reputation != 0, "E60");
+        uint256 current = users[usr].locks[platform][day];
+        int256 newLock = int256(current) + amount;
+        users[usr].locks[platform][day] = (newLock > 0 ? uint256(newLock) : 0);
+        emit UserLockRewardUpdate(usr, platform, day, amount);
     }
 
     /**
@@ -276,15 +179,48 @@ contract EntityManager is Ownable {
     }
 
     /**
-     * @notice 更改 Murmes 内质押的 Zimu 数量
-     * @param amount 变化数量
-     * label E12
+     * @notice 为用户初始化User结构
+     * @param usr 用户区块链地址
+     * @param amount 质押代币数
+     * label E4
      */
-    function _changeDespoit(int256 amount) internal {
-        if (amount != 0) {
-            int256 newAmount = int256(deposit) + amount;
-            deposit = newAmount > 0 ? uint256(newAmount) : 0;
+    function _userInitialization(address usr, int256 amount) internal {
+        if (users[usr].reputation == 0) {
+            users[usr].reputation = BASE_REPUTATION;
+            users[usr].deposit = amount;
+            emit UserJoin(usr, users[usr].reputation, users[usr].deposit);
         }
+        users[usr].operate = block.timestamp;
+    }
+
+    function _updateUser(
+        address usr,
+        int256 reputationSpread,
+        int256 tokenSpread
+    ) internal {
+        int256 newReputation = int256(users[usr].reputation) + reputationSpread;
+        users[usr].reputation = (
+            newReputation > 0 ? uint256(newReputation) : 0
+        );
+        if (tokenSpread < 0) {
+            //小于0意味着惩罚操作, 扣除质押资产
+            int256 despoit_ = tokenSpread;
+            uint256 penalty_ = uint256(tokenSpread * -1);
+            if (users[usr].deposit > 0) {
+                if (users[usr].deposit + tokenSpread < 0) {
+                    penalty_ = uint256(users[usr].deposit);
+                    despoit_ = users[usr].deposit * -1;
+                }
+                address vault = IComponentGlobal(componentGlobal).vault();
+                IVault(vault).changePenalty(penalty_);
+            }
+            users[usr].deposit = users[usr].deposit + tokenSpread;
+        }
+        //用户的最小信誉度为1, 这样是为了便于判断用户是否已加入系统（User结构已经初始化过）
+        if (users[usr].reputation == 0) {
+            users[usr].reputation = 1;
+        }
+        emit UserInfoUpdate(usr, reputationSpread, tokenSpread);
     }
 
     /**
@@ -299,16 +235,6 @@ contract EntityManager is Ownable {
         returns (uint256, int256)
     {
         return (users[usr].reputation, users[usr].deposit);
-    }
-
-    /**
-     * @notice 用户设置自己的用于筛选字幕制作者的守护合约
-     * @param guard 新的守护合约地址
-     * label E14
-     */
-    function setGuard(address guard) external {
-        require(users[msg.sender].reputation > 0, "E141");
-        users[msg.sender].guard = guard;
     }
 
     /**
@@ -334,6 +260,22 @@ contract EntityManager is Ownable {
         address platform,
         uint256 day
     ) external view returns (uint256) {
-        return users[usr].lock[platform][day];
+        return users[usr].locks[platform][day];
+    }
+
+    function getRequireNoteById(uint32 requireId)
+        external
+        view
+        returns (string memory)
+    {
+        return requiresNoteById[requireId];
+    }
+
+    function getRequireIdByNote(string memory requireNote)
+        external
+        view
+        returns (uint256)
+    {
+        return requiresIdByNote[requireNote];
     }
 }

@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "../common/token/ERC1155/IERC1155.sol";
 
-interface IVT is IERC1155 {
+interface IPlatformToken is IERC1155 {
     function Murmes() external returns (address);
 
     function decimals() external view returns (uint8);
@@ -16,7 +16,7 @@ interface IVT is IERC1155 {
         uint256 platformId
     ) external;
 
-    function mintStableToken(
+    function mintPlatformToken(
         uint256 platformId,
         address to,
         uint256 amount

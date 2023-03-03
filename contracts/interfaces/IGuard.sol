@@ -2,10 +2,17 @@
 pragma solidity ^0.8.0;
 
 interface IGuard {
-    function check(
+    function checkForSubmit(
         address caller,
         uint256 reputation,
         int256 deposit,
-        uint32 languageId
+        uint32 requireId
+    ) external view returns (bool);
+
+    function checkForAudit(
+        address caller,
+        uint256 reputation,
+        int256 deposit,
+        uint32 requireId
     ) external view returns (bool);
 }

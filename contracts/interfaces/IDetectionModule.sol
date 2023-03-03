@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-interface IDetectionStrategy {
-    function beforeDetection(uint256 origin, uint256[] memory history)
+interface IDetectionModule {
+    function beforeDetection(uint256 taskId, uint256 origin)
         external
         view
         returns (bool);

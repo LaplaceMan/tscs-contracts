@@ -2,22 +2,23 @@
 pragma solidity ^0.8.0;
 import "../common/token/ERC721/IERC721.sol";
 
-interface IST is IERC721 {
-    function Murmes() external view returns (address);
-
+interface IItemNFT is IERC721 {
     function tokenURI(uint256 tokenId) external view returns (string memory);
 
-    function mintST(
+    function mintItemToken(
         address maker,
         uint256 taskId,
         string memory cid,
-        uint32 languageId,
+        uint256 requireId,
         uint256 fingerprint
     ) external returns (uint256);
 
-    function getSTFingerprint(uint256 tokenId) external view returns (uint256);
+    function getItemFingerprint(uint256 tokenId)
+        external
+        view
+        returns (uint256);
 
-    function getSTBaseInfo(uint256 subtitleId)
+    function getItemBaseInfo(uint256 subtitleId)
         external
         view
         returns (

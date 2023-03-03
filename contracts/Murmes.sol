@@ -6,311 +6,193 @@
  */
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.0;
-
+import "./base/TaskManager.sol";
 import "./interfaces/IGuard.sol";
-import "./base/StrategyManager.sol";
+import "./interfaces/IPlatform.sol";
+import "./interfaces/IAccessModule.sol";
+import "./common/token/ERC20/IERC20.sol";
+import "./interfaces/IPlatformToken.sol";
+import "./interfaces/IDetectionModule.sol";
+import "./interfaces/ISettlementModule.sol";
 
-contract Murmes is StrategyManager {
-    /**
-     * @notice Murmes 内已经发出的申请（任务）总数
-     */
-    uint256 public totalTasks;
-
-    /**
-     * @notice 每个申请都有一个相应的 Application 结构记录申请信息
-     * @param applicant 发出申请, 需求制作字幕服务的用户
-     * @param videoId 申请所属视频的 ID
-     * @param strategy 结算策略
-     * @param amount 支付金额/比例
-     * @param language 申请所需语言的 ID
-     * @param subtitles 申请下已上传字幕的 ID 集合
-     * @param adopted 最终被采纳字幕的 ID
-     * @param deadline 结算策略为 0 时, 超过该期限可提取费用, 其它策略为申请冻结
-     */
-    struct Application {
-        address applicant;
-        address platform;
-        uint256 videoId;
-        string source;
-        uint8 strategy;
-        uint256 amount;
-        uint32 language;
-        uint256[] subtitles;
-        uint256 adopted;
-        uint256 deadline;
-    }
-
+contract Murmes is TaskManager {
     constructor(address dao, address mutliSig) {
         _setOwner(dao);
         _setMutliSig(mutliSig);
-        languageNote.push("None");
+        requiresNoteById.push("None");
     }
 
-    /**
-     * @notice taskId 与 Application 的映射, 从 1 开始（发出申请的顺位）
-     */
-    mapping(uint256 => Application) public tasks;
-
-    event ApplicationSubmit(
-        address applicant,
-        address platform,
-        uint256 videoId,
-        uint8 strategy,
-        uint256 amount,
-        uint32 language,
-        uint256 deadline,
-        uint256 taskId,
-        string src
-    );
-    event SubtitleCountsUpdate(uint256 taskId, uint256 counts);
-    // event ApplicationCancel(uint256 taskId);
-    event ApplicationUpdate(
-        uint256 taskId,
-        uint256 newAmount,
-        uint256 newDeadline
-    );
-    event ApplicationReset(uint256 taskId, uint256 amount);
-    event UserWithdraw(
-        address user,
-        address platform,
-        uint256[] day,
-        uint256 all
-    );
-    event VideoPreExtract(uint256 videoId, uint256 unsettled, uint256 surplus);
-
-    /**
-     * @notice 提交制作字幕的申请
-     * @param platform 视频所属平台 Platform 区块链地址
-     * @param videoId 视频在 Murmes 内的 ID
-     * @param strategy 结算策略 ID
-     * @param amount 支付金额/比例
-     * @param language 申请所需要语言的 ID
-     * @return 在 Murmes 内发出申请的顺位, taskId
-     * label M1
-     */
-    function submitApplication(
-        address platform,
-        uint256 videoId,
-        uint8 strategy,
-        uint256 amount,
-        uint32 language,
-        uint256 deadline,
-        string memory source
-    ) external returns (uint256) {
-        // 若调用者未主动加入 Murmes, 则自动初始化用户的信誉度和质押数（质押数自动设置为 0）
+    function postTask(DataTypes.PostTaskData calldata vars)
+        external
+        returns (uint256)
+    {
+        _validatePostTaskData(
+            vars.currency,
+            vars.auditModule,
+            vars.detectionModule
+        );
         _userInitialization(msg.sender, 0);
-        // 根据信誉度和质押 Zimu 数判断用户是否有权限使用 Murmes 提供的服务
+        _validateCaller(msg.sender);
         require(
-            accessStrategy.access(
-                users[msg.sender].reputation,
-                users[msg.sender].deposit
-            ),
-            "15"
+            vars.deadline > block.timestamp &&
+                vars.requireId < requiresNoteById.length,
+            "11"
         );
-        require(deadline > block.timestamp, "11");
-        require(settlementStrategy[strategy].strategy != address(0), "16");
+
         totalTasks++;
-        uint256 orderId = authorityStrategy.isOwnApplyAuthority(
-            platform,
-            videoId,
-            source,
-            msg.sender,
-            strategy,
-            amount
-        );
-        // 当平台地址为 0, 意味着使用默认一次性结算策略
-        if (platform == address(this)) {
-            // 一次性结算策略下, 需要用户提前授权主合约额度且只能使用 Zimu 代币支付
+        uint256 orderId; //
+        // uint256 orderId = authorityStrategy.isOwnApplyAuthority(
+        //     platform,
+        //     videoId,
+        //     source,
+        //     msg.sender,
+        //     strategy,
+        //     amount
+        // );
+        if (vars.platform == address(this)) {
+            assert(vars.settlement == DataTypes.SettlementType.ONETIME);
             require(
-                IZimu(zimuToken).transferFrom(
+                IERC20(vars.currency).transferFrom(
                     msg.sender,
                     address(this),
-                    amount
+                    vars.amount
                 ),
                 "112"
             );
         } else {
-            (, , , , , , uint256[] memory tasks_) = IPlatform(platforms)
-                .getVideoBaseInfo(orderId);
-            // 下面是为了防止重复申请制作同一语言的字幕
-            for (uint256 i = 0; i < tasks_.length; i++) {
-                require(tasks[tasks_[i]].language != language, "10");
+            address platforms = IComponentGlobal(componentGlobal).platforms();
+            uint256[] memory _tasks = IPlatform(platforms).getBoxTasks(orderId);
+            for (uint256 i = 0; i < _tasks.length; i++) {
+                require(tasks[_tasks[i]].requires != vars.requireId, "10");
             }
-            uint256[] memory newTasks = _sortStrategyPriority(
-                tasks_,
-                strategy,
+            uint256[] memory newTasks = _sortSettlementPriority(
+                _tasks,
+                vars.settlement,
                 totalTasks
             );
-            IPlatform(platforms).updateVideoTasks(orderId, newTasks);
+            IPlatform(platforms).updateBoxTasks(orderId, newTasks);
         }
-        // 实际上这一部分也应该模块化，但考虑到结算策略应该不会再增加，目前先这样设计
-        if (strategy == 2 || strategy == 0) {
-            // 更新未结算稳定币数目
-            ISettlementStrategy(settlementStrategy[strategy].strategy)
-                .updateDebtOrReward(totalTasks, 0, amount, 0);
+
+        if (vars.settlement != DataTypes.SettlementType.DIVIDEND) {
+            address settlementModule = IModuleGlobal(moduleGlobal)
+                .getSettlementModuleAddress(vars.settlement);
+            ISettlementModule(settlementModule).updateDebtOrReward(
+                totalTasks,
+                0,
+                vars.amount,
+                0
+            );
         }
-        // 上面都是对不同支付策略时申请变化的判断，也可以或者说应该模块化设计
+
         tasks[totalTasks].applicant = msg.sender;
-        tasks[totalTasks].videoId = orderId;
-        tasks[totalTasks].strategy = strategy;
-        tasks[totalTasks].amount = amount;
-        tasks[totalTasks].language = language;
-        tasks[totalTasks].deadline = deadline;
-        tasks[totalTasks].platform = platform;
-        tasks[totalTasks].source = source;
-        // 奖励措施
-        IVT(videoToken).mintStableToken(
-            0,
-            msg.sender,
-            users[msg.sender].reputation
-        );
-        emit ApplicationSubmit(
-            msg.sender,
-            platform,
-            orderId,
-            strategy,
-            amount,
-            language,
-            deadline,
-            totalTasks,
-            source
-        );
+        tasks[totalTasks].platform = vars.platform;
+        tasks[totalTasks].sourceId = orderId;
+        tasks[totalTasks].requireId = vars.requireId;
+        tasks[totalTasks].source = vars.source;
+        tasks[totalTasks].settlement = vars.settlement;
+        tasks[totalTasks].amount = vars.amount;
+        tasks[totalTasks].currency = vars.currency;
+        tasks[totalTasks].auditModule = vars.auditModule;
+        tasks[totalTasks].detectionModule = vars.detectionModule;
+        tasks[totalTasks].deadline = vars.deadline;
+
+        _rewardMurmesToken(msg.sender);
         return totalTasks;
     }
 
-    /**
-     * @notice 每次为视频新添加申请时，根据结算策略优先度更新 applys 数组（主要是方便结算逻辑的执行）
-     * @param arr 已有的申请序列
-     * @param spot 新申请的策略
-     * @param id 新申请的 id
-     * @return 从小到大（策略结算优先级）顺序的申请序列
-     * label M2
-     */
-    function _sortStrategyPriority(
-        uint256[] memory arr,
-        uint256 spot,
-        uint256 id
-    ) internal view returns (uint256[] memory) {
-        uint256[] memory newArr = new uint256[](arr.length + 1);
-        if (newArr.length == 1) {
-            newArr[0] = id;
-            return newArr;
-        }
-        uint256 flag;
-        for (flag = arr.length - 1; flag > 0; flag--) {
-            if (spot >= tasks[arr[flag]].strategy) {
-                break;
-            }
-        }
-        for (uint256 i = 0; i < newArr.length; i++) {
-            if (i <= flag) {
-                newArr[i] = arr[i];
-            } else if (i == flag + 1) {
-                newArr[i] = id;
-            } else {
-                newArr[i] = arr[i - 1];
-            }
-        }
-        return newArr;
-    }
+    // function _getHistoryFingerprint(uint256 taskId)
+    //     internal
+    //     view
+    //     returns (uint256[] memory)
+    // {
+    //     uint256[] memory history = new uint256[](tasks[taskId].items.length);
+    //     for (uint256 i = 0; i < tasks[taskId].items.length; i++) {
+    //         history[i] = IST(subtitleToken).getSTFingerprint(
+    //             tasks[taskId].items[i]
+    //         );
+    //     }
+    //     return history;
+    // }
 
-    /**
-     * @notice 获得特定申请下所有已上传字幕的指纹, 暂定为 Simhash
-     * @param taskId 申请在 Murmes 内的顺位 ID
-     * @return 该申请下所有已上传字幕的 fingerprint
-     * label M3
-     */
-    function _getHistoryFingerprint(uint256 taskId)
-        internal
-        view
-        returns (uint256[] memory)
+    function submitItem(DataTypes.SubmitItemData vars)
+        external
+        returns (uint256)
     {
-        uint256[] memory history = new uint256[](
-            tasks[taskId].subtitles.length
-        );
-        for (uint256 i = 0; i < tasks[taskId].subtitles.length; i++) {
-            history[i] = IST(subtitleToken).getSTFingerprint(
-                tasks[taskId].subtitles[i]
-            );
+        require(tasks[vars.taskId].adopted == 0, "43");
+        if (tasks[vars.taskId].items.length == 0) {
+            require(block.timestamp <= tasks[vars.taskId].deadline, "432");
         }
-        return history;
-    }
+        require(vars.requireId == tasks[vars.taskId].requireId, "49");
 
-    /**
-     * @notice 上传制作的字幕
-     * @param taskId 字幕所属申请在 Murmes 内的顺位 ID
-     * @param cid 字幕存储在 IPFS 获得的 CID
-     * @param languageId 字幕所属语种的 ID
-     * @param fingerprint 字幕指纹值, 暂定为 Simhash
-     * @return 字幕 ST ID
-     * label M4
-     */
-    function uploadSubtitle(
-        uint256 taskId,
-        string memory cid,
-        uint32 languageId,
-        uint256 fingerprint
-    ) external returns (uint256) {
-        // 无法为已被确认的申请上传字幕, 防止资金和制作力浪费
-        require(tasks[taskId].adopted == 0, "43");
-        // 期望截至日期前没有字幕上传则申请被冻结
-        if (tasks[taskId].subtitles.length == 0) {
-            require(block.timestamp <= tasks[taskId].deadline, "432");
-        }
-        // 确保字幕的语言与申请所需的语言一致
-        require(languageId == tasks[taskId].language, "49");
-        // 若调用者未主动加入 Murmes, 则自动初始化用户的信誉度和质押数（质押数自动设置为 0）
         _userInitialization(msg.sender, 0);
-        // 根据信誉度和质押 Zimu 数判断用户是否有权限使用 Murmes 提供的服务
-        require(
-            accessStrategy.access(
-                users[msg.sender].reputation,
-                users[msg.sender].deposit
-            ),
-            "45"
-        );
-        // 通过申请者自设的对字幕制作者的要求
-        address guard = users[tasks[taskId].applicant].guard;
+        _validateCaller(msg.sender);
+        _validateSubmitItemData(vars.taskId, vars.fingerprint);
+
+        address guard = users[tasks[vars.taskId].applicant].guard;
         if (guard != address(0)) {
             require(
-                IGuard(guard).check(
+                IGuard(guard).checkForSubmit(
                     msg.sender,
                     users[msg.sender].reputation,
                     users[msg.sender].deposit,
-                    languageId
-                ),
-                "452"
+                    vars.requireId
+                )
             );
         }
-        // 字幕相似度检测
-        if (
-            address(detectionStrategy) != address(0) &&
-            tasks[taskId].subtitles.length > 0
-        ) {
-            uint256[] memory history = _getHistoryFingerprint(taskId);
-            require(
-                detectionStrategy.beforeDetection(fingerprint, history),
-                "410"
-            );
-        }
-        // ERC721 Token 生成
-        uint256 subtitleId = _createST(
+
+        uint256 itemId = _createItem(
             msg.sender,
-            taskId,
-            cid,
-            languageId,
-            fingerprint
+            vars.taskId,
+            vars.cid,
+            vars.requireId,
+            vars.fingerprint
         );
-        tasks[taskId].subtitles.push(subtitleId);
-        return subtitleId;
+        tasks[vars.taskId].subtitles.push(itemId);
+        return itemId;
     }
 
-    /**
-     * @notice 由平台 Platform 更新其旗下视频中被确认字幕的使用量，目前只对于分成结算有用
-     * @param taskId 相应的申请 ID
-     * @param counts 新增使用量
-     * label M5
-     */
+    function auditItem(uint256 itemId, DataTypes.AuditAttitude attitude)
+        external
+    {
+        uint256 taskId = itemsNFT[itemId].taskId;
+        require(tasks[taskId].adopted == 0, "83");
+        require(itemsNFT[itemId].stateChangeTime > 0, "81");
+
+        _userInitialization(msg.sender, 0);
+        _validateCaller(msg.sender);
+
+        if (tasks[taskId].auditModule != address(0)) {
+            require(accessStrategy.auditable(users[msg.sender].deposit), "852");
+        }
+
+        _evaluateST(subtitleId, attitude, msg.sender);
+        // 基于字幕审核信息和审核策略判断字幕状态改变
+        (
+            uint256 uploaded,
+            uint256 support,
+            uint256 against,
+            uint256 allSupport,
+            uint256 uploadTime
+        ) = getSubtitleAuditInfo(subtitleId);
+        uint8 flag = auditStrategy.auditResult(
+            uploaded,
+            support,
+            against,
+            allSupport,
+            uploadTime,
+            lockUpTime
+        );
+        if (flag != 0 && subtitleNFT[subtitleId].state == 0) {
+            // 改变 ST 状态, 以及利益相关者信誉度和质押 Zimu 信息
+            _changeST(subtitleId, flag);
+            _updateUsers(subtitleId, flag);
+            // 字幕被采用, 更新相应申请的状态
+            if (flag == 1) {
+                tasks[subtitleNFT[subtitleId].taskId].adopted = subtitleId;
+            }
+        }
+    }
+
     function updateUsageCounts(
         uint256 taskId,
         uint256 counts,
@@ -325,36 +207,7 @@ contract Murmes is StrategyManager {
                 tasks[taskId].amount,
                 rateCountsToProfit
             );
-        emit SubtitleCountsUpdate(taskId, counts);
     }
-
-    // function updateUsageCounts(uint256[] memory id, uint256[] memory ms)
-    //     external
-    // {
-    //     require(id.length == ms.length, "ER1");
-    //     for (uint256 i = 0; i < id.length; i++) {
-    //         if (tasks[id[i]].adopted > 0) {
-    //             (address platform, , , , , , ) = IPlatform(platforms)
-    //                 .getVideoBaseInfo(tasks[id[i]].videoId);
-    //             (, , , uint16 rateCountsToProfit, ) = IPlatform(platforms)
-    //                 .getPlatformBaseInfo(platform);
-    //             require(msg.sender == platform, "ER5");
-    //             require(
-    //                 tasks[id[i]].strategy != 0 && tasks[id[i]].strategy != 2,
-    //                 "ER1-2"
-    //             );
-    //             ISettlementStrategy(
-    //                 settlementStrategy[tasks[id[i]].strategy].strategy
-    //             ).updateDebtOrReward(
-    //                     id[i],
-    //                     ms[i],
-    //                     tasks[id[i]].amount,
-    //                     rateCountsToProfit
-    //                 );
-    //         }
-    //     }
-    //     emit SubtitleCountsUpdate(msg.sender, id, ms);
-    // }
 
     /**
      * @notice 获得特定字幕与审核相关的信息
@@ -446,56 +299,6 @@ contract Murmes is StrategyManager {
                 int256(reputationSpread) * newFlag * (-1),
                 int256(tokenSpread) * newFlag * (-1)
             );
-        }
-    }
-
-    /**
-     * @notice 评价/审核字幕
-     * @param subtitleId 字幕 ST ID
-     * @param attitude 态度, 0 表示积极/支持, 1 表示消极/反对
-     * label M8
-     */
-    function evaluateSubtitle(uint256 subtitleId, uint8 attitude) external {
-        // 无法为已被确认的申请上传字幕, 防止资金和制作力浪费
-        require(tasks[subtitleNFT[subtitleId].taskId].adopted == 0, "83");
-        // ST 存在
-        require(subtitleNFT[subtitleId].stateChangeTime > 0, "81");
-        // 若调用者未主动加入 Murmes, 则自动初始化用户的信誉度和质押数（质押数自动设置为 0）
-        _userInitialization(msg.sender, 0);
-        // 根据信誉度和质押 ETH 数判断用户是否有权限使用 Murmes 提供的服务
-        require(
-            accessStrategy.access(
-                users[msg.sender].reputation,
-                users[msg.sender].deposit
-            ),
-            "85"
-        );
-        require(accessStrategy.auditable(users[msg.sender].deposit), "852");
-        _evaluateST(subtitleId, attitude, msg.sender);
-        // 基于字幕审核信息和审核策略判断字幕状态改变
-        (
-            uint256 uploaded,
-            uint256 support,
-            uint256 against,
-            uint256 allSupport,
-            uint256 uploadTime
-        ) = getSubtitleAuditInfo(subtitleId);
-        uint8 flag = auditStrategy.auditResult(
-            uploaded,
-            support,
-            against,
-            allSupport,
-            uploadTime,
-            lockUpTime
-        );
-        if (flag != 0 && subtitleNFT[subtitleId].state == 0) {
-            // 改变 ST 状态, 以及利益相关者信誉度和质押 Zimu 信息
-            _changeST(subtitleId, flag);
-            _updateUsers(subtitleId, flag);
-            // 字幕被采用, 更新相应申请的状态
-            if (flag == 1) {
-                tasks[subtitleNFT[subtitleId].taskId].adopted = subtitleId;
-            }
         }
     }
 
@@ -678,84 +481,85 @@ contract Murmes is StrategyManager {
         return all;
     }
 
-    /**
-     * @notice 取消申请（仅支持一次性结算策略, 其它的自动冻结）
-     * @param taskId 申请 ID
-     * label M15
-     */
-    function cancel(uint256 taskId) external {
-        require(msg.sender == tasks[taskId].applicant, "155");
+    function _validatePostTaskData(
+        address currency,
+        address audit,
+        address detection
+    ) internal {
         require(
-            tasks[taskId].adopted == 0 &&
-                tasks[taskId].subtitles.length == 0 &&
-                tasks[taskId].deadline <= block.timestamp,
-            "1552"
-        );
-        tasks[taskId].deadline = 0;
-        if (tasks[taskId].strategy == 0) {
-            require(
-                IZimu(zimuToken).transferFrom(
-                    address(this),
-                    msg.sender,
-                    tasks[taskId].amount
-                ),
-                "1512"
-            );
-        }
-        // emit ApplicationCancel(taskId);
-    }
-
-    /**
-     * @notice 更新（增加）申请中的额度和（延长）到期时间
-     * @param taskId 申请顺位 ID
-     * @param plusAmount 增加支付额度
-     * @param plusTime 延长到期时间
-     * label M16
-     */
-    function updateApplication(
-        uint256 taskId,
-        uint256 plusAmount,
-        uint256 plusTime
-    ) public {
-        require(msg.sender == tasks[taskId].applicant, "165");
-        require(tasks[taskId].adopted == 0, "166");
-        if (tasks[taskId].deadline == 0) {
-            tasks[taskId].amount = plusAmount;
-            tasks[taskId].deadline = plusTime;
-            require(plusTime > block.timestamp + 1 days, "161");
-        } else {
-            tasks[taskId].amount += plusAmount;
-            tasks[taskId].deadline += plusTime;
-        }
-        if (tasks[taskId].strategy == 0) {
-            require(
-                IZimu(zimuToken).transferFrom(
-                    msg.sender,
-                    address(this),
-                    plusAmount
-                ),
-                "1612"
-            );
-        }
-        emit ApplicationUpdate(
-            taskId,
-            tasks[taskId].amount,
-            tasks[taskId].deadline
+            IModuleGlobal(moduleGlobal).isPostTaskModuleValid(
+                currency,
+                audit,
+                detection
+            )
         );
     }
 
-    /**
-     * @notice 该功能服务于后续的仲裁法庭，取消被确认的恶意字幕，相当于重新发出申请
-     * @param taskId 被重置的申请 ID
-     * @param amount 恢复的代币奖励数量（注意这里以代币计价）
-     * label M17
-     */
-    function resetApplication(uint256 taskId, uint256 amount) public auth {
-        delete tasks[taskId].adopted;
-        tasks[taskId].deadline = block.timestamp + lockUpTime;
-        ISettlementStrategy(settlementStrategy[tasks[taskId].strategy].strategy)
-            .resetSettlement(taskId, amount);
-        emit ApplicationReset(taskId, amount);
+    function _validateCaller(address caller) internal {
+        address access = IComponentGlobal(componentGlobal).access();
+        require(
+            IAccessModule(access).access(
+                users[msg.sender].reputation,
+                users[msg.sender].deposit
+            )
+        );
+    }
+
+    function _validateSubmitItemData(uint256 taskId, uint256 fingerprint)
+        internal
+    {
+        if (
+            tasks[taskId].detectionModule != address(0) &&
+            tasks[taskId].items.length > 0
+        ) {
+            // uint256[] memory history = _getHistoryFingerprint(taskId);
+            address detection = tasks[taskId].detectionModule;
+            require(
+                ISettlementModule(detection).beforeDetection(
+                    taskId,
+                    fingerprint
+                ),
+                "410"
+            );
+        }
+    }
+
+    function _sortSettlementPriority(
+        uint256[] memory arr,
+        DataTypes.SettlementType spot,
+        uint256 id
+    ) internal view returns (uint256[] memory) {
+        uint256[] memory newArr = new uint256[](arr.length + 1);
+        if (newArr.length == 1) {
+            newArr[0] = id;
+            return newArr;
+        }
+        uint256 flag;
+        for (flag = arr.length - 1; flag > 0; flag--) {
+            if (uint8(spot) >= uint8(tasks[arr[flag]].settlement)) {
+                break;
+            }
+        }
+        for (uint256 i = 0; i < newArr.length; i++) {
+            if (i <= flag) {
+                newArr[i] = arr[i];
+            } else if (i == flag + 1) {
+                newArr[i] = id;
+            } else {
+                newArr[i] = arr[i - 1];
+            }
+        }
+        return newArr;
+    }
+
+    function _rewardMurmesToken(address to) internal {
+        address platformToken = IComponentGlobal(componentGlobal)
+            .platformToken();
+        IPlatformToken(platformToken).mintPlatformToken(
+            0,
+            to,
+            users[msg.sender].reputation
+        );
     }
 
     /**

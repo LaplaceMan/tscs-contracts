@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-interface IAccessStrategy {
+interface IAccessModule {
     function spread(uint256 reputation, uint8 flag)
         external
         view

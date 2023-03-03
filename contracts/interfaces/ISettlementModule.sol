@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-interface ISettlementStrategy {
+interface ISettlementModule {
     function settlement(
         uint256 taskId,
         address platform,

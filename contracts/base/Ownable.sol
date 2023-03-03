@@ -59,7 +59,8 @@ abstract contract Ownable {
     }
 
     // label O7
-    function _setOperatorByTool(address old, address replace) internal {
+    function setOperatorByTool(address old, address replace) internal {
+        require(isOperator(msg.sender));
         if (old == address(0)) {
             opeators[replace] = true;
         } else {
