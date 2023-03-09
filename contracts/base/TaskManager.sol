@@ -10,29 +10,28 @@ import "./ItemManager.sol";
 
 contract TaskManager is ItemManager {
     /**
-     * @notice Murmes 内已经发出的申请（任务）总数
+     * @notice Murmes内已经存在的任务总数
      */
     uint256 public totalTasks;
-
     /**
-     * @notice taskId 与 Application 的映射, 从 1 开始（发出申请的顺位）
+     * @notice task的信息, 从1开始（提交任务的顺位）
      */
     mapping(uint256 => DataTypes.TaskStruct) public tasks;
 
     /**
-     * @notice 更新（增加）申请中的额度和（延长）到期时间
+     * @notice 更新（增加）任务中的额度和（延长）到期时间
      * @param taskId 申请顺位 ID
      * @param plusAmount 增加支付额度
      * @param plusTime 延长到期时间
-     * label M16
+     * Fn 1
      */
     function updateApplication(
         uint256 taskId,
         uint256 plusAmount,
         uint256 plusTime
     ) public {
-        require(msg.sender == tasks[taskId].applicant, "165");
-        require(tasks[taskId].adopted == 0, "166");
+        require(msg.sender == tasks[taskId].applicant, "T15");
+        require(tasks[taskId].adopted == 0, "T10");
         if (tasks[taskId].deadline == 0) {
             tasks[taskId].amount = plusAmount;
             tasks[taskId].deadline = plusTime;

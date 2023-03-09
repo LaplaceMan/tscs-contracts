@@ -16,17 +16,23 @@ interface IPlatform {
     function updateBoxesExternalRevenue(uint256[] memory ids, uint256[] memory)
         external;
 
-    function getBox(uint256 boxId) external view returns (DataTypes.BoxStruct);
+    function getBox(uint256 boxId)
+        external
+        view
+        returns (DataTypes.BoxStruct memory);
 
     function getPlatform(address platform)
         external
         view
-        returns (DataTypes.PlatformStruct);
+        returns (DataTypes.PlatformStruct memory);
 
     function getPlatformIdByAddress(address platform)
         external
         view
         returns (uint256);
 
-    function getBoxTasks(uint256 boxId) external view returns (uint256 memory);
+    function getBoxTasks(uint256 boxId)
+        external
+        view
+        returns (uint256[] memory);
 }

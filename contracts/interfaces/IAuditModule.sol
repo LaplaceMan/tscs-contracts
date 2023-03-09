@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
+import {DataTypes} from "../libraries/DataTypes.sol";
 
-interface IAuditStrategy {
+interface IAuditModule {
     function auditUnit() external view returns (uint256);
 
     function auditResult(
@@ -11,5 +12,5 @@ interface IAuditStrategy {
         uint256 allSupport,
         uint256 uploadTime,
         uint256 lockUpTime
-    ) external view returns (uint8);
+    ) external view returns (DataTypes.ItemState);
 }

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.0;
+import {DataTypes} from "./DataTypes.sol";
 
 library Events {
     event PlatformJoin(
@@ -49,4 +50,47 @@ library Events {
         uint256 taskId,
         string src
     );
+
+    event WithdrawPenalty(address to, uint256 amount);
+
+    event WithdrawVideoPlatformFee(
+        address to,
+        uint256[] ids,
+        uint256[] amounts
+    );
+    event SystemSetFee(uint16 old, uint16 fee);
+
+    event RegisterRepuire(string require, uint256 id);
+    event UserJoin(address usr, uint256 reputation, int256 deposit);
+    event UserLockRewardUpdate(
+        address usr,
+        address platform,
+        uint256 day,
+        int256 reward
+    );
+    event UserInfoUpdate(
+        address usr,
+        int256 reputationSpread,
+        int256 tokenSpread
+    );
+    event UserWithdrawDespoit(address usr, uint256 amount, uint256 balance);
+
+    event ItemStateChange(
+        uint256 itemId,
+        DataTypes.ItemState state,
+        uint256 taskId
+    );
+
+    event ItemGetEvaluation(
+        uint256 itemId,
+        address evaluator,
+        DataTypes.AuditAttitude attitude
+    );
+
+    event OwnershipTransferred(
+        address indexed previousOwner,
+        address indexed newOwner
+    );
+
+    event MutliSigTransferred(address previousMutliSig, address newMutliSig);
 }

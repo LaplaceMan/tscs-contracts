@@ -8,59 +8,46 @@
 pragma solidity ^0.8.0;
 
 abstract contract Ownable {
+    /**
+     * @notice 管理员，一般为DAO
+     */
     address private _owner;
-
+    /**
+     * @notice 多签地址，受DAO管理
+     */
     address private _multiSig;
-
+    /**
+     * @notice 相应的区块链地址是否拥有特殊权限
+     */
     mapping(address => bool) opeators;
 
-    event OwnershipTransferred(
-        address indexed previousOwner,
-        address indexed newOwner
-    );
-
-    event MutliSigTransferred(address previousMutliSig, address newMutliSig);
-    // label O1
+    // Fn 1
     modifier onlyOwner() {
         require(msg.sender == _owner, "O15");
         _;
     }
-    // label O2
+    // Fn 2
     modifier auth() {
         require(opeators[msg.sender] == true, "O25");
         _;
     }
 
-    // label O3
-    function owner() public view virtual returns (address) {
-        return _owner;
-    }
-
-    // label O4
-    function multiSig() public view returns (address) {
-        return _multiSig;
-    }
-
-    function isOperator(address operator) public view returns (bool) {
-        return opeators[operator];
-    }
-
-    // label O5
+    // Fn 3
     function transferOwnership(address newOwner) external virtual onlyOwner {
-        require(newOwner != address(0), "O51");
+        require(newOwner != address(0), "O31");
         _setOwner(newOwner);
     }
 
-    // label O6
+    // Fn 4
     function transferMutliSig(address newMutliSig) external {
-        require(msg.sender == _multiSig, "O65");
-        require(newMutliSig != address(0), "O61");
+        require(msg.sender == _multiSig || msg.sender == _owner, "O45");
+        require(newMutliSig != address(0), "O41");
         _multiSig = newMutliSig;
     }
 
-    // label O7
+    // Fn 5
     function setOperatorByTool(address old, address replace) internal {
-        require(isOperator(msg.sender));
+        require(opeators[msg.sender] == true, "O55");
         if (old == address(0)) {
             opeators[replace] = true;
         } else {
@@ -69,17 +56,28 @@ abstract contract Ownable {
         }
     }
 
-    // label O8
+    // Fn 6
     function _setOwner(address newOwner) internal {
-        address oldOwner = _owner;
+        // address oldOwner = _owner;
         _owner = newOwner;
-        emit OwnershipTransferred(oldOwner, newOwner);
     }
 
-    // label O9
+    // Fn 7
     function _setMutliSig(address newMutliSig) internal {
-        address oldMutliSig = _multiSig;
+        // address oldMutliSig = _multiSig;
         _multiSig = newMutliSig;
-        emit MutliSigTransferred(oldMutliSig, newMutliSig);
+    }
+
+    // ***************** View Functions *****************
+    function owner() public view virtual returns (address) {
+        return _owner;
+    }
+
+    function multiSig() public view returns (address) {
+        return _multiSig;
+    }
+
+    function isOperator(address operator) public view returns (bool) {
+        return opeators[operator];
     }
 }

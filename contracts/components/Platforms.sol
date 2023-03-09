@@ -66,13 +66,11 @@ contract Platforms {
         if (rate2 != 0) {
             platforms[msg.sender].rateAuditorDivide = rate2;
         }
-        emit PlatformSetRate(msg.sender, rate1, rate2);
     }
 
     function setMurmesAuditorDivideRate(uint16 auditorDivide) external {
         require(IMurmes(Murmes).owner() == msg.sender, "P3-5");
         platforms[Murmes].rateAuditorDivide = auditorDivide;
-        emit PlatformSetRate(Murmes, 0, auditorDivide);
     }
 
     function createBox(
@@ -97,7 +95,7 @@ contract Platforms {
 
     function updateBoxUnsettledRevenue(uint256 boxId, int256 differ) external {
         require(msg.sender == Murmes, "P7-5");
-        int256 unsettled = int256(videos[videoId].unsettled) + differ;
+        int256 unsettled = int256(boxes[boxId].unsettled) + differ;
         boxes[boxId].unsettled = unsettled > 0 ? uint256(unsettled) : 0;
     }
 
@@ -106,23 +104,24 @@ contract Platforms {
         uint256[] memory amounts
     ) external {
         assert(ids.length == amounts.length);
-        address authority = IMurmes(Murmes).authorityStrategy();
+        // address authority = IMurmes(Murmes).authorityStrategy();
         for (uint256 i = 0; i < ids.length; i++) {
-            uint256 amount = IAuthorityStrategy(authority)
-                .isOwnUpdateViewCountsAuthority(
-                    videos[ids[i]].id,
-                    amounts[i],
-                    videos[ids[i]].platform,
-                    msg.sender
-                );
-            videos[ids[i]].unsettled += amount;
-            for (uint256 j; j < videos[ids[i]].tasks.length; j++) {
-                uint256 taskId = videos[ids[i]].tasks[j];
+            uint256 amount;
+            // uint256 amount = IAuthorityStrategy(authority)
+            //     .isOwnUpdateViewCountsAuthority(
+            //         videos[ids[i]].id,
+            //         amounts[i],
+            //         videos[ids[i]].platform,
+            //         msg.sender
+            //     );
+            boxes[ids[i]].unsettled += amount;
+            for (uint256 j; j < boxes[ids[i]].tasks.length; j++) {
+                uint256 taskId = boxes[ids[i]].tasks[j];
                 (uint8 strategy, , uint256[] memory itemIds) = IMurmes(Murmes)
                     .getTaskPaymentStrategyAndSubtitles(taskId);
                 if (strategy == 1 && itemIds.length > 0) {
                     uint16 rateCountsToProfit = platforms[
-                        videos[itemIds[i]].platform
+                        boxes[itemIds[i]].platform
                     ].rateCountsToProfit;
                     IMurmes(Murmes).updateUsageCounts(
                         taskId,
@@ -132,8 +131,6 @@ contract Platforms {
                 }
             }
         }
-
-        emit VideoCountsUpdate(videos[id[0]].platform, id, vs);
     }
 
     function _createBox(
@@ -144,7 +141,7 @@ contract Platforms {
         totalBoxes++;
         require(idRealToMurmes[platform][realId] == 0, "V1-0");
         boxes[totalBoxes].platform = platform;
-        boxes[totalBoxes].id = id;
+        boxes[totalBoxes].id = realId;
         boxes[totalBoxes].creator = creator;
         idRealToMurmes[platform][realId] = totalBoxes;
         return totalBoxes;
@@ -158,14 +155,18 @@ contract Platforms {
         return idRealToMurmes[platfrom][realId];
     }
 
-    function getBox(uint256 boxId) external view returns (DataTypes.BoxStruct) {
+    function getBox(uint256 boxId)
+        external
+        view
+        returns (DataTypes.BoxStruct memory)
+    {
         return boxes[boxId];
     }
 
     function getPlatform(address platform)
         external
         view
-        returns (DataTypes.PlatformStruct)
+        returns (DataTypes.PlatformStruct memory)
     {
         return platforms[platform];
     }
@@ -178,7 +179,11 @@ contract Platforms {
         return platforms[platform].platformId;
     }
 
-    function getBoxTasks(uint256 boxId) external view returns (uint256 memory) {
+    function getBoxTasks(uint256 boxId)
+        external
+        view
+        returns (uint256[] memory)
+    {
         return boxes[boxId].tasks;
     }
 }

@@ -9,8 +9,8 @@ pragma solidity ^0.8.0;
 import "./base/TaskManager.sol";
 import "./interfaces/IGuard.sol";
 import "./interfaces/IPlatform.sol";
+import "./interfaces/IAuditModule.sol";
 import "./interfaces/IAccessModule.sol";
-import "./common/token/ERC20/IERC20.sol";
 import "./interfaces/IPlatformToken.sol";
 import "./interfaces/IDetectionModule.sol";
 import "./interfaces/ISettlementModule.sol";
@@ -63,7 +63,7 @@ contract Murmes is TaskManager {
             address platforms = IComponentGlobal(componentGlobal).platforms();
             uint256[] memory _tasks = IPlatform(platforms).getBoxTasks(orderId);
             for (uint256 i = 0; i < _tasks.length; i++) {
-                require(tasks[_tasks[i]].requires != vars.requireId, "10");
+                require(tasks[_tasks[i]].requireId != vars.requireId, "10");
             }
             uint256[] memory newTasks = _sortSettlementPriority(
                 _tasks,
@@ -114,7 +114,7 @@ contract Murmes is TaskManager {
     //     return history;
     // }
 
-    function submitItem(DataTypes.SubmitItemData vars)
+    function submitItem(DataTypes.SubmitItemData calldata vars)
         external
         returns (uint256)
     {
@@ -140,14 +140,8 @@ contract Murmes is TaskManager {
             );
         }
 
-        uint256 itemId = _createItem(
-            msg.sender,
-            vars.taskId,
-            vars.cid,
-            vars.requireId,
-            vars.fingerprint
-        );
-        tasks[vars.taskId].subtitles.push(itemId);
+        uint256 itemId = _createItem(msg.sender, vars);
+        tasks[vars.taskId].items.push(itemId);
         return itemId;
     }
 
@@ -160,12 +154,14 @@ contract Murmes is TaskManager {
 
         _userInitialization(msg.sender, 0);
         _validateCaller(msg.sender);
-
-        if (tasks[taskId].auditModule != address(0)) {
-            require(accessStrategy.auditable(users[msg.sender].deposit), "852");
+        {
+            address access = IComponentGlobal(componentGlobal).access();
+            require(
+                IAccessModule(access).auditable(users[msg.sender].deposit),
+                "852"
+            );
         }
-
-        _evaluateST(subtitleId, attitude, msg.sender);
+        _evaluateItem(itemId, attitude, msg.sender);
         // 基于字幕审核信息和审核策略判断字幕状态改变
         (
             uint256 uploaded,
@@ -173,239 +169,99 @@ contract Murmes is TaskManager {
             uint256 against,
             uint256 allSupport,
             uint256 uploadTime
-        ) = getSubtitleAuditInfo(subtitleId);
-        uint8 flag = auditStrategy.auditResult(
-            uploaded,
-            support,
-            against,
-            allSupport,
-            uploadTime,
-            lockUpTime
-        );
-        if (flag != 0 && subtitleNFT[subtitleId].state == 0) {
-            // 改变 ST 状态, 以及利益相关者信誉度和质押 Zimu 信息
-            _changeST(subtitleId, flag);
-            _updateUsers(subtitleId, flag);
-            // 字幕被采用, 更新相应申请的状态
-            if (flag == 1) {
-                tasks[subtitleNFT[subtitleId].taskId].adopted = subtitleId;
+        ) = getItemAuditInfo(itemId);
+        DataTypes.ItemState flag = IAuditModule(tasks[taskId].auditModule)
+            .auditResult(
+                uploaded,
+                support,
+                against,
+                allSupport,
+                uploadTime,
+                IComponentGlobal(componentGlobal).lockUpTime()
+            );
+        if (
+            flag != DataTypes.ItemState.NORMAL &&
+            itemsNFT[itemId].state == DataTypes.ItemState.NORMAL
+        ) {
+            _changeItemState(itemId, flag);
+            _updateUsers(itemId, flag);
+            if (flag == DataTypes.ItemState.ADOPTED) {
+                tasks[itemsNFT[itemId].taskId].adopted = itemId;
             }
         }
     }
 
-    function updateUsageCounts(
+    function updateItemExternalRevenue(
         uint256 taskId,
         uint256 counts,
         uint16 rateCountsToProfit
     ) external {
-        require(isOperator(msg.sender), "55");
-        require(tasks[taskId].strategy == 1, "51");
-        ISettlementStrategy(settlementStrategy[tasks[taskId].strategy].strategy)
-            .updateDebtOrReward(
-                taskId,
-                counts,
-                tasks[taskId].amount,
-                rateCountsToProfit
-            );
-    }
-
-    /**
-     * @notice 获得特定字幕与审核相关的信息
-     * @param subtitleId 字幕 ID
-     * @return 同一申请下已上传字幕数, 该字幕获得的支持数, 该字幕获得的反对数, 同一申请下已上传字幕获得支持数的和
-     * label M6
-     */
-    function getSubtitleAuditInfo(uint256 subtitleId)
-        public
-        view
-        returns (
-            uint256,
-            uint256,
-            uint256,
-            uint256,
-            uint256
-        )
-    {
-        uint256 taskId = subtitleNFT[subtitleId].taskId;
-        uint256 uploaded = tasks[taskId].subtitles.length;
-        uint256 allSupport;
-        for (uint256 i = 0; i < uploaded; i++) {
-            uint256 singleSubtitle = tasks[taskId].subtitles[i];
-            allSupport += subtitleNFT[singleSubtitle].supporters.length;
-        }
-        return (
-            uploaded,
-            subtitleNFT[subtitleId].supporters.length,
-            subtitleNFT[subtitleId].dissenters.length,
-            allSupport,
-            subtitleNFT[subtitleId].stateChangeTime
+        require(
+            isOperator(msg.sender) || msg.sender == tasks[taskId].platform,
+            "55"
+        );
+        require(
+            tasks[taskId].settlement == DataTypes.SettlementType.DIVIDEND,
+            "51"
+        );
+        address thisSettlement = IModuleGlobal(moduleGlobal)
+            .getSettlementModuleAddress(tasks[taskId].settlement);
+        ISettlementModule(thisSettlement).updateDebtOrReward(
+            taskId,
+            counts,
+            tasks[taskId].amount,
+            rateCountsToProfit
         );
     }
 
-    /**
-     * @notice 批量更新用户信誉度和质押信息, 字幕状态发生变化时被调用
-     * @param subtitleId 字幕 ID
-     * @param flag 1 表示字幕被采用（奖励）, 2 表示字幕被认定为恶意字幕（惩罚）
-     * label M7
-     */
-    function _updateUsers(uint256 subtitleId, uint8 flag) internal {
-        int8 newFlag = 1;
-        uint8 reverseFlag = (flag == 1 ? 2 : 1);
-        uint8 multiplier = accessStrategy.multiplier();
-        // 2 表示字幕被认定为恶意字幕, 对字幕制作者和支持者进行惩罚, 所以标志位为 负
-        if (flag == 2) newFlag = -1;
-        // 更新字幕制作者信誉度和 Zimu 质押数信息
-        {
-            (uint256 reputationSpread, uint256 tokenSpread) = accessStrategy
-                .spread(
-                    users[IST(subtitleToken).ownerOf(subtitleId)].reputation,
-                    flag
-                );
-            _updateUser(
-                IST(subtitleToken).ownerOf(subtitleId),
-                int256((reputationSpread * multiplier) / 100) * newFlag,
-                int256((tokenSpread * multiplier) / 100) * newFlag
-            );
-        }
-        // 更新审核员信息, 支持者和反对者受到的待遇相反
-        for (
-            uint256 i = 0;
-            i < subtitleNFT[subtitleId].supporters.length;
-            i++
-        ) {
-            (uint256 reputationSpread, uint256 tokenSpread) = accessStrategy
-                .spread(
-                    users[subtitleNFT[subtitleId].supporters[i]].reputation,
-                    flag
-                );
-            _updateUser(
-                subtitleNFT[subtitleId].supporters[i],
-                int256(reputationSpread) * newFlag,
-                int256(tokenSpread) * newFlag
-            );
-        }
-        for (
-            uint256 i = 0;
-            i < subtitleNFT[subtitleId].dissenters.length;
-            i++
-        ) {
-            (uint256 reputationSpread, uint256 tokenSpread) = accessStrategy
-                .spread(
-                    users[subtitleNFT[subtitleId].dissenters[i]].reputation,
-                    reverseFlag
-                );
-            _updateUser(
-                subtitleNFT[subtitleId].dissenters[i],
-                int256(reputationSpread) * newFlag * (-1),
-                int256(tokenSpread) * newFlag * (-1)
-            );
-        }
-    }
-
-    /**
-     * @notice 预结算（视频和字幕）收益, 此处仅适用于结算策略为一次性结算（0）的申请
-     * @param taskId 申请 ID
-     * label M9
-     */
-    function preExtract0(uint256 taskId) external {
-        require(tasks[taskId].strategy == 0, "96");
+    function preExtractForNormal(uint256 taskId) external {
+        require(
+            tasks[taskId].settlement == DataTypes.SettlementType.ONETIME,
+            "96"
+        );
         _userInitialization(msg.sender, 0);
-        (, , , , uint16 rateAuditorDivide) = IPlatform(platforms)
-            .getPlatformBaseInfo(address(this));
-        ISettlementStrategy(settlementStrategy[0].strategy).settlement(
+        address platforms = IComponentGlobal(componentGlobal).platforms();
+        DataTypes.PlatformStruct memory platformInfo = IPlatform(platforms)
+            .getPlatform(address(this));
+        address settlement = IModuleGlobal(moduleGlobal)
+            .getSettlementModuleAddress(DataTypes.SettlementType.ONETIME);
+        address itemNFT = IComponentGlobal(componentGlobal).itemToken();
+        ISettlementModule(settlement).settlement(
             taskId,
             address(this),
-            IST(subtitleToken).ownerOf(tasks[taskId].adopted),
+            IItemNFT(itemNFT).ownerOf(tasks[taskId].adopted),
             0,
-            rateAuditorDivide,
-            subtitleNFT[tasks[taskId].adopted].supporters
+            platformInfo.rateAuditorDivide,
+            itemsNFT[tasks[taskId].adopted].supporters
         );
     }
 
-    /**
-     * @notice 预结算时, 遍历用到的结算策略
-     * @param videoId 视频在 Murmes 内的 ID
-     * @param unsettled 未结算稳定币数
-     * @return 本次预结算支付字幕制作费用后剩余的稳定币数目
-     * label M10
-     */
-    function _ergodic(uint256 videoId, uint256 unsettled)
-        internal
-        returns (uint256)
-    {
-        // 结算策略 strategy 拥有优先度, 根据id（小的优先级高）划分
-        (address platform, , , , , , uint256[] memory tasks_) = IPlatform(
-            platforms
-        ).getVideoBaseInfo(videoId);
-        (, , , , uint16 rateAuditorDivide) = IPlatform(platforms)
-            .getPlatformBaseInfo(platform);
-        for (uint256 i = 0; i < tasks_.length; i++) {
-            uint256 taskId = tasks_[i];
-            if (
-                tasks[taskId].strategy != 0 &&
-                tasks[taskId].adopted > 0 &&
-                unsettled > 0
-            ) {
-                uint256 subtitleGet = ISettlementStrategy(
-                    settlementStrategy[tasks[taskId].strategy].strategy
-                ).settlement(
-                        taskId,
-                        platform,
-                        IST(subtitleToken).ownerOf(tasks[taskId].adopted),
-                        unsettled,
-                        rateAuditorDivide,
-                        subtitleNFT[tasks[taskId].adopted].supporters
-                    );
-                unsettled -= subtitleGet;
-            }
-        }
-        return unsettled;
-    }
-
-    /**
-     * @notice 预结算（视频和字幕）收益, 仍需优化, 实现真正的模块化
-     * @param videoId 视频在 Murmes 内的 ID
-     * @return 本次结算稳定币数目
-     * label M11
-     */
-    function preExtractOther(uint256 videoId) external returns (uint256) {
-        (
-            address platform,
-            ,
-            ,
-            address creator,
-            ,
-            uint256 unsettled,
-
-        ) = IPlatform(platforms).getVideoBaseInfo(videoId);
-        require(unsettled > 0, "1111");
-        _userInitialization(msg.sender, 0);
-        // 获得相应的代币计价
-        (, , uint256 platformId, uint16 rateCountsToProfit, ) = IPlatform(
-            platforms
-        ).getPlatformBaseInfo(platform);
-        uint256 unsettled_ = (rateCountsToProfit * unsettled * (10**6)) /
-            RATE_BASE;
-        uint256 surplus = _ergodic(videoId, unsettled_);
-        // 若支付完字幕制作费用后仍有剩余, 则直接将收益以稳定币的形式发送给视频创作者
+    function preExtractOther(uint256 boxId) external returns (uint256) {
+        address platforms = IComponentGlobal(componentGlobal).platforms();
+        DataTypes.BoxStruct memory boxInfo = IPlatform(platforms).getBox(boxId);
+        require(boxInfo.unsettled > 0, "1111");
+        DataTypes.PlatformStruct memory platformInfo = IPlatform(platforms)
+            .getPlatform(boxInfo.platform);
+        uint256 unsettled = (platformInfo.rateCountsToProfit *
+            boxInfo.unsettled *
+            (10**6)) / BASE_RATE;
+        uint256 surplus = _ergodic(boxId, unsettled);
+        address platformToken = IComponentGlobal(componentGlobal)
+            .platformToken();
         if (surplus > 0) {
-            IVT(videoToken).mintStableToken(platformId, creator, surplus);
+            IPlatformToken(platformToken).mintPlatformToken(
+                platformInfo.platformId,
+                boxInfo.creator,
+                surplus
+            );
         }
-        IPlatform(platforms).updateVideoUnsettled(
-            videoId,
+        IPlatform(platforms).updateBoxUnsettledRevenue(
+            boxId,
             int256(unsettled) * -1
         );
-        emit VideoPreExtract(videoId, unsettled, surplus);
         return unsettled;
     }
 
-    /**
-     * @notice 预结算（字幕制作者）收益, "预" 指的是结算后不会直接得到稳定币, 经过锁定期（审核期）后才能提取
-     * @param platform 所属平台 Platform 区块链地址
-     * @param to 收益接收方
-     * @param amount 新增数目
-     * label M12
-     */
     function preDivide(
         address platform,
         address to,
@@ -414,13 +270,6 @@ contract Murmes is TaskManager {
         _preDivide(platform, to, amount);
     }
 
-    /**
-     * @notice 为批量用户（字幕支持者）预结算收益, "预" 指的是结算后不会直接得到稳定币, 经过锁定期（审核期）后才能提取
-     * @param platform 所属平台 Platform 区块链地址
-     * @param to 收益接收方
-     * @param amount 新增数目
-     * label M13
-     */
     function preDivideBatch(
         address platform,
         address[] memory to,
@@ -429,63 +278,153 @@ contract Murmes is TaskManager {
         _preDivideBatch(platform, to, amount);
     }
 
-    /**
-     * @notice 提取经过锁定期的收益
-     * @param platform 要提取的平台 Platform 的区块链地址
-     * @param day 要提取 天 的集合
-     * @return 本次总共提取的（由相应平台背书的）稳定币数
-     * label M14
-     */
     function withdraw(address platform, uint256[] memory day)
         external
         returns (uint256)
     {
         uint256 all = 0;
+
         for (uint256 i = 0; i < day.length; i++) {
             if (
-                users[msg.sender].lock[platform][day[i]] > 0 &&
-                block.timestamp >= day[i] + lockUpTime
+                users[msg.sender].locks[platform][day[i]] > 0 &&
+                block.timestamp >=
+                day[i] + IComponentGlobal(componentGlobal).lockUpTime()
             ) {
-                all += users[msg.sender].lock[platform][day[i]];
-                users[msg.sender].lock[platform][day[i]] = 0;
+                all += users[msg.sender].locks[platform][day[i]];
+                users[msg.sender].locks[platform][day[i]] = 0;
             }
         }
         if (all > 0) {
-            (, , uint256 platformId, , ) = IPlatform(platforms)
-                .getPlatformBaseInfo(platform);
+            address platforms = IComponentGlobal(componentGlobal).platforms();
+            DataTypes.PlatformStruct memory platformInfo = IPlatform(platforms)
+                .getPlatform(platform);
+            address vault = IComponentGlobal(componentGlobal).vault();
             uint256 fee = IVault(vault).fee();
+            address platformToken = IComponentGlobal(componentGlobal)
+                .platformToken();
             if (fee > 0) {
-                uint256 thisFee = (all * fee) / BASE_FEE_RATE;
+                uint256 thisFee = (all * fee) / BASE_RATE;
+                address recipient = IVault(vault).feeRecipient();
                 all -= thisFee;
                 if (platform != address(this)) {
-                    IVT(videoToken).mintStableToken(platformId, vault, thisFee);
+                    IPlatformToken(platformToken).mintPlatformToken(
+                        platformInfo.platformId,
+                        recipient,
+                        thisFee
+                    );
                 } else {
+                    // 此时，platform为currency
                     require(
-                        IZimu(zimuToken).transferFrom(
+                        IERC20(platform).transferFrom(
                             address(this),
-                            vault,
+                            recipient,
                             thisFee
                         ),
                         "1412"
                     );
                 }
-                IVault(vault).addFee(platformId, thisFee);
             }
             if (platform != address(this)) {
-                IVT(videoToken).mintStableToken(platformId, msg.sender, all);
+                IPlatformToken(platformToken).mintPlatformToken(
+                    platformInfo.platformId,
+                    msg.sender,
+                    all
+                );
             } else {
-                require(IZimu(zimuToken).transfer(msg.sender, all), "14122");
+                require(IERC20(platform).transfer(msg.sender, all), "14122");
             }
         }
-        emit UserWithdraw(msg.sender, platform, day, all);
         return all;
+    }
+
+    function _updateUsers(uint256 itemId, DataTypes.ItemState flag) internal {
+        int8 newFlag = 1;
+        uint8 reverseFlag = (uint8(flag) == 1 ? 2 : 1);
+        address access = IComponentGlobal(componentGlobal).access();
+        uint8 multiplier = IAccessModule(access).multiplier();
+
+        if (flag == DataTypes.ItemState.DELETED) newFlag = -1;
+        {
+            address itemToken = IComponentGlobal(componentGlobal).itemToken();
+            (uint256 reputationSpread, uint256 tokenSpread) = IAccessModule(
+                access
+            ).spread(
+                    users[IItemNFT(itemToken).ownerOf(itemId)].reputation,
+                    uint8(flag)
+                );
+            _updateUser(
+                IItemNFT(itemToken).ownerOf(itemId),
+                int256((reputationSpread * multiplier) / 100) * newFlag,
+                int256((tokenSpread * multiplier) / 100) * newFlag
+            );
+        }
+
+        for (uint256 i = 0; i < itemsNFT[itemId].supporters.length; i++) {
+            (uint256 reputationSpread, uint256 tokenSpread) = IAccessModule(
+                access
+            ).spread(
+                    users[itemsNFT[itemId].supporters[i]].reputation,
+                    uint8(flag)
+                );
+            _updateUser(
+                itemsNFT[itemId].supporters[i],
+                int256(reputationSpread) * newFlag,
+                int256(tokenSpread) * newFlag
+            );
+        }
+        for (uint256 i = 0; i < itemsNFT[itemId].opponents.length; i++) {
+            (uint256 reputationSpread, uint256 tokenSpread) = IAccessModule(
+                access
+            ).spread(
+                    users[itemsNFT[itemId].opponents[i]].reputation,
+                    reverseFlag
+                );
+            _updateUser(
+                itemsNFT[itemId].opponents[i],
+                int256(reputationSpread) * newFlag * (-1),
+                int256(tokenSpread) * newFlag * (-1)
+            );
+        }
+    }
+
+    function _ergodic(uint256 boxId, uint256 unsettled)
+        internal
+        returns (uint256)
+    {
+        address platforms = IComponentGlobal(componentGlobal).platforms();
+        DataTypes.BoxStruct memory boxInfo = IPlatform(platforms).getBox(boxId);
+        DataTypes.PlatformStruct memory platformInfo = IPlatform(platforms)
+            .getPlatform(boxInfo.platform);
+        address itemNFT = IComponentGlobal(componentGlobal).itemToken();
+        for (uint256 i = 0; i < boxInfo.tasks.length; i++) {
+            uint256 taskId = boxInfo.tasks[i];
+            if (
+                tasks[taskId].settlement != DataTypes.SettlementType.ONETIME &&
+                tasks[taskId].adopted > 0 &&
+                unsettled > 0
+            ) {
+                address settlement = IModuleGlobal(moduleGlobal)
+                    .getSettlementModuleAddress(tasks[taskId].settlement);
+                uint256 itemGetReward = ISettlementModule(settlement)
+                    .settlement(
+                        taskId,
+                        boxInfo.platform,
+                        IItemNFT(itemNFT).ownerOf(tasks[taskId].adopted),
+                        unsettled,
+                        platformInfo.rateAuditorDivide,
+                        itemsNFT[tasks[taskId].adopted].supporters
+                    );
+                unsettled -= itemGetReward;
+            }
+        }
+        return unsettled;
     }
 
     function _validatePostTaskData(
         address currency,
         address audit,
         address detection
-    ) internal {
+    ) internal view {
         require(
             IModuleGlobal(moduleGlobal).isPostTaskModuleValid(
                 currency,
@@ -495,18 +434,19 @@ contract Murmes is TaskManager {
         );
     }
 
-    function _validateCaller(address caller) internal {
+    function _validateCaller(address caller) internal view {
         address access = IComponentGlobal(componentGlobal).access();
         require(
             IAccessModule(access).access(
-                users[msg.sender].reputation,
-                users[msg.sender].deposit
+                users[caller].reputation,
+                users[caller].deposit
             )
         );
     }
 
     function _validateSubmitItemData(uint256 taskId, uint256 fingerprint)
         internal
+        view
     {
         if (
             tasks[taskId].detectionModule != address(0) &&
@@ -515,7 +455,7 @@ contract Murmes is TaskManager {
             // uint256[] memory history = _getHistoryFingerprint(taskId);
             address detection = tasks[taskId].detectionModule;
             require(
-                ISettlementModule(detection).beforeDetection(
+                IDetectionModule(detection).beforeDetection(
                     taskId,
                     fingerprint
                 ),
@@ -562,6 +502,33 @@ contract Murmes is TaskManager {
         );
     }
 
+    function getItemAuditInfo(uint256 itemId)
+        public
+        view
+        returns (
+            uint256,
+            uint256,
+            uint256,
+            uint256,
+            uint256
+        )
+    {
+        uint256 taskId = itemsNFT[itemId].taskId;
+        uint256 uploaded = tasks[taskId].items.length;
+        uint256 allSupport;
+        for (uint256 i = 0; i < uploaded; i++) {
+            uint256 singleItem = tasks[taskId].items[i];
+            allSupport += itemsNFT[singleItem].supporters.length;
+        }
+        return (
+            uploaded,
+            itemsNFT[itemId].supporters.length,
+            itemsNFT[itemId].opponents.length,
+            allSupport,
+            itemsNFT[itemId].stateChangeTime
+        );
+    }
+
     /**
      * @notice 根据申请 ID 获得其所属的平台
      * @param taskId 申请/任务 ID
@@ -578,19 +545,19 @@ contract Murmes is TaskManager {
     }
 
     // label M19
-    function getTaskPaymentStrategyAndSubtitles(uint256 taskId)
+    function getTaskPaymentAndItems(uint256 taskId)
         public
         view
         returns (
-            uint8,
+            DataTypes.SettlementType,
             uint256,
             uint256[] memory
         )
     {
         return (
-            tasks[taskId].strategy,
+            tasks[taskId].settlement,
             tasks[taskId].amount,
-            tasks[taskId].subtitles
+            tasks[taskId].items
         );
     }
 }

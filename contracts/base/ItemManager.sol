@@ -11,66 +11,60 @@ import "../interfaces/IItemNFT.sol";
 
 contract ItemManager is EntityManager {
     /**
-     * @notice 与传统 ERC721 代币相比 每个 ST（Subtitle Token）都有相应的 Subtitle 结构记录字幕的详细信息, 因为观众评价（审核）机制的引入, ST 是动态的 NFT
+     * @notice 记录Item详细信息
      */
     mapping(uint256 => DataTypes.ItemStruct) itemsNFT;
     /**
-     * @notice 限制每个用户只能对每个字幕评价一次, 用户区块链地址 => ST ID => 是否评价（true 为已参与评价）
+     * @notice 用户是否对Item评价过
      */
     mapping(address => mapping(uint256 => bool)) evaluated;
     /**
-     * @notice 限制每个用户只能给每个申请下已上传字幕中的一个好评, 用户区块链地址 => apply ID => 支持的 ST ID
+     * @notice 用户建议特定任务应该采纳的Item
      */
     mapping(address => mapping(uint256 => uint256)) adopted;
 
-    event ItemStateChange(
-        uint256 itemId,
-        DataTypes.ItemState state,
-        uint256 taskId
-    );
-    event ItemGetEvaluation(
-        uint256 itemId,
-        address evaluator,
-        DataTypes.AuditAttitude attitude
-    );
-
     /**
-     * @notice 当 DAO 判定字幕为恶意时，删除字幕，由于加密思想，我们并没有在链上删掉ST的信息，而是在本系统内作标记，将不再认可它
-     * @param id 恶意ST ID
-     * label S6
+     * @notice 当DAO判定Item为恶意时，"删除"它
+     * @param itemId 恶意Item ID
+     * Fn 1
      */
-    function holdSubtitleStateByDAO(uint256 id, DataTypes.ItemState state)
+    function holdSubtitleStateByDAO(uint256 itemId, DataTypes.ItemState state)
         external
         auth
     {
         assert(state != DataTypes.ItemState.ADOPTED);
-        _changeItemState(id, state);
+        _changeItemState(itemId, state);
     }
 
-    function _createItem(
-        address maker,
-        uint256 taskId,
-        string memory cid,
-        uint256 requireId,
-        uint256 fingerprint
-    ) internal returns (uint256) {
+    /**
+     * @notice 创建Item
+     * @param maker Item制作者地址
+     * @param vars Item信息
+     * @return 相应Item ID
+     * Fn 2
+     */
+    function _createItem(address maker, DataTypes.SubmitItemData calldata vars)
+        internal
+        returns (uint256)
+    {
         address itemToken = IComponentGlobal(componentGlobal).itemToken();
-        uint256 id = IItemNFT(itemToken).mintItemToken(
-            maker,
-            taskId,
-            cid,
-            requireId,
-            fingerprint
-        );
-        itemsNFT[id].taskId = taskId;
-        itemsNFT[id].stateChangeTime = block.timestamp;
-        return id;
+        uint256 itemId = IItemNFT(itemToken).mintItemToken(maker, vars);
+        itemsNFT[itemId].taskId = vars.taskId;
+        itemsNFT[itemId].stateChangeTime = block.timestamp;
+        return itemId;
     }
 
-    function _changeItemState(uint256 id, DataTypes.ItemState state) internal {
-        itemsNFT[id].state = state;
-        itemsNFT[id].stateChangeTime = block.timestamp;
-        emit ItemStateChange(id, state, itemsNFT[id].taskId);
+    /**
+     * @notice 改变Item状态
+     * @param itemId Item的ID
+     * @param state 改变后的状态
+     * Fn 3
+     */
+    function _changeItemState(uint256 itemId, DataTypes.ItemState state)
+        internal
+    {
+        itemsNFT[itemId].state = state;
+        itemsNFT[itemId].stateChangeTime = block.timestamp;
     }
 
     function _evaluateItem(
@@ -78,20 +72,20 @@ contract ItemManager is EntityManager {
         DataTypes.AuditAttitude attitude,
         address evaluator
     ) internal {
-        require(itemsNFT[itemId].state == DataTypes.ItemState.NORMAL, "S33");
-        require(evaluated[evaluator][itemId] == false, "S34");
+        require(itemsNFT[itemId].state == DataTypes.ItemState.NORMAL, "I35");
+        require(evaluated[evaluator][itemId] == false, "I34");
         if (attitude == DataTypes.AuditAttitude.SUPPORT) {
             uint256 taskId = itemsNFT[itemId].taskId;
-            require(adopted[evaluator][taskId] == 0, "S32");
+            require(adopted[evaluator][taskId] == 0, "I30");
             itemsNFT[itemId].supporters.push(evaluator);
             adopted[evaluator][taskId] = itemId;
         } else {
-            itemsNFT[itemId].dissenters.push(evaluator);
+            itemsNFT[itemId].opponents.push(evaluator);
         }
         evaluated[evaluator][itemId] = true;
-        emit ItemGetEvaluation(itemId, evaluator, attitude);
     }
 
+    // ***************** View Functions *****************
     function getItem(uint256 itemId)
         external
         view

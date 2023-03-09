@@ -19,6 +19,8 @@ contract ComponentGlobal is IComponentGlobal {
 
     address public platformToken;
 
+    address public defaultDespoitableToken;
+
     uint256 public lockUpTime;
 
     event SystemSetComponent(uint8 id, address component);

@@ -8,11 +8,9 @@ interface IVault {
 
     function Murmes() external view returns (address);
 
-    function changePenalty(uint256 amount) external;
+    function feeRecipient() external view returns (address);
 
-    function addFee(uint256 platformId, uint256 amount) external;
-
-    function getFeeIncome(uint256 platformId) external view returns (uint256);
+    function updatePenalty(uint256 amount) external;
 
     function withdrawDeposit(
         address token,

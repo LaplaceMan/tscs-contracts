@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import {DataTypes} from "../libraries/DataTypes.sol";
+
 interface IAccessModule {
     function spread(uint256 reputation, uint8 flag)
         external

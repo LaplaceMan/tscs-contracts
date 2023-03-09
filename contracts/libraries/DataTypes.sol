@@ -23,7 +23,7 @@ library DataTypes {
         DataTypes.ItemState state;
         uint256 taskId;
         address[] supporters;
-        address[] dissenters;
+        address[] opponents;
         uint256 stateChangeTime;
     }
 

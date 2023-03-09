@@ -7,12 +7,14 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.0;
 
-import "../interfaces/IVT.sol";
-import "../interfaces/IZimu.sol";
 import "../interfaces/IVault.sol";
 import "../interfaces/IMurmes.sol";
 
 contract Vault is IVault {
+    /**
+     * @notice Murmes 合约地址
+     */
+    address public Murmes;
     /**
      * @notice 手续费用比率
      */
@@ -21,33 +23,16 @@ contract Vault is IVault {
      * @notice TSCS内产生的罚款总数（以Zimu计价）
      */
     uint256 public penalty;
+
+    address public feeRecipient;
     /**
      * @notice 罚款上限（以Zimu计价）
      */
     uint256 public penaltyUpperLimit;
-    /**
-     * @notice Murmes 合约地址
-     */
-    address public Murmes;
 
-    /**
-     * @notice 来自于不同平台的手续费收入
-     */
-    mapping(uint256 => uint256) feeIncome;
-
-    event WithdrawPenalty(address to, uint256 amount);
-
-    event WithdrawVideoPlatformFee(
-        address to,
-        uint256[] ids,
-        uint256[] amounts
-    );
-    event SystemSetFee(uint16 old, uint16 fee);
-
-    // event WithdrawPlatformFee(address to, uint256 amount);
-
-    constructor(address ms) {
+    constructor(address ms, address recipient) {
         Murmes = ms;
+        feeRecipient = recipient;
         penaltyUpperLimit = (10**5) * (10**18);
     }
 
@@ -65,18 +50,8 @@ contract Vault is IVault {
      * @param amount 新增罚没 Zimu 数量
      * label V2
      */
-    function changePenalty(uint256 amount) public auth {
+    function updatePenalty(uint256 amount) public auth {
         penalty += amount;
-    }
-
-    /**
-     * @notice 新增手续费，内部功能
-     * @param platformId 新增手续费来源平台
-     * @param amount 新增手续费数量
-     * label V3
-     */
-    function addFee(uint256 platformId, uint256 amount) public auth {
-        feeIncome[platformId] += amount;
     }
 
     /**
@@ -98,32 +73,6 @@ contract Vault is IVault {
         if (amount > penalty) amount = penalty;
         penalty -= amount;
         require(IZimu(token).transferFrom(address(this), to, amount), "V4-12");
-        emit WithdrawPenalty(to, amount);
-    }
-
-    /**
-     * @notice 获得指定平台所拥有的资产数（收费情况）
-     * @param platformId 指定 platform 的 ID
-     * @return 指定平台所拥有的资产数
-     * label V5
-     */
-    function getFeeIncome(uint256 platformId) public view returns (uint256) {
-        return feeIncome[platformId];
-    }
-
-    /**
-     * @notice 质押代币保存在金库合约中，此功能配合 Murmes 内的提取质押功能一起使用
-     * @param token Zimu 代币合约
-     * @param to 提币地址
-     * @param amount 提币数量
-     * label V6
-     */
-    function withdrawDeposit(
-        address token,
-        address to,
-        uint256 amount
-    ) external auth {
-        require(IZimu(token).transferFrom(address(this), to, amount), "V6-12");
     }
 
     /**
@@ -157,52 +106,4 @@ contract Vault is IVault {
         fee = rate;
         emit SystemSetFee(old, rate);
     }
-
-    /**
-     * @notice 提取平台内产生的交易费用
-     * @param platformIds 平台 IDs
-     * @param to VT 代币接收地址
-     * @param amounts 提取数量
-     */
-    // function transferVideoPlatformFee(
-    //     address token,
-    //     uint256[] memory platformIds,
-    //     address to,
-    //     uint256[] memory amounts
-    // ) external {
-    //     require(IMurmes(Murmes).isOperator(msg.sender), "ER5");
-    //     for (uint256 i; i < platformIds.length; i++) {
-    //         require(platformIds[i] != 0, "ER1");
-    //         uint256 balance = IVT(token).balanceOf(
-    //             address(this),
-    //             platformIds[i]
-    //         );
-    //         require(balance - feeIncome[platformIds[i]] >= amounts[i], "ER1");
-    //     }
-    //     IVT(token).safeBatchTransferFrom(
-    //         address(this),
-    //         to,
-    //         platformIds,
-    //         amounts,
-    //         ""
-    //     );
-    //     emit WithdrawVideoPlatformFee(to, platformIds, amounts);
-    // }
-
-    /**
-     * @notice 提取平台内产生的交易费用，此功能专用于提取一次性结算时的 Zimu 代币手续费
-     * @param token Zimu 代币合约
-     * @param to 代币接收地址
-     * @param amount 提取代币数量
-     */
-    // function transferPlatformFee(
-    //     address token,
-    //     address to,
-    //     uint256 amount
-    // ) external {
-    //     require(IMurmes(Murmes).isOperator(msg.sender), "ER5");
-    //     require(feeIncome[0] >= amount, "ER1");
-    //     IZimu(token).transferFrom(address(this), to, amount);
-    //     emit WithdrawPlatformFee(to, amount);
-    // }
 }

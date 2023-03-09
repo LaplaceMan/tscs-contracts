@@ -31,10 +31,6 @@ TSCS: A Blockchain-Based Tokenized Subtitle Crowdsourcing System (Old Name)
 
 `npx hardhat run scripts/deploy.js --network <network-name>`
 
-> 先部署 Murmes (TSCS) 主合约 Murmes.sol ，构造函数输入参数为 DAO 合约地址
-> 然后部署代币合约 VT.sol 、Zimu.sol、ST.sol 、Vault.sol、Platforms.sol，构造函数输入参数为主合约地址（和 DAO 合约地址）
-> 最后部署策略合约 AccessStrategy.sol（访问权限策略）、AuditStrategy.sol（审核策略）、DetectionStrategy.sol（相似度检测策略）和三个结算策略合约。其中，结算策略合约构造函数输入参数为主合约地址，其余为 DAO 合约地址
-
 ## Test Contracts
 
 `npx hardhat test .\scripts\<Test script>.js --network <Network name>`
