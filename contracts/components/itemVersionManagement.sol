@@ -1,9 +1,3 @@
-/**
- * @Author: LaplaceMan 505876833@qq.com
- * @Date: 2022-12-20 15:36:38
- * @Description: 基于 Simhash 实现字幕的版本控制，simhash计算过程在链下进行，以乐观的态度认为大多数用户会诚实上传，当出现不匹配的情况时，进行惩罚
- * @Copyright (c) 2022 by LaplaceMan 505876833@qq.com, All Rights Reserved.
- */
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.0;
 
@@ -11,7 +5,7 @@ import "../interfaces/IST.sol";
 import "../interfaces/IMurmes.sol";
 import "../interfaces/IDetectionStrategy.sol";
 
-contract SubtitleVersionManagement {
+contract ItemVersionManagement {
     /**
      * @notice Murmes 主合约地址
      */
@@ -107,9 +101,10 @@ contract SubtitleVersionManagement {
      * @param versionId 无效的版本号
      * label SVM2
      */
-    function reportInvalidVersion(uint256 subtitleId, uint256 versionId)
-        public
-    {
+    function reportInvalidVersion(
+        uint256 subtitleId,
+        uint256 versionId
+    ) public {
         require(IMurmes(Murmes).isOperator(msg.sender), "SVM2-5");
         for (uint256 i = versionId; i < subtitles[subtitleId].length; i++) {
             subtitles[subtitleId][i].invalid = true;
@@ -145,11 +140,10 @@ contract SubtitleVersionManagement {
      * @return 特定版本字幕的详细信息
      * label SVM4
      */
-    function getSpecifyVersion(uint256 subtitleId, uint256 versionId)
-        public
-        view
-        returns (version memory)
-    {
+    function getSpecifyVersion(
+        uint256 subtitleId,
+        uint256 versionId
+    ) public view returns (version memory) {
         require(subtitles[subtitleId][versionId].fingerprint != 0, "ER1");
         return subtitles[subtitleId][versionId];
     }
@@ -160,11 +154,9 @@ contract SubtitleVersionManagement {
      * @return 字幕有效的版本数，字幕所有的版本数
      * label SVM5
      */
-    function getVersionNumebr(uint256 subtitleId)
-        public
-        view
-        returns (uint256, uint256)
-    {
+    function getVersionNumebr(
+        uint256 subtitleId
+    ) public view returns (uint256, uint256) {
         if (subtitles[subtitleId].length == 0) return (0, 0);
         uint256 validNumber = 0;
         for (uint256 i = 0; i < subtitles[subtitleId].length; i++) {
@@ -184,11 +176,9 @@ contract SubtitleVersionManagement {
      * @return 返回特定字幕最新的有效的版本的详细信息
      * label SVM6
      */
-    function getLatestValidVersion(uint256 subtitleId)
-        public
-        view
-        returns (string memory, uint256)
-    {
+    function getLatestValidVersion(
+        uint256 subtitleId
+    ) public view returns (string memory, uint256) {
         string memory source;
         uint256 fingerprint;
         for (uint256 i = subtitles[subtitleId].length; i > 0; i--) {

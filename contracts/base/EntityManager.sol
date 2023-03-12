@@ -1,9 +1,3 @@
-/**
- * @Author: LaplaceMan 505876833@qq.com
- * @Date: 2022-09-07 18:33:27
- * @Description: 管理 Murmes 内代币合约地址、语言和用户信息
- * @Copyright (c) 2022 by LaplaceMan email: 505876833@qq.com, All Rights Reserved.
- */
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.0;
 import "./Ownable.sol";
@@ -150,11 +144,7 @@ contract EntityManager is Ownable {
      * @param amount 新增锁定代币数量
      * Fn 7
      */
-    function _preDivide(
-        address platform,
-        address to,
-        uint256 amount
-    ) internal {
+    function _preDivide(address platform, address to, uint256 amount) internal {
         updateLockReward(platform, block.timestamp / 86400, int256(amount), to);
     }
 
@@ -223,11 +213,9 @@ contract EntityManager is Ownable {
     }
 
     // ***************** View Functions *****************
-    function getUserBaseInfo(address usr)
-        external
-        view
-        returns (uint256, int256)
-    {
+    function getUserBaseInfo(
+        address usr
+    ) external view returns (uint256, int256) {
         return (users[usr].reputation, users[usr].deposit);
     }
 
@@ -243,19 +231,15 @@ contract EntityManager is Ownable {
         return users[usr].locks[platform][day];
     }
 
-    function getRequireNoteById(uint32 requireId)
-        external
-        view
-        returns (string memory)
-    {
+    function getRequireNoteById(
+        uint32 requireId
+    ) external view returns (string memory) {
         return requiresNoteById[requireId];
     }
 
-    function getRequireIdByNote(string memory requireNote)
-        external
-        view
-        returns (uint256)
-    {
+    function getRequireIdByNote(
+        string memory requireNote
+    ) external view returns (uint256) {
         return requiresIdByNote[requireNote];
     }
 }

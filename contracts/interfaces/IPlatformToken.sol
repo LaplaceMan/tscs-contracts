@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "../common/token/ERC1155/IERC1155.sol";
 
 interface IPlatformToken is IERC1155 {
-    function Murmes() external returns (address);
+    function Murmes() external view returns (address);
 
     function decimals() external view returns (uint8);
 
@@ -16,15 +16,13 @@ interface IPlatformToken is IERC1155 {
         uint256 platformId
     ) external;
 
-    function mintPlatformToken(
+    function mintPlatformTokenByMurmes(
         uint256 platformId,
         address to,
         uint256 amount
     ) external;
 
-    function burn(
-        address from,
-        uint256 platformId,
-        uint256 amount
-    ) external;
+    function burn(address from, uint256 platformId, uint256 amount) external;
+
+    event CreatePlatformToken(address platform, uint256 id);
 }

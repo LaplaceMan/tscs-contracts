@@ -1,31 +1,16 @@
-/**
- * @Author: LaplaceMan 505876833@qq.com
- * @Date: 2023-02-14 16:58:15
- * @Description 与 Lens 结合的中间件
- * @Copyright (c) 2023 by LaplaceMan, All Rights Reserved.
- */
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.0;
 
-import "../interfaces/IPlatform.sol";
+import "../interfaces/IPlatforms.sol";
 import {ILensHub} from "../interfaces/ILensHub.sol";
 import "../interfaces/IMurmes.sol";
 import "../interfaces/IAuthorityStrategy.sol";
 import "../interfaces/ILensFeeModuleForMurmes.sol";
-import "../interfaces/IVT.sol";
+import "../interfaces/IPlatformToken.sol";
 import "../common/token/ERC20/IERC20.sol";
 
 contract AuthorityStrategy is IAuthorityStrategy {
-    /**
-     * @notice Lens Hub 合约地址
-     */
-    address public immutable Lens;
-
-    /**
-     * @notice Murmes 主合约地址
-     */
-    address public immutable Murmes;
-
+    address public Murmes;
     /**
      * @notice 在使用分成结算策略时，一个视频的总分成不能超过百分之80，这是为了保证同视频下使用一次性支付下的的字幕制作者权益
      */
@@ -34,32 +19,14 @@ contract AuthorityStrategy is IAuthorityStrategy {
     mapping(uint256 => uint16) occupied;
 
     /**
-     * @notice 对视频ID 和 Lens 资产做映射
-     */
-    mapping(uint256 => LensVideo) videoLensMap;
-
-    /**
      * @notice 白名单内的Lens上的Module
      */
     mapping(address => bool) whitelistedLensModule;
 
     event SetWhitelistedLensModule(address module, bool usability);
 
-    constructor(address ms, address lens) {
-        Lens = lens;
+    constructor(address ms) {
         Murmes = ms;
-    }
-
-    /**
-     * @notice 用于Lens资产和Murmes中视频的映射
-     * @param profileId profileId
-     * @param pubId pubId
-     * @param income 发出申请后Lens视频通过collect获得的收益
-     */
-    struct LensVideo {
-        uint256 profileId;
-        uint256 pubId;
-        uint256 income;
     }
 
     /**
@@ -136,10 +103,10 @@ contract AuthorityStrategy is IAuthorityStrategy {
      * @param caller 调用者
      * label AYS2
      */
-    function isOwnCreateVideoAuthority(uint256 flag, address caller)
-        external
-        view
-    {
+    function isOwnCreateVideoAuthority(
+        uint256 flag,
+        address caller
+    ) external view {
         if (caller != address(this)) {
             require(flag > 0, "AYS2-5");
         }
@@ -188,7 +155,7 @@ contract AuthorityStrategy is IAuthorityStrategy {
         uint256 tokenId = IPlatform(platforms).getPlatformIdByAddress(Lens);
         address token = IPlatform(platforms).tokenGlobal();
         address vt = IMurmes(Murmes).videoToken();
-        uint256 fix = amount / (10**6);
+        uint256 fix = amount / (10 ** 6);
         if (fix > 0) {
             IVT(vt).burn(msg.sender, tokenId, amount);
             require(IERC20(token).transfer(msg.sender, fix), "AYS4-12");
@@ -233,11 +200,9 @@ contract AuthorityStrategy is IAuthorityStrategy {
      * @notice 内部功能，string 转 uint256
      * label AYS6
      */
-    function _stringToUint256(string memory str)
-        internal
-        pure
-        returns (uint256 value, bool result)
-    {
+    function _stringToUint256(
+        string memory str
+    ) internal pure returns (uint256 value, bool result) {
         for (uint256 i = 0; i < bytes(str).length; i++) {
             if (
                 (uint8(bytes(str)[i]) - 48) < 0 ||
@@ -247,7 +212,7 @@ contract AuthorityStrategy is IAuthorityStrategy {
             }
             value +=
                 (uint8(bytes(str)[i]) - 48) *
-                10**(bytes(str).length - i - 1);
+                10 ** (bytes(str).length - i - 1);
         }
         return (value, true);
     }

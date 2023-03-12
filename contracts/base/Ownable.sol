@@ -1,9 +1,3 @@
-/**
- * @Author: LaplaceMan 505876833@qq.com
- * @Date: 2022-12-05 20:23:26
- * @Description: 权限控制合约
- * @Copyright (c) 2022 by LaplaceMan email: 505876833@qq.com, All Rights Reserved.
- */
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 

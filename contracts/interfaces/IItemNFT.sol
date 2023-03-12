@@ -6,23 +6,16 @@ import {DataTypes} from "../libraries/DataTypes.sol";
 interface IItemNFT is IERC721 {
     function tokenURI(uint256 tokenId) external view returns (string memory);
 
-    function mintItemToken(
+    function mintItemTokenByMurmes(
         address maker,
-        DataTypes.SubmitItemData calldata vars
+        DataTypes.ItemMetadata calldata vars
     ) external returns (uint256);
 
-    function getItemFingerprint(uint256 tokenId)
-        external
-        view
-        returns (uint256);
+    function getItemFingerprint(
+        uint256 tokenId
+    ) external view returns (uint256);
 
-    function getItemBaseInfo(uint256 subtitleId)
-        external
-        view
-        returns (
-            address,
-            uint256,
-            uint32,
-            uint256
-        );
+    function getItemBaseInfo(
+        uint256 itemId
+    ) external view returns (address, uint256, uint256);
 }

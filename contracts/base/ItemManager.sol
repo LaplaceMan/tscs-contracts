@@ -1,9 +1,3 @@
-/**
- * @Author: LaplaceMan 505876833@qq.com
- * @Date: 2022-09-06 20:23:26
- * @Description: 字幕代币化和管理, ERC721 标准实现（沿用了 OpenZeppelin 提供的模板）
- * @Copyright (c) 2022 by LaplaceMan email: 505876833@qq.com, All Rights Reserved.
- */
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.0;
 import "./EntityManager.sol";
@@ -28,10 +22,10 @@ contract ItemManager is EntityManager {
      * @param itemId 恶意Item ID
      * Fn 1
      */
-    function holdSubtitleStateByDAO(uint256 itemId, DataTypes.ItemState state)
-        external
-        auth
-    {
+    function holdSubtitleStateByDAO(
+        uint256 itemId,
+        DataTypes.ItemState state
+    ) external auth {
         assert(state != DataTypes.ItemState.ADOPTED);
         _changeItemState(itemId, state);
     }
@@ -43,10 +37,10 @@ contract ItemManager is EntityManager {
      * @return 相应Item ID
      * Fn 2
      */
-    function _createItem(address maker, DataTypes.SubmitItemData calldata vars)
-        internal
-        returns (uint256)
-    {
+    function _createItem(
+        address maker,
+        DataTypes.ItemMetadata calldata vars
+    ) internal returns (uint256) {
         address itemToken = IComponentGlobal(componentGlobal).itemToken();
         uint256 itemId = IItemNFT(itemToken).mintItemToken(maker, vars);
         itemsNFT[itemId].taskId = vars.taskId;
@@ -60,9 +54,10 @@ contract ItemManager is EntityManager {
      * @param state 改变后的状态
      * Fn 3
      */
-    function _changeItemState(uint256 itemId, DataTypes.ItemState state)
-        internal
-    {
+    function _changeItemState(
+        uint256 itemId,
+        DataTypes.ItemState state
+    ) internal {
         itemsNFT[itemId].state = state;
         itemsNFT[itemId].stateChangeTime = block.timestamp;
     }
@@ -86,11 +81,9 @@ contract ItemManager is EntityManager {
     }
 
     // ***************** View Functions *****************
-    function getItem(uint256 itemId)
-        external
-        view
-        returns (DataTypes.ItemStruct memory item)
-    {
+    function getItem(
+        uint256 itemId
+    ) external view returns (DataTypes.ItemStruct memory item) {
         return itemsNFT[itemId];
     }
 }

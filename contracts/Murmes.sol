@@ -1,19 +1,17 @@
 /**
- * @Author: LaplaceMan 505876833@qq.com
- * @Date: 2022-09-07 17:56:09
- * @Description: 基于区块链的代币化字幕众包系统 - Murmes
- * @Copyright (c) 2022 by LaplaceMan 505876833@qq.com, All Rights Reserved.
+ * @Author: LaplaceMan
+ * @Description: 基于区块链的众包协议 - Murmes
+ * @Copyright (c) 2023 by LaplaceMan heichenclone@gmail.com, All Rights Reserved.
  */
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.0;
 import "./base/TaskManager.sol";
 import "./interfaces/IGuard.sol";
-import "./interfaces/IPlatform.sol";
+import "./interfaces/IPlatforms.sol";
 import "./interfaces/IAuditModule.sol";
 import "./interfaces/IAccessModule.sol";
 import "./interfaces/IPlatformToken.sol";
 import "./interfaces/IDetectionModule.sol";
-import "./interfaces/ISettlementModule.sol";
 
 contract Murmes is TaskManager {
     constructor(address dao, address mutliSig) {
@@ -22,10 +20,9 @@ contract Murmes is TaskManager {
         requiresNoteById.push("None");
     }
 
-    function postTask(DataTypes.PostTaskData calldata vars)
-        external
-        returns (uint256)
-    {
+    function postTask(
+        DataTypes.PostTaskData calldata vars
+    ) external returns (uint256) {
         _validatePostTaskData(
             vars.currency,
             vars.auditModule,
@@ -61,7 +58,9 @@ contract Murmes is TaskManager {
             );
         } else {
             address platforms = IComponentGlobal(componentGlobal).platforms();
-            uint256[] memory _tasks = IPlatform(platforms).getBoxTasks(orderId);
+            uint256[] memory _tasks = IPlatforms(platforms).getBoxTasks(
+                orderId
+            );
             for (uint256 i = 0; i < _tasks.length; i++) {
                 require(tasks[_tasks[i]].requireId != vars.requireId, "10");
             }
@@ -70,7 +69,7 @@ contract Murmes is TaskManager {
                 vars.settlement,
                 totalTasks
             );
-            IPlatform(platforms).updateBoxTasks(orderId, newTasks);
+            IPlatforms(platforms).updateBoxTasks(orderId, newTasks);
         }
 
         if (vars.settlement != DataTypes.SettlementType.DIVIDEND) {
@@ -114,10 +113,9 @@ contract Murmes is TaskManager {
     //     return history;
     // }
 
-    function submitItem(DataTypes.SubmitItemData calldata vars)
-        external
-        returns (uint256)
-    {
+    function submitItem(
+        DataTypes.ItemMetadata calldata vars
+    ) external returns (uint256) {
         require(tasks[vars.taskId].adopted == 0, "43");
         if (tasks[vars.taskId].items.length == 0) {
             require(block.timestamp <= tasks[vars.taskId].deadline, "432");
@@ -145,9 +143,10 @@ contract Murmes is TaskManager {
         return itemId;
     }
 
-    function auditItem(uint256 itemId, DataTypes.AuditAttitude attitude)
-        external
-    {
+    function auditItem(
+        uint256 itemId,
+        DataTypes.AuditAttitude attitude
+    ) external {
         uint256 taskId = itemsNFT[itemId].taskId;
         require(tasks[taskId].adopted == 0, "83");
         require(itemsNFT[itemId].stateChangeTime > 0, "81");
@@ -191,7 +190,7 @@ contract Murmes is TaskManager {
         }
     }
 
-    function updateItemExternalRevenue(
+    function updateItemRevenue(
         uint256 taskId,
         uint256 counts,
         uint16 rateCountsToProfit
@@ -221,7 +220,7 @@ contract Murmes is TaskManager {
         );
         _userInitialization(msg.sender, 0);
         address platforms = IComponentGlobal(componentGlobal).platforms();
-        DataTypes.PlatformStruct memory platformInfo = IPlatform(platforms)
+        DataTypes.PlatformStruct memory platformInfo = IPlatforms(platforms)
             .getPlatform(address(this));
         address settlement = IModuleGlobal(moduleGlobal)
             .getSettlementModuleAddress(DataTypes.SettlementType.ONETIME);
@@ -238,13 +237,15 @@ contract Murmes is TaskManager {
 
     function preExtractOther(uint256 boxId) external returns (uint256) {
         address platforms = IComponentGlobal(componentGlobal).platforms();
-        DataTypes.BoxStruct memory boxInfo = IPlatform(platforms).getBox(boxId);
+        DataTypes.BoxStruct memory boxInfo = IPlatforms(platforms).getBox(
+            boxId
+        );
         require(boxInfo.unsettled > 0, "1111");
-        DataTypes.PlatformStruct memory platformInfo = IPlatform(platforms)
+        DataTypes.PlatformStruct memory platformInfo = IPlatforms(platforms)
             .getPlatform(boxInfo.platform);
         uint256 unsettled = (platformInfo.rateCountsToProfit *
             boxInfo.unsettled *
-            (10**6)) / BASE_RATE;
+            (10 ** 6)) / BASE_RATE;
         uint256 surplus = _ergodic(boxId, unsettled);
         address platformToken = IComponentGlobal(componentGlobal)
             .platformToken();
@@ -255,7 +256,7 @@ contract Murmes is TaskManager {
                 surplus
             );
         }
-        IPlatform(platforms).updateBoxUnsettledRevenue(
+        IPlatforms(platforms).updateBoxUnsettledRevenue(
             boxId,
             int256(unsettled) * -1
         );
@@ -278,10 +279,10 @@ contract Murmes is TaskManager {
         _preDivideBatch(platform, to, amount);
     }
 
-    function withdraw(address platform, uint256[] memory day)
-        external
-        returns (uint256)
-    {
+    function withdraw(
+        address platform,
+        uint256[] memory day
+    ) external returns (uint256) {
         uint256 all = 0;
 
         for (uint256 i = 0; i < day.length; i++) {
@@ -296,7 +297,7 @@ contract Murmes is TaskManager {
         }
         if (all > 0) {
             address platforms = IComponentGlobal(componentGlobal).platforms();
-            DataTypes.PlatformStruct memory platformInfo = IPlatform(platforms)
+            DataTypes.PlatformStruct memory platformInfo = IPlatforms(platforms)
                 .getPlatform(platform);
             address vault = IComponentGlobal(componentGlobal).vault();
             uint256 fee = IVault(vault).fee();
@@ -387,13 +388,15 @@ contract Murmes is TaskManager {
         }
     }
 
-    function _ergodic(uint256 boxId, uint256 unsettled)
-        internal
-        returns (uint256)
-    {
+    function _ergodic(
+        uint256 boxId,
+        uint256 unsettled
+    ) internal returns (uint256) {
         address platforms = IComponentGlobal(componentGlobal).platforms();
-        DataTypes.BoxStruct memory boxInfo = IPlatform(platforms).getBox(boxId);
-        DataTypes.PlatformStruct memory platformInfo = IPlatform(platforms)
+        DataTypes.BoxStruct memory boxInfo = IPlatforms(platforms).getBox(
+            boxId
+        );
+        DataTypes.PlatformStruct memory platformInfo = IPlatforms(platforms)
             .getPlatform(boxInfo.platform);
         address itemNFT = IComponentGlobal(componentGlobal).itemToken();
         for (uint256 i = 0; i < boxInfo.tasks.length; i++) {
@@ -444,10 +447,10 @@ contract Murmes is TaskManager {
         );
     }
 
-    function _validateSubmitItemData(uint256 taskId, uint256 fingerprint)
-        internal
-        view
-    {
+    function _validateSubmitItemData(
+        uint256 taskId,
+        uint256 fingerprint
+    ) internal view {
         if (
             tasks[taskId].detectionModule != address(0) &&
             tasks[taskId].items.length > 0
@@ -502,17 +505,9 @@ contract Murmes is TaskManager {
         );
     }
 
-    function getItemAuditInfo(uint256 itemId)
-        public
-        view
-        returns (
-            uint256,
-            uint256,
-            uint256,
-            uint256,
-            uint256
-        )
-    {
+    function getItemAuditInfo(
+        uint256 itemId
+    ) public view returns (uint256, uint256, uint256, uint256, uint256) {
         uint256 taskId = itemsNFT[itemId].taskId;
         uint256 uploaded = tasks[taskId].items.length;
         uint256 allSupport;
@@ -535,29 +530,17 @@ contract Murmes is TaskManager {
      * @return 申请所属的平台
      * label M18
      */
-    function getPlatformByTaskId(uint256 taskId)
-        external
-        view
-        returns (address)
-    {
+    function getPlatformByTaskId(
+        uint256 taskId
+    ) external view returns (address) {
         require(tasks[taskId].applicant != address(0), "181");
         return tasks[taskId].platform;
     }
 
     // label M19
-    function getTaskPaymentAndItems(uint256 taskId)
-        public
-        view
-        returns (
-            DataTypes.SettlementType,
-            uint256,
-            uint256[] memory
-        )
-    {
-        return (
-            tasks[taskId].settlement,
-            tasks[taskId].amount,
-            tasks[taskId].items
-        );
+    function getTaskPaymentModuleAndItemsLength(
+        uint256 taskId
+    ) public view returns (DataTypes.SettlementType, uint256) {
+        return (tasks[taskId].settlement, tasks[taskId].items.length);
     }
 }

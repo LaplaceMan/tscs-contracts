@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
+import {DataTypes} from "../libraries/DataTypes.sol";
 
 interface IMurmes {
     // ***** Ownable *****
@@ -27,15 +28,13 @@ interface IMurmes {
     //     view
     //     returns (string memory);
 
-    function getLanguageIdByNote(string memory note)
-        external
-        view
-        returns (uint16);
+    function getLanguageIdByNote(
+        string memory note
+    ) external view returns (uint16);
 
-    function getUserBaseInfo(address usr)
-        external
-        view
-        returns (uint256, int256);
+    function getUserBaseInfo(
+        address usr
+    ) external view returns (uint256, int256);
 
     function getUserLockReward(
         address usr,
@@ -62,10 +61,9 @@ interface IMurmes {
 
     function lockUpTime() external view returns (uint256);
 
-    function getSettlementStrategyBaseInfo(uint8 strategyId)
-        external
-        view
-        returns (address, string memory);
+    function getSettlementStrategyBaseInfo(
+        uint8 strategyId
+    ) external view returns (address, string memory);
 
     function holdSubtitleStateByDAO(uint256 id, uint8 state) external;
 
@@ -74,25 +72,17 @@ interface IMurmes {
 
     function versionManagement() external returns (address);
 
-    function getSubtitleBaseInfo(uint256 subtitleId)
+    function getSubtitleBaseInfo(
+        uint256 subtitleId
+    )
         external
         view
-        returns (
-            uint8,
-            uint256,
-            uint256,
-            address[] memory,
-            address[] memory
-        );
+        returns (uint8, uint256, uint256, address[] memory, address[] memory);
 
     // ***** Murmes *****
     function totalTasks() external view returns (uint256);
 
-    function preDivide(
-        address platform,
-        address to,
-        uint256 amount
-    ) external;
+    function preDivide(address platform, address to, uint256 amount) external;
 
     function preDivideBatch(
         address platform,
@@ -109,10 +99,9 @@ interface IMurmes {
 
     function resetApplication(uint256 taskId, uint256 amount) external;
 
-    function getPlatformByTaskId(uint256 taskId)
-        external
-        view
-        returns (address);
+    function getPlatformByTaskId(
+        uint256 taskId
+    ) external view returns (address);
 
     function submitApplication(
         address platform,
@@ -139,7 +128,9 @@ interface IMurmes {
         uint256 plusTime
     ) external;
 
-    function tasks(uint256 taskId)
+    function tasks(
+        uint256 taskId
+    )
         external
         returns (
             address,
@@ -154,20 +145,13 @@ interface IMurmes {
             uint256
         );
 
-    // function updateUsageCounts(uint256[] memory id, uint256[] memory ms)
-    //     external;
-    function updateUsageCounts(
+    function updateItemRevenue(
         uint256 taskId,
         uint256 counts,
         uint16 rateCountsToProfit
     ) external;
 
-    function getTaskPaymentStrategyAndSubtitles(uint256 taskId)
-        external
-        view
-        returns (
-            uint8,
-            uint256,
-            uint256[] memory
-        );
+    function getTaskPaymentModuleAndItemsLength(
+        uint256 taskId
+    ) external view returns (DataTypes.SettlementType, uint256);
 }

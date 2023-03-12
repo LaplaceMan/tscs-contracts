@@ -1,12 +1,7 @@
-/**
- * @Author: LaplaceMan 505876833@qq.com
- * @Date: 2022-09-08 15:13:26
- * @Description: 管理 Murmes 所使用的审核策略、访问策略、检测策略和结算策略
- * @Copyright (c) 2022 by LaplaceMan email: 505876833@qq.com, All Rights Reserved.
- */
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.0;
 import "./ItemManager.sol";
+import "../interfaces/ISettlementModule.sol";
 
 contract TaskManager is ItemManager {
     /**
@@ -25,68 +20,77 @@ contract TaskManager is ItemManager {
      * @param plusTime 延长到期时间
      * Fn 1
      */
-    function updateApplication(
+    function updateTask(
         uint256 taskId,
         uint256 plusAmount,
         uint256 plusTime
     ) public {
         require(msg.sender == tasks[taskId].applicant, "T15");
         require(tasks[taskId].adopted == 0, "T10");
-        if (tasks[taskId].deadline == 0) {
-            tasks[taskId].amount = plusAmount;
-            tasks[taskId].deadline = plusTime;
-            require(plusTime > block.timestamp + 1 days, "161");
-        } else {
-            tasks[taskId].amount += plusAmount;
-            tasks[taskId].deadline += plusTime;
+        tasks[taskId].amount += plusAmount;
+        tasks[taskId].deadline += plusTime;
+        require(tasks[taskId].deadline > block.timestamp + 1 days, "T11");
+        if (tasks[taskId].settlement == DataTypes.SettlementType.ONETIME) {
+            IERC20(tasks[taskId].currency).transferFrom(
+                msg.sender,
+                address(this),
+                plusAmount
+            );
+        } else if (
+            tasks[taskId].settlement ==
+            DataTypes.SettlementType.ONETIME_MORTGAGE
+        ) {
+            address settlementModule = IModuleGlobal(moduleGlobal)
+                .getSettlementModuleAddress(
+                    DataTypes.SettlementType.ONETIME_MORTGAGE
+                );
+            ISettlementModule(settlementModule).updateDebtOrReward(
+                taskId,
+                0,
+                plusAmount,
+                0
+            );
         }
-        // if (tasks[taskId].strategy == 0) {
-        //     require();
-        // IZimu(zimuToken).transferFrom(
-        //     msg.sender,
-        //     address(this),
-        //     plusAmount
-        // ),
-        // "1612"
-        // }
     }
 
     /**
-     * @notice 该功能服务于后续的仲裁法庭，取消被确认的恶意字幕，相当于重新发出申请
+     * @notice 该功能服务于后续的仲裁法庭，取消被确认的Item，相当于重新发出申请
      * @param taskId 被重置的申请 ID
      * @param amount 恢复的代币奖励数量（注意这里以代币计价）
-     * label M17
+     * Fn 2
      */
-    function resetApplication(uint256 taskId, uint256 amount) public auth {
+    function resetTask(uint256 taskId, uint256 amount) public auth {
         delete tasks[taskId].adopted;
-        // tasks[taskId].deadline = block.timestamp + lockUpTime;
-        // ISettlementStrategy(settlementStrategy[tasks[taskId].strategy].strategy)
-        //     .resetSettlement(taskId, amount);
+        uint256 lockUpTime = IComponentGlobal(componentGlobal).lockUpTime();
+        tasks[taskId].deadline = block.timestamp + lockUpTime;
+        address settlement = IModuleGlobal(moduleGlobal)
+            .getSettlementModuleAddress(tasks[taskId].settlement);
+        ISettlementModule(settlement).resetSettlement(taskId, amount);
     }
 
     /**
-     * @notice 取消申请（仅支持一次性结算策略, 其它的自动冻结）
-     * @param taskId 申请 ID
-     * label M15
+     * @notice 取消申请
+     * @param taskId 申请ewn ID
+     * Fn 3
      */
-    function cancel(uint256 taskId) external {
-        // require(msg.sender == tasks[taskId].applicant, "155");
-        // require(
-        //     tasks[taskId].adopted == 0 &&
-        //         // tasks[taskId].subtitles.length == 0 &&
-        //         // tasks[taskId].deadline <= block.timestamp,
-        //     "1552"
-        // );
-        // tasks[taskId].deadline = 0;
-        // if (tasks[taskId].strategy == 0) {
-        // require(
-        //     IZimu(zimuToken).transferFrom(
-        //         address(this),
-        //         msg.sender,
-        //         tasks[taskId].amount
-        //     ),
-        //     "1512"
-        // );
-        // }
+    function cancelTask(uint256 taskId) external {
+        require(msg.sender == tasks[taskId].applicant, "T35");
+        require(
+            tasks[taskId].adopted == 0 &&
+                tasks[taskId].items.length == 0 &&
+                block.timestamp >= tasks[taskId].deadline,
+            "T36"
+        );
+        if (tasks[taskId].settlement == DataTypes.SettlementType.ONETIME) {
+            require(
+                IERC20(tasks[taskId].currency).transferFrom(
+                    address(this),
+                    msg.sender,
+                    tasks[taskId].amount
+                ),
+                "T312"
+            );
+        }
+        delete tasks[taskId];
     }
 }

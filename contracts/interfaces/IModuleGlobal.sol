@@ -3,22 +3,23 @@ pragma solidity ^0.8.0;
 import {DataTypes} from "../libraries/DataTypes.sol";
 
 interface IModuleGlobal {
-    function isAuditModuleWhitelisted(address module)
-        external
-        view
-        returns (bool);
+    function Murmes() external view returns (address);
 
-    function isDetectionModuleWhitelisted(address module)
-        external
-        view
-        returns (bool);
+    function isAuditModuleWhitelisted(
+        address module
+    ) external view returns (bool);
 
-    function isGuardWhitelisted(address module) external view returns (bool);
+    function isDetectionModuleWhitelisted(
+        address module
+    ) external view returns (bool);
 
-    function isCurrencyWhitelisted(address currency)
-        external
-        view
-        returns (bool);
+    function isGuardModuleWhitelisted(
+        address module
+    ) external view returns (bool);
+
+    function isCurrencyWhitelisted(
+        address currency
+    ) external view returns (bool);
 
     function isPostTaskModuleValid(
         address currency,
@@ -26,8 +27,12 @@ interface IModuleGlobal {
         address detection
     ) external view returns (bool);
 
-    function getSettlementModuleAddress(DataTypes.SettlementType moduleId)
-        external
-        view
-        returns (address);
+    function getSettlementModuleAddress(
+        DataTypes.SettlementType moduleId
+    ) external view returns (address);
+
+    event SystemSetCurrencyIsWhitelisted(address token, bool result);
+    event SystemSetGuardModuleIsWhitelisted(address guard, bool result);
+    event SystemSetAuditModuleIsWhitelisted(address module, bool result);
+    event SystemSetDetectionModuleIsWhitelisted(address module, bool result);
 }

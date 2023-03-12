@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.0;
 
-interface IAuthorityStrategy {
+interface IAuthorityModule {
     function isOwnApplyAuthority(
         address platform,
         uint256 videoId,
@@ -11,11 +11,12 @@ interface IAuthorityStrategy {
         uint256 amount
     ) external returns (uint256);
 
-    function isOwnCreateVideoAuthority(uint256 flag, address caller)
-        external
-        view;
+    function isOwnCreateBoxAuthority(
+        address platform,
+        address caller
+    ) external view returns (bool);
 
-    function isOwnUpdateViewCountsAuthority(
+    function formatCountsOfUpdateBoxRevenue(
         uint256 realId,
         uint256 counts,
         address platform,
@@ -26,8 +27,7 @@ interface IAuthorityStrategy {
 
     function setWhitelistedLensModule(address module, bool usability) external;
 
-    function getSettlableInLens(uint256 videoId)
-        external
-        view
-        returns (uint256);
+    function getSettlableInLens(
+        uint256 videoId
+    ) external view returns (uint256);
 }

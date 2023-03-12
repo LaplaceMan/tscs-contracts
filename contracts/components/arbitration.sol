@@ -1,9 +1,3 @@
-/**
- * @Author: LaplaceMan 505876833@qq.com
- * @Date: 2022-12-21 10:12:34
- * @Description: 用于处理 Murmes 的恶意行为，链下投票，链上多签执行
- * @Copyright (c) 2022 by LaplaceMan 505876833@qq.com, All Rights Reserved.
- */
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.0;
 
@@ -214,7 +208,7 @@ contract Arbitration {
             uint256 reputationPunishment,
             uint256 tokenPunishment
         ) = IAccessStrategy(access).spread(reputation, 2);
-        if (tokenPunishment == 0) tokenPunishment = 8 * 10**18;
+        if (tokenPunishment == 0) tokenPunishment = 8 * 10 ** 18;
         IMurmes(Murmes).updateUser(
             reports[reportId].reporter,
             int256(reputationPunishment) * -1,
@@ -274,9 +268,9 @@ contract Arbitration {
                 int256(reputationPunishment);
             // 当 Zimu 激励代币发送完毕时，恶意用户获得额外的惩罚 tokenFixedReward
             uint256 punishmentToken = tokenPunishment1 + tokenPunishment2 >
-                4 * 10**18
+                4 * 10 ** 18
                 ? tokenPunishment1 + tokenPunishment2
-                : 4 * 10**18;
+                : 4 * 10 ** 18;
             IMurmes(Murmes).updateUser(
                 suppoters[i],
                 spread,
@@ -291,9 +285,10 @@ contract Arbitration {
      * @param dissenters 诚实评价者
      * label A7
      */
-    function _liquidatingNormalUser(address access, address[] memory dissenters)
-        internal
-    {
+    function _liquidatingNormalUser(
+        address access,
+        address[] memory dissenters
+    ) internal {
         for (uint256 i = 0; i < dissenters.length; i++) {
             (uint256 reputation, ) = IMurmes(Murmes).getUserBaseInfo(
                 dissenters[i]
@@ -307,7 +302,9 @@ contract Arbitration {
                 2
             );
             // 一般来说，lastReputation 大于 reputation
-            tokenReward = tokenReward > 1 * 10**18 ? tokenReward : 1 * 10**18;
+            tokenReward = tokenReward > 1 * 10 ** 18
+                ? tokenReward
+                : 1 * 10 ** 18;
             int256 spread = int256(lastReputation) - int256(reputation) + 10;
             address vault = IMurmes(Murmes).vault();
             address zimu = IMurmes(Murmes).zimuToken();
@@ -323,9 +320,10 @@ contract Arbitration {
      * @param reportId 举报 ID
      * label A8
      */
-    function _liquidatingSubtitleMaker(address maker, uint256 reportId)
-        internal
-    {
+    function _liquidatingSubtitleMaker(
+        address maker,
+        uint256 reportId
+    ) internal {
         (uint256 reputation, int256 deposit) = IMurmes(Murmes).getUserBaseInfo(
             maker
         );
@@ -386,7 +384,7 @@ contract Arbitration {
         IVault(vault).transferPenalty(
             zimu,
             maker,
-            tokenPunishment > 3 * 10**18 ? tokenPunishment : 3 * 10**18
+            tokenPunishment > 3 * 10 ** 18 ? tokenPunishment : 3 * 10 ** 18
         );
         IMurmes(Murmes).updateUser(maker, int256(_reputationSpread), 0);
     }

@@ -14,8 +14,8 @@ library DataTypes {
     }
 
     enum SettlementType {
-        DIVIDEND,
         ONETIME,
+        DIVIDEND,
         ONETIME_MORTGAGE
     }
 
@@ -25,6 +25,13 @@ library DataTypes {
         address[] supporters;
         address[] opponents;
         uint256 stateChangeTime;
+    }
+
+    struct ItemMetadata {
+        uint256 taskId;
+        string cid;
+        uint32 requireId;
+        uint256 fingerprint;
     }
 
     struct UserStruct {
@@ -51,22 +58,6 @@ library DataTypes {
         uint256 deadline;
     }
 
-    struct PlatformStruct {
-        string name;
-        string symbol;
-        uint256 platformId;
-        uint16 rateCountsToProfit;
-        uint16 rateAuditorDivide;
-    }
-
-    struct BoxStruct {
-        address platform;
-        uint256 id;
-        address creator;
-        uint256 unsettled;
-        uint256[] tasks;
-    }
-
     struct PostTaskData {
         address platform;
         uint256 sourceId;
@@ -81,10 +72,19 @@ library DataTypes {
         uint256 deadline;
     }
 
-    struct SubmitItemData {
-        uint256 taskId;
-        string cid;
-        uint32 requireId;
-        uint256 fingerprint;
+    struct PlatformStruct {
+        string name;
+        string symbol;
+        uint256 platformId;
+        uint16 rateCountsToProfit;
+        uint16 rateAuditorDivide;
+    }
+
+    struct BoxStruct {
+        address platform;
+        uint256 id;
+        address creator;
+        uint256 unsettled;
+        uint256[] tasks;
     }
 }
