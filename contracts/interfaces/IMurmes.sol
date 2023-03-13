@@ -11,17 +11,9 @@ interface IMurmes {
     function multiSig() external view returns (address);
 
     // ***** EntityManager *****
-    function zimuToken() external view returns (address);
-
-    function videoToken() external view returns (address);
-
-    function vault() external view returns (address);
-
-    function platforms() external view returns (address);
-
-    function despoit() external view returns (uint256);
-
     function componentGlobal() external view returns (address);
+
+    function moduleGlobal() external view returns (address);
 
     // function getLanguageNoteById(uint16 languageId)
     //     external
@@ -32,7 +24,7 @@ interface IMurmes {
         string memory note
     ) external view returns (uint16);
 
-    function getUserBaseInfo(
+    function getUserBaseData(
         address usr
     ) external view returns (uint256, int256);
 
@@ -72,7 +64,7 @@ interface IMurmes {
 
     function versionManagement() external returns (address);
 
-    function getSubtitleBaseInfo(
+    function getSubtitleBaseData(
         uint256 subtitleId
     )
         external
@@ -99,7 +91,7 @@ interface IMurmes {
 
     function resetApplication(uint256 taskId, uint256 amount) external;
 
-    function getPlatformByTaskId(
+    function getPlatformAddressByTaskId(
         uint256 taskId
     ) external view returns (address);
 
@@ -145,13 +137,9 @@ interface IMurmes {
             uint256
         );
 
-    function updateItemRevenue(
-        uint256 taskId,
-        uint256 counts,
-        uint16 rateCountsToProfit
-    ) external;
+    function updateItemRevenue(uint256 taskId, uint256 counts) external;
 
-    function getTaskPaymentModuleAndItemsLength(
+    function getTaskPaymentModuleAndItems(
         uint256 taskId
-    ) external view returns (DataTypes.SettlementType, uint256);
+    ) external view returns (DataTypes.SettlementType, uint256[] memory);
 }

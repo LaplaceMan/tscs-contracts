@@ -78,6 +78,7 @@ library DataTypes {
         uint256 platformId;
         uint16 rateCountsToProfit;
         uint16 rateAuditorDivide;
+        address authorityModule;
     }
 
     struct BoxStruct {

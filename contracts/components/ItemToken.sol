@@ -49,7 +49,7 @@ contract ItemToken is ERC721, IItemNFT {
         return itemsNFT[tokenId].fingerprint;
     }
 
-    function getItemBaseInfo(
+    function getItemBaseData(
         uint256 itemId
     ) external view override returns (address, uint256, uint256) {
         return (

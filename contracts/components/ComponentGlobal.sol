@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.0;
-import "../interfaces/IMurmes.sol";
 import "../interfaces/IComponentGlobal.sol";
+
+interface MurmesInterface {
+    function owner() external view returns (address);
+}
 
 contract ComponentGlobal is IComponentGlobal {
     address public Murmes;
@@ -32,7 +35,7 @@ contract ComponentGlobal is IComponentGlobal {
 
     // Fn 1
     modifier auth() {
-        require(IMurmes(Murmes).owner() == msg.sender, "C15");
+        require(MurmesInterface(Murmes).owner() == msg.sender, "C15");
         _;
     }
 

@@ -4,27 +4,23 @@ pragma solidity ^0.8.0;
 import {DataTypes} from "../libraries/DataTypes.sol";
 
 interface IAccessModule {
-    function spread(uint256 reputation, uint8 flag)
-        external
-        view
-        returns (uint256, uint256);
+    function Murmes() external returns (address);
 
-    function access(uint256 reputation, int256 deposit)
-        external
-        view
-        returns (bool);
+    function variation(
+        uint256 reputation,
+        uint8 flag
+    ) external view returns (uint256, uint256);
+
+    function access(
+        uint256 reputation,
+        int256 deposit
+    ) external view returns (bool);
 
     function auditable(int256 deposit_) external view returns (bool);
 
-    function depositThreshold() external view returns (uint16);
+    function depositUnit() external view returns (uint256);
 
-    function blacklistThreshold() external view returns (uint8);
-
-    function minDeposit() external view returns (uint256);
-
-    function rewardToken() external view returns (uint256);
-
-    function punishmentToken() external view returns (uint256);
+    function punishmentUnit() external view returns (uint256);
 
     function multiplier() external view returns (uint8);
 
@@ -32,10 +28,14 @@ interface IAccessModule {
 
     function punishment(uint256 reputation) external view returns (uint256);
 
-    function lastReputation(uint256 reputation, uint8 flag)
-        external
-        pure
-        returns (uint256);
+    function lastReputation(
+        uint256 reputation,
+        uint8 flag
+    ) external pure returns (uint256);
 
     function deposit(uint256 reputation) external view returns (uint256);
+
+    event SystemSetMultiplier(uint8 newMultiplier);
+    event SystemSetDepositUnit(uint256 newMinDepositUnit);
+    event SystemSetPunishmentUnit(uint256 newPunishmentTokenUnit);
 }

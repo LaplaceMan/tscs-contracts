@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
-import "../interfaces/IMurmes.sol";
 import "../interfaces/IPlatformToken.sol";
 import "../common/token/ERC1155/ERC1155.sol";
+
+interface MurmesInterface {
+    function isOperator(address caller) external view returns (bool);
+}
 
 contract PlatformToken is ERC1155, IPlatformToken {
     address public Murmes;
@@ -30,7 +33,7 @@ contract PlatformToken is ERC1155, IPlatformToken {
         uint256 platformId
     ) external override {
         require(platforms[platformId] == address(0), "PT10");
-        require(IMurmes(Murmes).isOperator(msg.sender), "PT15");
+        require(MurmesInterface(Murmes).isOperator(msg.sender), "PT15");
         platforms[platformId] = endorser;
         suffix[platformId] = symbol;
         emit CreatePlatformToken(endorser, platformId);

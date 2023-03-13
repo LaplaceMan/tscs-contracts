@@ -15,7 +15,7 @@ interface IItemNFT is IERC721 {
         uint256 tokenId
     ) external view returns (uint256);
 
-    function getItemBaseInfo(
+    function getItemBaseData(
         uint256 itemId
     ) external view returns (address, uint256, uint256);
 }

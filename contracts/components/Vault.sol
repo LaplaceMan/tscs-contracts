@@ -2,8 +2,11 @@
 pragma solidity ^0.8.0;
 
 import "../interfaces/IVault.sol";
-import "../interfaces/IMurmes.sol";
 import "../common/token/ERC20/IERC20.sol";
+
+interface MurmesInterface {
+    function owner() external view returns (address);
+}
 
 contract Vault is IVault {
     address public Murmes;
@@ -45,7 +48,7 @@ contract Vault is IVault {
         address to,
         uint256 amount
     ) external {
-        require(IMurmes(Murmes).owner() == msg.sender, "V25");
+        require(MurmesInterface(Murmes).owner() == msg.sender, "V25");
         if (amount > penalty) amount = penalty;
         penalty -= amount;
         require(IERC20(token).transfer(to, amount), "V212");
@@ -57,7 +60,7 @@ contract Vault is IVault {
      * Fn 3
      */
     function setFee(uint16 newFee) external {
-        require(IMurmes(Murmes).owner() == msg.sender, "V35");
+        require(MurmesInterface(Murmes).owner() == msg.sender, "V35");
         uint16 old = fee;
         fee = newFee;
         emit SystemSetFee(old, newFee);

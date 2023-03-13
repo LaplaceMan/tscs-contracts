@@ -45,20 +45,20 @@ TSCS: A Blockchain-Based Tokenized Subtitle Crowdsourcing System (Old Name)
 
 ## Error Explain
 
-| Label | Explain                |
-| ----- | ---------------------- |
-| ER0   | Already Exists         |
-| ER1   | Invaild Data           |
-| ER2   | Not Existence          |
-| ER3   | State Changed          |
-| ER4   | Have Evaluated         |
-| ER5   | No Permission          |
-| ER6   | Not Support            |
-| ER7   | GAM Only One-time      |
-| ER9   | Language Inconsistency |
-| ER10  | High Similarity        |
-| ER11  | Invalid Settlement     |
-| ER12  | Transaction failed     |
+| Label | Explain               |
+| ----- | --------------------- |
+| ER0   | Already Exists        |
+| ER1   | Invaild Data          |
+| ER2   | Not Existence         |
+| ER3   | State Changed         |
+| ER4   | Have Evaluated        |
+| ER5   | No Permission         |
+| ER6   | Not Support           |
+| ER7   | GAM Only One-time     |
+| ER9   | Require Inconsistency |
+| ER10  | High Similarity       |
+| ER11  | Invalid Settlement    |
+| ER12  | Transaction failed    |
 
 ## Contracts UML Diagram
 

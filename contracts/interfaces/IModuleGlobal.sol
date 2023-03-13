@@ -17,6 +17,10 @@ interface IModuleGlobal {
         address module
     ) external view returns (bool);
 
+    function isAuthorityModuleWhitelisted(
+        address module
+    ) external view returns (bool);
+
     function isCurrencyWhitelisted(
         address currency
     ) external view returns (bool);
@@ -35,4 +39,9 @@ interface IModuleGlobal {
     event SystemSetGuardModuleIsWhitelisted(address guard, bool result);
     event SystemSetAuditModuleIsWhitelisted(address module, bool result);
     event SystemSetDetectionModuleIsWhitelisted(address module, bool result);
+    event SystemSetAuthorityModuleIsWhitelisted(address module, bool result);
+    event SystemSetSettlementModule(
+        DataTypes.SettlementType moduleId,
+        address module
+    );
 }

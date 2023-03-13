@@ -3,9 +3,11 @@ pragma solidity ^0.8.0;
 import {DataTypes} from "../libraries/DataTypes.sol";
 
 interface IAuditModule {
+    function Murmes() external view returns (address);
+
     function auditUnit() external view returns (uint256);
 
-    function auditResult(
+    function afterAuditItem(
         uint256 uploaded,
         uint256 support,
         uint256 against,
@@ -13,4 +15,6 @@ interface IAuditModule {
         uint256 uploadTime,
         uint256 lockUpTime
     ) external view returns (DataTypes.ItemState);
+
+    event SystemChangeAuditUnit(uint256 nowAuditUnit);
 }

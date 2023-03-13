@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.0;
-import "../interfaces/IMurmes.sol";
 import "../interfaces/IModuleGlobal.sol";
+
+interface MurmesInterface {
+    function owner() external view returns (address);
+}
 
 contract ModuleGlobal is IModuleGlobal {
     address public Murmes;
@@ -12,14 +15,11 @@ contract ModuleGlobal is IModuleGlobal {
 
     mapping(address => bool) whitelistDetectionModule;
 
+    mapping(address => bool) whitelistAuthorityModule;
+
     mapping(DataTypes.SettlementType => address) settlementModule;
 
     mapping(address => bool) whitelistCurrency;
-
-    event SystemSetSettlementModule(
-        DataTypes.SettlementType moduleId,
-        address module
-    );
 
     constructor(address ms) {
         Murmes = ms;
@@ -27,7 +27,7 @@ contract ModuleGlobal is IModuleGlobal {
 
     // Fn 1
     modifier auth() {
-        require(IMurmes(Murmes).owner() == msg.sender, "M15");
+        require(MurmesInterface(Murmes).owner() == msg.sender, "M15");
         _;
     }
 
@@ -101,28 +101,48 @@ contract ModuleGlobal is IModuleGlobal {
         emit SystemSetDetectionModuleIsWhitelisted(module, result);
     }
 
+    /**
+     * @notice 设置支持的平台权限控制模块
+     * @param module 权限控制模块合约地址
+     * @param result 加入或撤出白名单
+     * Fn 7
+     */
+    function setAuthorityModuleIsWhitelisted(
+        address module,
+        bool result
+    ) external auth {
+        whitelistAuthorityModule[module] = result;
+        emit SystemSetAuthorityModuleIsWhitelisted(module, result);
+    }
+
     // ***************** View Functions *****************
     function isAuditModuleWhitelisted(
         address module
-    ) external view returns (bool) {
+    ) external view override returns (bool) {
         return whitelistAuditModule[module];
     }
 
     function isDetectionModuleWhitelisted(
         address module
-    ) external view returns (bool) {
+    ) external view override returns (bool) {
         return whitelistDetectionModule[module];
     }
 
     function isGuardModuleWhitelisted(
         address module
-    ) external view returns (bool) {
+    ) external view override returns (bool) {
         return whitelistGuardModule[module];
+    }
+
+    function isAuthorityModuleWhitelisted(
+        address module
+    ) external view override returns (bool) {
+        return whitelistAuditModule[module];
     }
 
     function isCurrencyWhitelisted(
         address currency
-    ) external view returns (bool) {
+    ) external view override returns (bool) {
         return whitelistCurrency[currency];
     }
 
@@ -130,7 +150,7 @@ contract ModuleGlobal is IModuleGlobal {
         address currency,
         address audit,
         address detection
-    ) external view returns (bool) {
+    ) external view override returns (bool) {
         bool can = true;
         if (
             !whitelistCurrency[currency] ||
@@ -144,7 +164,7 @@ contract ModuleGlobal is IModuleGlobal {
 
     function getSettlementModuleAddress(
         DataTypes.SettlementType moduleId
-    ) external view returns (address) {
+    ) external view override returns (address) {
         return settlementModule[moduleId];
     }
 }

@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "../interfaces/IMurmes.sol";
 import "../interfaces/IPlatforms.sol";
+import "../interfaces/IModuleGlobal.sol";
 import "../interfaces/IPlatformToken.sol";
 import "../interfaces/IComponentGlobal.sol";
 import "../interfaces/IAuthorityModule.sol";
@@ -49,11 +50,17 @@ contract Platforms is IPlatforms {
         string memory name,
         string memory symbol,
         uint16 rate1,
-        uint16 rate2
+        uint16 rate2,
+        address authority
     ) external returns (uint256) {
         require(rate1 > 0 && rate2 > 0, "P21");
         require(platforms[platform].platformId == 0, "P20");
         require(IMurmes(Murmes).owner() == msg.sender, "P25");
+        address moduleGlobal = IMurmes(Murmes).moduleGlobal();
+        require(
+            IModuleGlobal(moduleGlobal).isAuthorityModuleWhitelisted(authority),
+            "P26"
+        );
         totalPlatforms++;
         platforms[platform] = (
             DataTypes.PlatformStruct({
@@ -61,7 +68,8 @@ contract Platforms is IPlatforms {
                 symbol: symbol,
                 platformId: totalPlatforms,
                 rateCountsToProfit: rate1,
-                rateAuditorDivide: rate2
+                rateAuditorDivide: rate2,
+                authorityModule: authority
             })
         );
         address component = IMurmes(Murmes).componentGlobal();
@@ -182,20 +190,15 @@ contract Platforms is IPlatforms {
             boxes[ids[i]].unsettled += amount;
             for (uint256 j; j < boxes[ids[i]].tasks.length; j++) {
                 uint256 taskId = boxes[ids[i]].tasks[j];
-                (DataTypes.SettlementType settlement, uint256 length) = IMurmes(
-                    Murmes
-                ).getTaskPaymentModuleAndItemsLength(taskId);
-                uint16 rateCountsToProfit = platforms[boxes[ids[i]].platform]
-                    .rateCountsToProfit;
+                (
+                    DataTypes.SettlementType settlement,
+                    uint256[] memory items
+                ) = IMurmes(Murmes).getTaskPaymentModuleAndItems(taskId);
                 if (
                     settlement == DataTypes.SettlementType.DIVIDEND &&
-                    length > 0
+                    items.length > 0
                 ) {
-                    IMurmes(Murmes).updateItemRevenue(
-                        taskId,
-                        amount,
-                        rateCountsToProfit
-                    );
+                    IMurmes(Murmes).updateItemRevenue(taskId, amount);
                 }
             }
         }
@@ -204,32 +207,47 @@ contract Platforms is IPlatforms {
     // ***************** View Functions *****************
     function getBox(
         uint256 boxId
-    ) external view returns (DataTypes.BoxStruct memory) {
+    ) external view override returns (DataTypes.BoxStruct memory) {
         return boxes[boxId];
     }
 
     function getBoxTasks(
         uint256 boxId
-    ) external view returns (uint256[] memory) {
+    ) external view override returns (uint256[] memory) {
         return boxes[boxId].tasks;
     }
 
     function getBoxOrderIdByRealId(
         address platfrom,
         uint256 realId
-    ) public view returns (uint256) {
+    ) external view override returns (uint256) {
         return idRealToMurmes[platfrom][realId];
     }
 
     function getPlatform(
         address platform
-    ) external view returns (DataTypes.PlatformStruct memory) {
+    ) external view override returns (DataTypes.PlatformStruct memory) {
         return platforms[platform];
+    }
+
+    function getPlatformRate(
+        address platform
+    ) external view override returns (uint16, uint16) {
+        return (
+            platforms[platform].rateCountsToProfit,
+            platforms[platform].rateAuditorDivide
+        );
     }
 
     function getPlatformIdByAddress(
         address platform
-    ) external view returns (uint256) {
+    ) external view override returns (uint256) {
         return platforms[platform].platformId;
+    }
+
+    function getPlatformAuthorityModule(
+        address platform
+    ) external view override returns (address) {
+        return platforms[platform].authorityModule;
     }
 }

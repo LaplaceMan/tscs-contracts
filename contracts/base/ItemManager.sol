@@ -42,7 +42,7 @@ contract ItemManager is EntityManager {
         DataTypes.ItemMetadata calldata vars
     ) internal returns (uint256) {
         address itemToken = IComponentGlobal(componentGlobal).itemToken();
-        uint256 itemId = IItemNFT(itemToken).mintItemToken(maker, vars);
+        uint256 itemId = IItemNFT(itemToken).mintItemTokenByMurmes(maker, vars);
         itemsNFT[itemId].taskId = vars.taskId;
         itemsNFT[itemId].stateChangeTime = block.timestamp;
         return itemId;

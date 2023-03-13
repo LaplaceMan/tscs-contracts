@@ -28,15 +28,28 @@ interface IPlatforms {
         uint256 boxId
     ) external view returns (DataTypes.BoxStruct memory);
 
+    function getBoxTasks(
+        uint256 boxId
+    ) external view returns (uint256[] memory);
+
+    function getBoxOrderIdByRealId(
+        address platfrom,
+        uint256 realId
+    ) external view returns (uint256);
+
     function getPlatform(
         address platform
     ) external view returns (DataTypes.PlatformStruct memory);
+
+    function getPlatformRate(
+        address platform
+    ) external view returns (uint16, uint16);
 
     function getPlatformIdByAddress(
         address platform
     ) external view returns (uint256);
 
-    function getBoxTasks(
-        uint256 boxId
-    ) external view returns (uint256[] memory);
+     function getPlatformAuthorityModule(
+        address platform
+    ) external view returns (address) {
 }

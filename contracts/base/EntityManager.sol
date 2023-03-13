@@ -213,7 +213,7 @@ contract EntityManager is Ownable {
     }
 
     // ***************** View Functions *****************
-    function getUserBaseInfo(
+    function getUserBaseData(
         address usr
     ) external view returns (uint256, int256) {
         return (users[usr].reputation, users[usr].deposit);

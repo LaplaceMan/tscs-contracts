@@ -2,6 +2,8 @@
 pragma solidity ^0.8.0;
 
 interface ISettlementModule {
+    function Murmes() external view returns (address);
+
     function settlement(
         uint256 taskId,
         address platform,
@@ -11,19 +13,16 @@ interface ISettlementModule {
         address[] memory supporters
     ) external returns (uint256);
 
-    function updateDebtOrReward(
+    function updateDebtOrRevenue(
         uint256 taskId,
         uint256 number,
         uint256 amount,
         uint16 rateCountsToProfit
     ) external;
 
-    function Murmes() external view returns (address);
-
     function resetSettlement(uint256 taskId, uint256 amount) external;
 
-    function getSettlementBaseInfo(uint256 taskId)
-        external
-        view
-        returns (uint256, uint256);
+    function getSettlementBaseData(
+        uint256 taskId
+    ) external view returns (uint256, uint256);
 }

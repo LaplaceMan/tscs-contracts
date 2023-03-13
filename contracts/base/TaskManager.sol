@@ -44,7 +44,7 @@ contract TaskManager is ItemManager {
                 .getSettlementModuleAddress(
                     DataTypes.SettlementType.ONETIME_MORTGAGE
                 );
-            ISettlementModule(settlementModule).updateDebtOrReward(
+            ISettlementModule(settlementModule).updateDebtOrRevenue(
                 taskId,
                 0,
                 plusAmount,
