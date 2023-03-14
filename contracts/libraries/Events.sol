@@ -61,19 +61,19 @@ library Events {
     event SystemSetFee(uint16 old, uint16 fee);
 
     event RegisterRepuire(string require, uint256 id);
-    event UserJoin(address usr, uint256 reputation, int256 deposit);
+    event UserJoin(address user, uint256 reputation, int256 deposit);
     event UserLockRewardUpdate(
-        address usr,
+        address user,
         address platform,
         uint256 day,
         int256 reward
     );
     event UserInfoUpdate(
-        address usr,
+        address user,
         int256 reputationSpread,
         int256 tokenSpread
     );
-    event UserWithdrawDespoit(address usr, uint256 amount, uint256 balance);
+    event UserWithdrawDespoit(address user, uint256 amount, uint256 balance);
 
     event ItemStateChange(
         uint256 itemId,

@@ -3,8 +3,11 @@ pragma solidity ^0.8.0;
 import {DataTypes} from "../libraries/DataTypes.sol";
 
 interface IAuthorityModule {
+    function Murmes() external view returns (address);
+
     function isOwnCreateBoxAuthority(
         address platform,
+        uint256 platformId,
         address caller
     ) external view returns (bool);
 

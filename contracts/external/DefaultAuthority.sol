@@ -17,6 +17,7 @@ contract DefaultAuthority is IAuthorityBase {
         Murmes = ms;
     }
 
+    // Fn 1
     function forPostTask(
         address,
         uint256 boxId,
@@ -29,5 +30,29 @@ contract DefaultAuthority is IAuthorityBase {
         DataTypes.BoxStruct memory box = IPlatforms(platforms).getBox(boxId);
         require(box.creator == caller, "DA15");
         return boxId;
+    }
+
+    // Fn 2
+    function forCreateBox(
+        address platform,
+        uint256 platformId,
+        address caller
+    ) external returns (bool) {
+        if (caller != platform || platformId == 0) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    // Fn 3
+    function forUpdateBoxRevenue(
+        uint256,
+        uint256 counts,
+        address platform,
+        address caller
+    ) external override returns (uint256) {
+        require(platform == caller, "DA35");
+        return counts;
     }
 }

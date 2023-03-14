@@ -2,8 +2,8 @@
 pragma solidity ^0.8.0;
 
 interface ILensFeeModuleForMurmes {
-    function getTotalIncomeForMurmes(uint256 profileId, uint256 pubId)
-        external
-        view
-        returns (uint256);
+    function getTotalRevenueForMurmes(
+        uint256 profileId,
+        uint256 pubId
+    ) external view returns (uint256);
 }

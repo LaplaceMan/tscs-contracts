@@ -7,27 +7,44 @@ contract Guard is IGuard {
     mapping(address => bool) whitelist;
 
     /**
-     * @notice 一个用于筛选字幕制作者的守护合约的简单示例
-     * @param caller 字幕制作者地址
-     * @param reputation 字幕制作者信誉度分数
-     * @param deposit 字幕制作者质押代币数
-     * @param languageId 申请的语言 ID
+     * @notice 一个用于筛选制作者的守护合约的简单示例
+     * @param caller Item制作者地址
+     * @param reputation Item制作者信誉度分数
+     * @param deposit Item制作者质押代币数
+     * @param requireId 设置的条件ID
      * @return result 是否符合要求
      */
-    function check(
+    function beforeSubmitItem(
         address caller,
         uint256 reputation,
         int256 deposit,
-        uint32 languageId
-    ) external view returns (bool result) {
+        uint32 requireId
+    ) external view override returns (bool result) {
         result = true;
-        // 当申请制作ID为0的语言的字幕时，要求字幕制作者在申请者设置的白名单中
-        if (languageId == 0) {
+        // 当众包人物条件的ID为0时，要求制作者在申请者设置的白名单中
+        if (requireId == 0) {
             if (whitelist[caller] != true) result = false;
         }
-        // 要求字幕制作者信誉度分数大于50
+        // 要求制作者信誉度分数大于50
         if (reputation < 50) result = false;
-        // 要求字幕制作者质押的Zimu代币数量大于0
+        // 要求制作者质押的代币数量大于0
         if (deposit <= 0) result = false;
+    }
+
+    function beforeAuditItem(
+        address caller,
+        uint256 reputation,
+        int256 deposit,
+        uint32 requireId
+    ) external view override returns (bool result) {
+        result = true;
+        // 当众包人物条件的ID为0时，要求审核员在申请者设置的白名单中
+        if (requireId == 0) {
+            if (whitelist[caller] != true) result = false;
+        }
+        // 要求审核员信誉度分数大于50
+        if (reputation < 50) result = false;
+        // 要求审核员质押的代币数量大于64（精度为18）
+        if (deposit < 64 * 10 ** 18) result = false;
     }
 }

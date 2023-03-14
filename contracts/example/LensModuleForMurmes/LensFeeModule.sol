@@ -9,8 +9,9 @@ import {FollowValidationModuleBase} from "./base/FollowValidationModuleBase.sol"
 import {IERC20} from "../../common/token/ERC20/IERC20.sol";
 import {SafeERC20} from "../../common/token/ERC20/extensions/SafeERC20.sol";
 import {IERC721} from "../../common/token/ERC721/IERC721.sol";
-import "../../interfaces/IPlatform.sol";
 import "../../interfaces/IMurmes.sol";
+import "../../interfaces/IPlatforms.sol";
+import "../../interfaces/IComponentGlobal.sol";
 import "../../interfaces/ILensFeeModuleForMurmes.sol";
 
 /**
@@ -43,7 +44,7 @@ contract LensFeeModuleForMurmes is
     mapping(uint256 => mapping(uint256 => ProfilePublicationData))
         internal _dataByPublicationByProfile;
     mapping(uint256 => mapping(uint256 => uint256))
-        internal _incomeForMurmesByPublicationByProfile;
+        internal _revenueForMurmesByPublicationByProfile;
 
     constructor(
         address hub,
@@ -51,14 +52,6 @@ contract LensFeeModuleForMurmes is
         address ms
     ) FeeModuleBase(moduleGlobals) ModuleBase(hub) {
         Murmes = ms;
-    }
-
-    function getTotalIncomeForMurmes(uint256 profileId, uint256 pubId)
-        external
-        view
-        returns (uint256)
-    {
-        return _incomeForMurmesByPublicationByProfile[profileId][pubId];
     }
 
     /**
@@ -105,22 +98,6 @@ contract LensFeeModuleForMurmes is
         return data;
     }
 
-    function isOpenMurmes(uint256 profileId, uint256 pubId)
-        public
-        view
-        returns (bool open)
-    {
-        uint256 realId = uint256(keccak256(abi.encode(profileId, pubId)));
-        address platforms = IMurmes(Murmes).platforms();
-        uint256 videoId = IPlatform(platforms).getVideoOrderIdByRealId(
-            HUB,
-            realId
-        );
-        (, , , , , , uint256[] memory tasks) = IPlatform(platforms)
-            .getVideoBaseInfo(videoId);
-        if (tasks.length > 0) open = true;
-    }
-
     /**
      * @dev Processes a collect by:
      *  1. Ensuring the collector is a follower
@@ -157,22 +134,42 @@ contract LensFeeModuleForMurmes is
      *
      * @return ProfilePublicationData The ProfilePublicationData struct mapped to that publication.
      */
-    function getPublicationData(uint256 profileId, uint256 pubId)
-        external
-        view
-        returns (ProfilePublicationData memory)
-    {
+    function getPublicationData(
+        uint256 profileId,
+        uint256 pubId
+    ) external view returns (ProfilePublicationData memory) {
         return _dataByPublicationByProfile[profileId][pubId];
     }
 
-    function _currencyWhitelistedInMurmes(address currency)
-        internal
-        view
-        returns (bool result)
-    {
-        address platforms = IMurmes(Murmes).platforms();
-        address defaultCurrency = IPlatform(platforms).tokenGlobal();
+    function _currencyWhitelistedInMurmes(
+        address currency
+    ) internal view returns (bool result) {
+        address components = IMurmes(Murmes).componentGlobal();
+        address defaultCurrency = IComponentGlobal(components)
+            .defaultDespoitableToken();
         if (defaultCurrency == currency) result = true;
+    }
+
+    function isOpenMurmes(
+        uint256 profileId,
+        uint256 pubId
+    ) public view returns (bool open) {
+        uint256 realId = uint256(keccak256(abi.encode(profileId, pubId)));
+        address components = IMurmes(Murmes).componentGlobal();
+        address platforms = IComponentGlobal(components).platforms();
+        uint256 boxId = IPlatforms(platforms).getBoxOrderIdByRealId(
+            HUB,
+            realId
+        );
+        uint256[] memory tasks = IPlatforms(platforms).getBoxTasks(boxId);
+        if (tasks.length > 0) open = true;
+    }
+
+    function getTotalrevenueForMurmes(
+        uint256 profileId,
+        uint256 pubId
+    ) external view returns (uint256) {
+        return _revenueForMurmesByPublicationByProfile[profileId][pubId];
     }
 
     function _processCollect(
@@ -205,7 +202,7 @@ contract LensFeeModuleForMurmes is
                 murmesRecipient,
                 adjustedAmount
             );
-            _incomeForMurmesByPublicationByProfile[profileId][
+            _revenueForMurmesByPublicationByProfile[profileId][
                 pubId
             ] += adjustedAmount;
         }
@@ -274,7 +271,7 @@ contract LensFeeModuleForMurmes is
                 murmesRecipient,
                 adjustedAmount
             );
-            _incomeForMurmesByPublicationByProfile[profileId][
+            _revenueForMurmesByPublicationByProfile[profileId][
                 pubId
             ] += adjustedAmount;
         }

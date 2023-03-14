@@ -1,14 +1,8 @@
-/**
- * @Author: LaplaceMan 505876833@qq.com
- * @Date: 2023-01-24 13:26:23
- * @Description: 该合约可以帮助申请们共同出资为某一个视频申请特定语言的字幕，但是支付策略只能为一次性支付，即需要捐赠的是Zimu代币
- * @Copyright (c) 2023 by LaplaceMan 505876833@qq.com, All Rights Reserved.
- */
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.0;
 import "../interfaces/IMurmes.sol";
-import "../interfaces/IZimu.sol";
-import "../interfaces/IVT.sol";
+import "../common/token/ERC20/IERC20.sol";
+import "../interfaces/IPlatformToken.sol";
 
 contract Crowdfunding {
     /**
@@ -20,7 +14,7 @@ contract Crowdfunding {
      */
     address immutable Murmes;
     /**
-     * @notice 总贡献的Zimu代币数
+     * @notice 总贡献的代币数
      */
     uint256 public cumulative;
     /**
@@ -32,7 +26,7 @@ contract Crowdfunding {
      */
     mapping(uint256 => crowd) public crowds;
     /**
-     * @notice 用户贡献过的字幕代币数，用于计算待提取 ID 为 0 的 VT 的份额
+     * @notice 用户贡献过的代币数
      */
     mapping(address => uint256) public contribution;
     /**
@@ -72,53 +66,60 @@ contract Crowdfunding {
      * @param source 源视频链接
      * @param raised 已筹集的代币数量
      * @param target 用于发起申请的目标（字幕制作）费用
-     * @param language 所需字幕的语言
+     * @param requireId 所需条件
      * @param deadline 申请截至时间
      * @param end 众筹申请的截至时间（未凑齐款项时取消申请）
-     * @param applyId 当众筹成功后返回的协议内该申请的 applyId
+     * @param taskId 当众筹成功后返回的协议内该申请的 applyId
      * @param frozen 该众筹申请的状态，false 表示仍在进行中
+     * @param currency 筹集的代币类型
      * @param helper 参与众筹的用户地址
      * @param token 参与众筹的用户所贡献的代币数目
      */
     struct crowd {
         string source;
-        uint112 raised;
-        uint112 target;
-        uint32 language;
+        uint128 raised;
+        uint128 target;
+        uint256 requireId;
         uint256 deadline;
         uint256 end;
-        uint256 applyId;
+        uint256 taskId;
         bool frozen;
+        address currency;
         address[] helper;
-        uint112[] token;
+        uint128[] token;
     }
 
     /**
      * @notice 发出众筹申请
-     * @param source 视频源链接
+     * @param source 任务必要的源链接
      * @param deadline 众筹成功发出申请后，申请的截至（冻结）日期
      * @param target 用于发起申请的目标（字幕制作）费用
      * @param initial 众筹申请发起者初始时贡献的代币数
-     * @param language 所需字幕的语言 ID
+     * @param currency 用于众筹的代币类型
+     * @param requireId 所需条件的ID
      * @param end 众筹申请的截至时间（未凑齐款项时取消申请）
      * @return 众筹申请 ID
-     * label CF1
+     * Fn 1
      */
     function initiate(
         string memory source,
         uint256 deadline,
-        uint112 target,
-        uint112 initial,
-        uint32 language,
+        uint128 target,
+        uint128 initial,
+        address currency,
+        uint256 requireId,
         uint256 end
     ) external returns (uint256) {
-        require(target > 0 && end > block.timestamp, "CF1-1");
+        require(target > 0 && end > block.timestamp, "CF11");
         all++;
         if (initial > 0) {
-            address zimu = IMurmes(Murmes).zimuToken();
             require(
-                IZimu(zimu).transferFrom(msg.sender, address(this), initial),
-                "CF1-12"
+                IERC20(currency).transferFrom(
+                    msg.sender,
+                    address(this),
+                    initial
+                ),
+                "CF112"
             );
             crowds[all].raised += initial;
             crowds[all].helper.push(msg.sender);
@@ -128,10 +129,11 @@ contract Crowdfunding {
         crowds[all].source = source;
         crowds[all].deadline = deadline;
         crowds[all].target = target;
-        crowds[all].language = language;
+        crowds[all].currency = currency;
+        crowds[all].requireId = requireId;
         crowds[all].end = end;
         participated[msg.sender][all] = true;
-        emit NewCrowdfunding(source, deadline, target, initial, language, end);
+        emit NewCrowdfunding(source, deadline, target, initial, requireId, end);
         return all;
     }
 
@@ -141,10 +143,10 @@ contract Crowdfunding {
      * @param number 捐赠/贡献的代币数目
      * label CF2
      */
-    function donation(uint256 index, uint112 number)
-        external
-        returns (uint256)
-    {
+    function donation(
+        uint256 index,
+        uint112 number
+    ) external returns (uint256) {
         require(
             !crowds[index].frozen &&
                 crowds[index].target > 0 &&

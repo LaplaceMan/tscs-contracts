@@ -10,4 +10,17 @@ interface IAuthorityBase {
         address caller,
         DataTypes.SettlementType settlement
     ) external returns (uint256);
+
+    function forCreateBox(
+        address platform,
+        uint256 platformId,
+        address caller
+    ) external returns (bool);
+
+    function forUpdateBoxRevenue(
+        uint256 realId,
+        uint256 counts,
+        address platform,
+        address caller
+    ) external returns (uint256);
 }

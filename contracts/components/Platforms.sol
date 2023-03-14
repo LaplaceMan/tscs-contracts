@@ -72,8 +72,8 @@ contract Platforms is IPlatforms {
                 authorityModule: authority
             })
         );
-        address component = IMurmes(Murmes).componentGlobal();
-        address platformToken = IComponentGlobal(component).platformToken();
+        address components = IMurmes(Murmes).componentGlobal();
+        address platformToken = IComponentGlobal(components).platformToken();
         IPlatformToken(platformToken).createPlatformToken(
             symbol,
             platform,
@@ -121,12 +121,12 @@ contract Platforms is IPlatforms {
         address platform,
         address creator
     ) external returns (uint256) {
-        address component = IMurmes(Murmes).componentGlobal();
-        address authority = IComponentGlobal(component).authority();
-        if (!IMurmes(Murmes).isOperator(msg.sender)) platform = msg.sender;
+        address components = IMurmes(Murmes).componentGlobal();
+        address authority = IComponentGlobal(components).authority();
         require(
             IAuthorityModule(authority).isOwnCreateBoxAuthority(
                 platform,
+                platforms[platform].platformId,
                 msg.sender
             ),
             "P55"
@@ -177,8 +177,8 @@ contract Platforms is IPlatforms {
         uint256[] memory amounts
     ) external {
         assert(ids.length == amounts.length);
-        address component = IMurmes(Murmes).componentGlobal();
-        address authority = IComponentGlobal(component).authority();
+        address components = IMurmes(Murmes).componentGlobal();
+        address authority = IComponentGlobal(components).authority();
         for (uint256 i = 0; i < ids.length; i++) {
             uint256 amount = IAuthorityModule(authority)
                 .formatCountsOfUpdateBoxRevenue(

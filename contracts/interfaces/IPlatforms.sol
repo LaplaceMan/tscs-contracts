@@ -3,12 +3,16 @@ pragma solidity ^0.8.0;
 import {DataTypes} from "../libraries/DataTypes.sol";
 
 interface IPlatforms {
+    function Murmes() external view returns(address);
+    
     function createBox(
         uint256 id,
         address from,
         address creator
     ) external returns (uint256);
 
+    function setPlatformRate(uint16 rate1, uint16 rate2) external;
+   
     function updateBoxTasksByMurmes(
         uint256 boxId,
         uint256[] memory tasks

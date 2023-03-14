@@ -609,30 +609,14 @@ contract Murmes is TaskManager {
         );
     }
 
-    function getPlatformAddressByTaskId(
-        uint256 taskId
-    ) external view returns (address) {
-        require(tasks[taskId].applicant != address(0), "181");
-        return tasks[taskId].platform;
+    function getItemCustomModuleOfTask(
+        uint256 itemId
+    ) external view returns (address, address, address) {
+        uint256 taskId = itemsNFT[itemId].taskId;
+        return (
+            tasks[taskId].currency,
+            tasks[taskId].auditModule,
+            tasks[taskId].detectionModule
+        );
     }
-
-    function getTaskPaymentModuleAndItems(
-        uint256 taskId
-    ) public view returns (DataTypes.SettlementType, uint256[] memory) {
-        return (tasks[taskId].settlement, tasks[taskId].items);
-    }
-
-    // function _getHistoryFingerprint(uint256 taskId)
-    //     internal
-    //     view
-    //     returns (uint256[] memory)
-    // {
-    //     uint256[] memory history = new uint256[](tasks[taskId].items.length);
-    //     for (uint256 i = 0; i < tasks[taskId].items.length; i++) {
-    //         history[i] = IST(subtitleToken).getSTFingerprint(
-    //             tasks[taskId].items[i]
-    //         );
-    //     }
-    //     return history;
-    // }
 }

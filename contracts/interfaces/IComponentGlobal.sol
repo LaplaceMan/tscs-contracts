@@ -25,6 +25,6 @@ interface IComponentGlobal {
     function lockUpTime() external view returns (uint256);
 
     event SystemSetDefaultDepositToken(address token);
-    event SystemSetComponent(uint8 id, address component);
+    event SystemSetComponent(uint8 id, address components);
     event SystemSetLockUpTime(uint256 oldTime, uint256 newTime);
 }

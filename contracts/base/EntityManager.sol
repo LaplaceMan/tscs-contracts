@@ -53,10 +53,10 @@ contract EntityManager is Ownable {
 
     /**
      * @notice 主动加入协议, 并质押一定数目的代币
-     * @param usr 用户区块链地址
+     * @param user 用户区块链地址
      * Fn 2
      */
-    function userJoin(address usr, uint256 deposit) external {
+    function userJoin(address user, uint256 deposit) external {
         if (deposit > 0) {
             address token = IComponentGlobal(componentGlobal)
                 .defaultDespoitableToken();
@@ -66,10 +66,10 @@ contract EntityManager is Ownable {
             );
         }
 
-        if (users[usr].reputation == 0) {
-            _userInitialization(usr, deposit);
+        if (users[user].reputation == 0) {
+            _userInitialization(user, deposit);
         } else {
-            users[usr].deposit += int256(deposit);
+            users[user].deposit += int256(deposit);
         }
     }
 
@@ -104,17 +104,17 @@ contract EntityManager is Ownable {
 
     /**
      * @notice 更新用户信誉度分数和质押代币数
-     * @param usr 用户区块链地址
+     * @param user 用户区块链地址
      * @param reputationSpread 有正负（增加或扣除）的信誉度分数
      * @param tokenSpread 有正负的（增加或扣除）代币数量
      * Fn 5
      */
-    function updaterUser(
-        address usr,
+    function updateUser(
+        address user,
         int256 reputationSpread,
         int256 tokenSpread
     ) public auth {
-        _updateUser(usr, reputationSpread, tokenSpread);
+        _updateUser(user, reputationSpread, tokenSpread);
     }
 
     /**
@@ -122,19 +122,19 @@ contract EntityManager is Ownable {
      * @param platform 平台地址 / 代币合约地址
      * @param day "天"的Unix格式
      * @param amount 有正负（新增或扣除）的代币数量（为锁定状态）
-     * @param usr 用户区块链地址
+     * @param user 用户区块链地址
      * Fn 6
      */
     function updateLockReward(
         address platform,
         uint256 day,
         int256 amount,
-        address usr
+        address user
     ) public auth {
-        require(users[usr].reputation != 0, "E62");
-        uint256 current = users[usr].locks[platform][day];
+        require(users[user].reputation != 0, "E62");
+        uint256 current = users[user].locks[platform][day];
         int256 newLock = int256(current) + amount;
-        users[usr].locks[platform][day] = (newLock > 0 ? uint256(newLock) : 0);
+        users[user].locks[platform][day] = (newLock > 0 ? uint256(newLock) : 0);
     }
 
     /**
@@ -169,66 +169,67 @@ contract EntityManager is Ownable {
 
     /**
      * @notice 用户初始化，辅助作用是更新最新操作时间
-     * @param usr 用户区块链地址
+     * @param user 用户区块链地址
      * @param amount 质押代币数
      * Fn 9
      */
-    function _userInitialization(address usr, uint256 amount) internal {
-        if (users[usr].reputation == 0) {
-            users[usr].reputation = BASE_REPUTATION;
-            users[usr].deposit = int256(amount);
+    function _userInitialization(address user, uint256 amount) internal {
+        if (users[user].reputation == 0) {
+            users[user].reputation = BASE_REPUTATION;
+            users[user].deposit = int256(amount);
         }
-        users[usr].operate = block.timestamp;
+        users[user].operate = block.timestamp;
     }
 
     /**
      * @notice 更新用户基本信息
-     * @param usr 用户区块链地址
+     * @param user 用户区块链地址
      * @param reputationSpread 信誉度变化
      * @param tokenSpread 质押代币数目变化
      */
     function _updateUser(
-        address usr,
+        address user,
         int256 reputationSpread,
         int256 tokenSpread
     ) internal {
-        int256 newReputation = int256(users[usr].reputation) + reputationSpread;
-        users[usr].reputation = (
+        int256 newReputation = int256(users[user].reputation) +
+            reputationSpread;
+        users[user].reputation = (
             newReputation > 0 ? uint256(newReputation) : 0
         );
         if (tokenSpread < 0) {
             uint256 penalty = uint256(tokenSpread * -1);
-            if (users[usr].deposit > 0) {
-                if (users[usr].deposit + tokenSpread < 0) {
-                    penalty = uint256(users[usr].deposit);
+            if (users[user].deposit > 0) {
+                if (users[user].deposit + tokenSpread < 0) {
+                    penalty = uint256(users[user].deposit);
                 }
                 address vault = IComponentGlobal(componentGlobal).vault();
                 IVault(vault).updatePenalty(penalty);
             }
-            users[usr].deposit = users[usr].deposit + tokenSpread;
+            users[user].deposit = users[user].deposit + tokenSpread;
         }
-        if (users[usr].reputation == 0) {
-            users[usr].reputation = 1;
+        if (users[user].reputation == 0) {
+            users[user].reputation = 1;
         }
     }
 
     // ***************** View Functions *****************
     function getUserBaseData(
-        address usr
+        address user
     ) external view returns (uint256, int256) {
-        return (users[usr].reputation, users[usr].deposit);
+        return (users[user].reputation, users[user].deposit);
     }
 
-    function gutUserGuard(address usr) external view returns (address) {
-        return users[usr].guard;
+    function gutUserGuard(address user) external view returns (address) {
+        return users[user].guard;
     }
 
     function getUserLockReward(
-        address usr,
+        address user,
         address platform,
         uint256 day
     ) external view returns (uint256) {
-        return users[usr].locks[platform][day];
+        return users[user].locks[platform][day];
     }
 
     function getRequireNoteById(

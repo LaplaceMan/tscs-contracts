@@ -15,68 +15,60 @@ interface IMurmes {
 
     function moduleGlobal() external view returns (address);
 
-    // function getLanguageNoteById(uint16 languageId)
-    //     external
-    //     view
-    //     returns (string memory);
-
-    function getLanguageIdByNote(
-        string memory note
-    ) external view returns (uint16);
-
     function getUserBaseData(
-        address usr
+        address user
     ) external view returns (uint256, int256);
 
     function getUserLockReward(
-        address usr,
+        address user,
         address platform,
         uint256 day
     ) external view returns (uint256);
 
-    function gutUserGuard(address usr) external view returns (address);
+    function gutUserGuard(address user) external view returns (address);
+
+    function getRequireNoteById(
+        uint32 requireId
+    ) external view returns (string memory);
+
+    function getRequireIdByNote(
+        string memory requireNote
+    ) external view returns (uint256);
 
     function updateUser(
-        address usr,
+        address user,
         int256 reputationSpread,
         int256 tokenSpread
     ) external;
 
-    // ***** StrategyManager *****
-    function auditStrategy() external view returns (address);
+    // ***** ItemManager *****
+    function getItem(
+        uint256 itemId
+    ) external view returns (DataTypes.ItemStruct memory);
 
-    function accessStrategy() external view returns (address);
-
-    function detectionStrategy() external view returns (address);
-
-    function authorityStrategy() external view returns (address);
-
-    function lockUpTime() external view returns (uint256);
-
-    function getSettlementStrategyBaseInfo(
-        uint8 strategyId
-    ) external view returns (address, string memory);
-
-    function holdSubtitleStateByDAO(uint256 id, uint8 state) external;
-
-    // ***** SubtitleManager *****
-    function subtitleToken() external returns (address);
-
-    function versionManagement() external returns (address);
-
-    function getSubtitleBaseData(
-        uint256 subtitleId
-    )
-        external
-        view
-        returns (uint8, uint256, uint256, address[] memory, address[] memory);
-
-    // ***** Murmes *****
+    // ***** TaskManager *****
     function totalTasks() external view returns (uint256);
 
-    function preDivide(address platform, address to, uint256 amount) external;
+    function tasks(
+        uint256 taskId
+    ) external view returns (DataTypes.TaskStruct memory);
 
-    function preDivideBatch(
+    function getPlatformAddressByTaskId(
+        uint256 taskId
+    ) external view returns (address);
+
+    function getTaskPaymentModuleAndItems(
+        uint256 taskId
+    ) external view returns (DataTypes.SettlementType, uint256[] memory);
+
+    // ***** Murmes *****
+    function preDivideBySettlementModule(
+        address platform,
+        address to,
+        uint256 amount
+    ) external;
+
+    function preDivideBatchBySettlementModule(
         address platform,
         address[] memory to,
         uint256 amount
@@ -86,60 +78,14 @@ interface IMurmes {
         address platform,
         uint256 day,
         int256 amount,
-        address usr
+        address user
     ) external;
 
-    function resetApplication(uint256 taskId, uint256 amount) external;
+    function getItemAuditData(
+        uint256 itemId
+    ) external view returns (uint256, uint256, uint256, uint256, uint256);
 
-    function getPlatformAddressByTaskId(
-        uint256 taskId
-    ) external view returns (address);
-
-    function submitApplication(
-        address platform,
-        uint256 videoId,
-        uint8 strategy,
-        uint256 amount,
-        uint32 language,
-        uint256 deadline,
-        string memory source
-    ) external returns (uint256);
-
-    function uploadSubtitle(
-        uint256 taskId,
-        string memory cid,
-        uint16 languageId,
-        uint256 fingerprint
-    ) external returns (uint256);
-
-    function cancel(uint256 taskId) external;
-
-    function updateApplication(
-        uint256 taskId,
-        uint256 plusAmount,
-        uint256 plusTime
-    ) external;
-
-    function tasks(
-        uint256 taskId
-    )
-        external
-        returns (
-            address,
-            address,
-            uint256,
-            string memory,
-            uint8,
-            uint256,
-            uint32,
-            uint256[] memory,
-            uint256,
-            uint256
-        );
-
-    function updateItemRevenue(uint256 taskId, uint256 counts) external;
-
-    function getTaskPaymentModuleAndItems(
-        uint256 taskId
-    ) external view returns (DataTypes.SettlementType, uint256[] memory);
+    function getItemCustomModuleOfTask(
+        uint256 itemId
+    ) external view returns (address, address, address);
 }

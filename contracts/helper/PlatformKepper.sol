@@ -1,14 +1,9 @@
-/**
- * @Author: LaplaceMan 505876833@qq.com
- * @Date: 2023-02-01 11:59:41
- * @Description 提供了一种使用 Chainlink API调用服务和数字签名的方式完成平台的维护的例子，包括视频播放量、字幕使用量更新，为视频开启Murmes使用权限（链上结算方式和抵押支付策略），必要比率设置，减轻了平台负担，利益相关者可根据需要调用更新功能，
- * @Copyright (c) 2023 by LaplaceMan 505876833@qq.com, All Rights Reserved.
- */
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
 import "../interfaces/IMurmes.sol";
-import "../interfaces/IPlatform.sol";
+import "../interfaces/IPlatforms.sol";
+import "../interfaces/IComponentGlobal.sol";
 import "@chainlink/contracts/src/v0.8/ChainlinkClient.sol";
 import "@chainlink/contracts/src/v0.8/ConfirmedOwner.sol";
 
@@ -34,25 +29,19 @@ contract PlatformKepper is ChainlinkClient, ConfirmedOwner {
      */
     address public Murmes;
     /**
-     * @notice 请求和视频ID的映射
+     * @notice 请求和Box ID的映射
      */
-    mapping(bytes32 => uint256) public requestVideoIdMap;
+    mapping(bytes32 => uint256) public requestBoxIdMap;
     /**
-     * @notice 请求和申请（任务）ID的映射
+     * @notice 请求和任务ID的映射
      */
-    mapping(bytes32 => uint256) public requestApplyIdMap;
+    mapping(bytes32 => uint256) public requestTaskIdMap;
     /**
-     * @notice 申请ID和字幕最新使用量的映射
+     * @notice Box ID和Box收益的映射
      */
-    mapping(uint256 => uint256) public latestSubtitleUsage;
+    mapping(uint256 => uint256) public boxRevenue;
 
-    event RequestUpdateVideoViewCounts(
-        bytes32 indexed requestId,
-        uint256 counts,
-        bool result
-    );
-
-    event RequestUpdateSubtitleUsageCounts(
+    event RequestUpdateBoxRevenue(
         bytes32 indexed requestId,
         uint256 counts,
         bool result
@@ -84,85 +73,91 @@ contract PlatformKepper is ChainlinkClient, ConfirmedOwner {
     }
 
     /**
-     * @notice 提交更新特定视频播放量的申请
-     * @param videoId 根据注册顺序获得的视频ID
+     * @notice 提交更新特定Box收益的申请
+     * @param boxId 根据注册顺序获得的Box ID
      * @return requestId Chainlink 请求ID
-     * label PK1
+     * Fn 1
      */
-    function requestVideoViewCounts(uint256 videoId)
-        public
-        returns (bytes32 requestId)
-    {
-        address platforms = IMurmes(Murmes).platforms();
-        (address platform, , , , , , ) = IPlatform(platforms).getVideoBaseInfo(
-            videoId
-        );
-        require(platform == address(this), "PK1-5");
+    function requestUpdateBoxRevenue(
+        uint256 boxId
+    ) public returns (bytes32 requestId) {
+        address components = IMurmes(Murmes).componentGlobal();
+        address platforms = IComponentGlobal(components).platforms();
+        DataTypes.BoxStruct memory box = IPlatforms(platforms).getBox(boxId);
+        require(box.platform == address(this), "PK15");
 
         Chainlink.Request memory req = buildChainlinkRequest(
             jobId,
             address(this),
-            this.fulfillVideoViewCounts.selector
+            this.fulfillUpdateBoxRevenue.selector
         );
 
         string memory api = string(
-            abi.encodePacked("/getVideoViewCountsAPI/", videoId)
+            abi.encodePacked("/getBoxRevenueAPI/", boxId)
         );
 
         req.add("get", api);
         req.add("path", "0,counts");
         requestId = sendChainlinkRequest(req, fee);
-        requestVideoIdMap[requestId] = videoId;
+        requestBoxIdMap[requestId] = boxId;
         return requestId;
     }
 
     /**
-     * @notice 提交更新特定字幕使用量的申请
-     * @param applyId 字幕所属的申请ID
-     * @return requestId Chainlink 请求ID
+     * @notice Chainlink 返回特定视频ID的播放量
+     * @param _requestId Chainlink 申请ID
+     * @param _counts 根据平台提供的API返回的特定视频最新的播放量
+     * Fn 2
      */
-    // function requestSubtitleUsageCounts(uint256 applyId)
-    //     public
-    //     returns (bytes32 requestId)
-    // {
-    //     (, address platform, , , , , , , , ) = IMurmes(Murmes).tasks(applyId);
-    //     require(platform == address(this), "ER5");
-
-    //     Chainlink.Request memory req = buildChainlinkRequest(
-    //         jobId,
-    //         address(this),
-    //         this.fulfillSubtitleUsageCounts.selector
-    //     );
-
-    //     string memory api = string(
-    //         abi.encodePacked("/getSubtitleUsageCountsAPI/", applyId)
-    //     );
-
-    //     req.add("get", api);
-    //     req.add("path", "0,counts");
-    //     requestId = sendChainlinkRequest(req, fee);
-    //     requestApplyIdMap[requestId] = applyId;
-    //     return requestId;
-    // }
+    function fulfillVideoViewCounts(
+        bytes32 _requestId,
+        uint256 _counts
+    ) public recordChainlinkFulfillment(_requestId) {
+        uint256 boxId = requestBoxIdMap[requestId];
+        bool result = _updateBoxRevenue(boxId, _counts);
+        emit RequestUpdateBoxRevenue(_requestId, _counts, result);
+    }
 
     /**
-     * @notice 内部功能，调用Murmes协议 updateViewCounts 更新视频播放量
-     * label PK2
+     * @notice 由平台方提供服务，使用数字签名的方式更新Box收益
+     * @return result 更新结果
+     * Fn 3
      */
-    function _updateVideoViewCounts(uint256 _id, uint256 _counts)
-        internal
-        returns (bool)
-    {
-        address platforms = IMurmes(Murmes).platforms();
-        (, , , , uint256 counts, , ) = IPlatform(platforms).getVideoBaseInfo(
-            _id
+    function updateBoxRevenueWithSignature(
+        uint256 boxId,
+        uint256 counts,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external returns (bool result) {
+        bytes32 digest = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                DOMAIN_SEPARATOR,
+                keccak256(
+                    abi.encode(UPDATEVIDEOVIEWCOUNTS_TYPEHASH, boxId, counts)
+                )
+            )
         );
-        if (_counts > counts) {
+        require(_checkSignature(digest, v, r, s), "PK35");
+        result = _updateBoxRevenue(boxId, counts);
+    }
+
+    /**
+     * @notice 内部功能，调用Murmes协议updateBoxesRevenue更新Box收益
+     * Fn 4
+     */
+    function _updateBoxRevenue(
+        uint256 _id,
+        uint256 _counts
+    ) internal returns (bool) {
+        if (_counts > boxRevenue[_id]) {
             uint256[] memory update = new uint256[](1);
-            update[0] = _counts - counts;
+            update[0] = _counts - boxRevenue[_id];
             uint256[] memory id = new uint256[](1);
             id[0] = _id;
-            IPlatform(platforms).updateViewCounts(id, update);
+            boxRevenue[_id] = _counts;
+            IPlatforms(platforms).updateBoxesRevenue(id, update);
             return true;
         } else {
             return false;
@@ -170,49 +165,66 @@ contract PlatformKepper is ChainlinkClient, ConfirmedOwner {
     }
 
     /**
-     * @notice 内部功能，调用Murmes协议 updateUsageCounts 更新字幕使用量
+     * @notice 由平台方提供服务，使用数字签名的方式创建Box和创作者的映射关系
+     * @return boxId 根据注册顺序获得的在Murmes中的Box ID
+     * Fn 5
      */
-    // function _updateSubtitleUsageCounts(uint256 _id, uint256 _counts)
-    //     internal
-    //     returns (bool)
-    // {
-    //     uint256 latestUsage = latestSubtitleUsage[_id];
-    //     latestSubtitleUsage[_id] = _counts;
-    //     if (_counts - latestUsage > 0) {
-    //         uint256[] memory update = new uint256[](1);
-    //         update[0] = _counts;
-    //         uint256[] memory id = new uint256[](1);
-    //         id[0] = _id;
-    //         IMurmes(Murmes).updateUsageCounts(id, update);
-    //         return true;
-    //     } else {
-    //         return false;
-    //     }
-    // }
-
-    /**
-     * @notice 内部功能，调用Murmes协议 createVideo 创建视频和创作者的映射关系
-     * label PK3
-     */
-    function _openMurmesServiceForVideo(
-        uint256 id,
-        string memory symbol,
+    function openServiceForBoxWithSignature(
+        uint256 realId,
         address creator,
-        uint256 initialize
-    ) internal returns (uint256) {
-        address platforms = IMurmes(Murmes).platforms();
-        uint256 videoId = IPlatform(platforms).createVideo(
-            id,
-            symbol,
-            creator,
-            initialize,
-            address(0)
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external returns (uint256 boxId) {
+        bytes32 digest = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                DOMAIN_SEPARATOR,
+                keccak256(
+                    abi.encode(OPENSERVICEFORVIDEO_TYPEHASH, realId, creator)
+                )
+            )
         );
-        return videoId;
+        require(_checkSignature(digest, v, r, s), "PK55");
+        boxId = _openMurmesServiceForBox(realId, creator);
     }
 
-    // 内部辅助功能，检查签名有效性
-    // label PK4
+    /**
+     * @notice 由平台Platform注册Box, 此后该Box支持链上结算
+     * @param realId Box在 Platform 内部的 ID
+     * @param creator Box创作者区块链地址
+     * @return videoId Box在 Murmes 内的 ID
+     * Fn 6
+     */
+    function openServiceForVideo(
+        uint256 realId,
+        address creator
+    ) external auth returns (uint256 boxId) {
+        boxId = _openMurmesServiceForBox(realId, creator);
+    }
+
+    /**
+     * @notice 内部功能，调用Murmes协议 createBox 创建Box和创作者的映射关系
+     * Fn 7
+     */
+    function _openMurmesServiceForBox(
+        uint256 id,
+        address creator
+    ) internal returns (uint256) {
+        address components = IMurmes(Murmes).componentGlobal();
+        address platforms = IComponentGlobal(components).platforms();
+        uint256 boxId = IPlatforms(platforms).createBox(
+            id,
+            address(this),
+            creator
+        );
+        return boxId;
+    }
+
+    /**
+     * @notice 内部功能，检查签名有效性
+     * Fn 8
+     */
     function _checkSignature(
         bytes32 digest,
         uint8 v,
@@ -228,160 +240,18 @@ contract PlatformKepper is ChainlinkClient, ConfirmedOwner {
     }
 
     /**
-     * @notice Chainlink 返回特定视频ID的播放量
-     * @param _requestId Chainlink 申请ID
-     * @param _counts 根据平台提供的API返回的特定视频最新的播放量
-     * label PK5
-     */
-    function fulfillVideoViewCounts(bytes32 _requestId, uint256 _counts)
-        public
-        recordChainlinkFulfillment(_requestId)
-    {
-        uint256 videoId = requestVideoIdMap[_requestId];
-        bool result = _updateVideoViewCounts(videoId, _counts);
-        emit RequestUpdateVideoViewCounts(_requestId, _counts, result);
-    }
-
-    /**
-     * @notice  Chainlink 返回特定申请ID下被采纳字幕的使用量
-     * @param _requestId Chainlink 请求ID
-     * @param _counts 根据平台提供的API返回的特定字幕最新的使用量
-     */
-    // function fulfillSubtitleUsageCounts(bytes32 _requestId, uint256 _counts)
-    //     public
-    //     recordChainlinkFulfillment(_requestId)
-    // {
-    //     uint256 applyId = requestApplyIdMap[_requestId];
-    //     bool result = _updateSubtitleUsageCounts(applyId, _counts);
-    //     emit RequestUpdateSubtitleUsageCounts(_requestId, _counts, result);
-    // }
-
-    /**
-     * @notice 由平台方提供服务，使用数字签名的方式更新视频播放量
-     * @return result 更新结果
-     * label PK6
-     */
-    function updateVideoViewCountsWithSignature(
-        uint256 videoId,
-        uint256 counts,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external returns (bool result) {
-        bytes32 digest = keccak256(
-            abi.encodePacked(
-                "\x19\x01",
-                DOMAIN_SEPARATOR,
-                keccak256(
-                    abi.encode(UPDATEVIDEOVIEWCOUNTS_TYPEHASH, videoId, counts)
-                )
-            )
-        );
-        require(_checkSignature(digest, v, r, s), "PK6-5");
-        result = _updateVideoViewCounts(videoId, counts);
-    }
-
-    /**
-     * @notice 由平台方提供服务，使用数字签名的方式更新字幕使用量
-     * @return result 更新结果
-     */
-    // function updateSubtitleUsageCountsWithSignature(
-    //     uint256 applyId,
-    //     uint256 counts,
-    //     uint8 v,
-    //     bytes32 r,
-    //     bytes32 s
-    // ) external returns (bool result) {
-    //     bytes32 digest = keccak256(
-    //         abi.encodePacked(
-    //             "\x19\x01",
-    //             DOMAIN_SEPARATOR,
-    //             keccak256(
-    //                 abi.encode(
-    //                     UPDATESUBTITLEUSAGECOUNTS_TYPEHASH,
-    //                     applyId,
-    //                     counts
-    //                 )
-    //             )
-    //         )
-    //     );
-    //     require(_checkSignature(digest, v, r, s), "ER5");
-    //     result = _updateSubtitleUsageCounts(applyId, counts);
-    // }
-
-    /**
-     * @notice 由平台方提供服务，使用数字签名的方式创建视频和创作者的映射关系
-     * @return videoId 根据注册顺序获得的在 Murmes 中的视频ID
-     * label PK7
-     */
-    function openServiceForVideoWithSignature(
-        uint256 realId,
-        string memory symbol,
-        address creator,
-        uint256 initialize,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external returns (uint256 videoId) {
-        bytes32 digest = keccak256(
-            abi.encodePacked(
-                "\x19\x01",
-                DOMAIN_SEPARATOR,
-                keccak256(
-                    abi.encode(
-                        OPENSERVICEFORVIDEO_TYPEHASH,
-                        realId,
-                        symbol,
-                        creator,
-                        initialize
-                    )
-                )
-            )
-        );
-        require(_checkSignature(digest, v, r, s), "PK7-5");
-        videoId = _openMurmesServiceForVideo(
-            realId,
-            symbol,
-            creator,
-            initialize
-        );
-    }
-
-    /**
-     * @notice 由平台 Platform 注册视频, 此后该视频支持链上结算（意味着更多结算策略的支持）
-     * @param realId 视频在 Platform 内部的 ID
-     * @param symbol 视频的 symbol
-     * @param creator 视频创作者区块链地址
-     * @param initialize 初始化时（开启服务前）视频播放量
-     * @return videoId 视频在 Murmes 内的 ID
-     * label PK8
-     */
-    function openServiceForVideo(
-        uint256 realId,
-        string memory symbol,
-        address creator,
-        uint256 initialize
-    ) external onlyOwner returns (uint256 videoId) {
-        videoId = _openMurmesServiceForVideo(
-            realId,
-            symbol,
-            creator,
-            initialize
-        );
-    }
-
-    /**
-     * @notice 修改自己 Platform 内的比率, 请至少保证一个非 0, 避免无效修改
-     * @param rateCountsToProfit 播放量和实际收益比例
-     * @param rateAuditorDivide 字幕支持者分成比例
-     * label PK9
+     * @notice 修改自己Platform内的比率
+     * @param rateCountsToProfit 新的收益转换率
+     * @param rateAuditorDivide 新的审核分成率
+     * Fn 9
      */
     function setPlatfromRate(
         uint16 rateCountsToProfit,
         uint16 rateAuditorDivide
-    ) external onlyOwner {
-        address platforms = IMurmes(Murmes).platforms();
-        IPlatform(platforms).platformRate(
+    ) external auth {
+        address components = IMurmes(Murmes).componentGlobal();
+        address platforms = IComponentGlobal(components).platforms();
+        IPlatforms(platforms).setPlatformRate(
             rateCountsToProfit,
             rateAuditorDivide
         );
@@ -389,9 +259,9 @@ contract PlatformKepper is ChainlinkClient, ConfirmedOwner {
 
     /**
      * @notice 提取合约内未用尽的 link 代币
-     * label PK10
+     * Fn 10
      */
-    function withdrawLink() public onlyOwner {
+    function withdrawLink() public auth {
         LinkTokenInterface link = LinkTokenInterface(chainlinkTokenAddress());
         require(
             link.transfer(msg.sender, link.balanceOf(address(this))),

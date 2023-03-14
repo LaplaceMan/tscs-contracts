@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v4.8.0) (security/ReentrancyGuard.sol)
-// 可重入攻击防止
 pragma solidity ^0.8.0;
 
 /**

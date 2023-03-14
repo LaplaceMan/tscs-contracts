@@ -93,4 +93,18 @@ contract TaskManager is ItemManager {
         }
         delete tasks[taskId];
     }
+
+    // ***************** View Functions *****************
+    function getPlatformAddressByTaskId(
+        uint256 taskId
+    ) external view returns (address) {
+        require(tasks[taskId].applicant != address(0), "181");
+        return tasks[taskId].platform;
+    }
+
+    function getTaskPaymentModuleAndItems(
+        uint256 taskId
+    ) public view returns (DataTypes.SettlementType, uint256[] memory) {
+        return (tasks[taskId].settlement, tasks[taskId].items);
+    }
 }
