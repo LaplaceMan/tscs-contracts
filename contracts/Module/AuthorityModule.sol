@@ -62,12 +62,14 @@ contract AuthorityStrategy is IAuthorityModule {
 
     /**
      * @notice 判断调用者是否有创建Box的权限
+     * @param 全局组件模块合约
      * @param platform Box所属平台
      * @param platformId Box所属平台的ID
      * @param caller 调用者
      * Fn 2
      */
     function isOwnCreateBoxAuthority(
+        address components,
         address platform,
         uint256 platformId,
         address caller
@@ -89,6 +91,7 @@ contract AuthorityStrategy is IAuthorityModule {
      * @param counts 收益数目
      * @param platform 第三方平台地址
      * @param caller 调用者
+     * @param components 全局组件模块合约
      * @return 实际可更新的收益
      * Fn 3
      */
@@ -96,7 +99,8 @@ contract AuthorityStrategy is IAuthorityModule {
         uint256 realId,
         uint256 counts,
         address platform,
-        address caller
+        address caller,
+        address components
     ) external override returns (uint256) {
         address platforms = IComponentGlobal(components).platforms();
         address authorityModule = IPlatforms(platforms)

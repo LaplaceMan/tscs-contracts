@@ -37,7 +37,7 @@ contract DefaultAuthority is IAuthorityBase {
         address platform,
         uint256 platformId,
         address caller
-    ) external returns (bool) {
+    ) external view override returns (bool) {
         if (caller != platform || platformId == 0) {
             return false;
         } else {

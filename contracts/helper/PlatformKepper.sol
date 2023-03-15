@@ -109,11 +109,11 @@ contract PlatformKepper is ChainlinkClient, ConfirmedOwner {
      * @param _counts 根据平台提供的API返回的特定视频最新的播放量
      * Fn 2
      */
-    function fulfillVideoViewCounts(
+    function fulfillUpdateBoxRevenue(
         bytes32 _requestId,
         uint256 _counts
     ) public recordChainlinkFulfillment(_requestId) {
-        uint256 boxId = requestBoxIdMap[requestId];
+        uint256 boxId = requestBoxIdMap[_requestId];
         bool result = _updateBoxRevenue(boxId, _counts);
         emit RequestUpdateBoxRevenue(_requestId, _counts, result);
     }
@@ -157,6 +157,8 @@ contract PlatformKepper is ChainlinkClient, ConfirmedOwner {
             uint256[] memory id = new uint256[](1);
             id[0] = _id;
             boxRevenue[_id] = _counts;
+            address components = IMurmes(Murmes).componentGlobal();
+            address platforms = IComponentGlobal(components).platforms();
             IPlatforms(platforms).updateBoxesRevenue(id, update);
             return true;
         } else {
@@ -191,20 +193,19 @@ contract PlatformKepper is ChainlinkClient, ConfirmedOwner {
 
     /**
      * @notice 由平台Platform注册Box, 此后该Box支持链上结算
-     * @param realId Box在 Platform 内部的 ID
+     * @param realId Box在Platform内部的 ID
      * @param creator Box创作者区块链地址
-     * @return videoId Box在 Murmes 内的 ID
      * Fn 6
      */
     function openServiceForVideo(
         uint256 realId,
         address creator
-    ) external auth returns (uint256 boxId) {
+    ) external onlyOwner returns (uint256 boxId) {
         boxId = _openMurmesServiceForBox(realId, creator);
     }
 
     /**
-     * @notice 内部功能，调用Murmes协议 createBox 创建Box和创作者的映射关系
+     * @notice 内部功能，调用Murmes协议createBox创建Box和创作者的映射关系
      * Fn 7
      */
     function _openMurmesServiceForBox(
@@ -248,7 +249,7 @@ contract PlatformKepper is ChainlinkClient, ConfirmedOwner {
     function setPlatfromRate(
         uint16 rateCountsToProfit,
         uint16 rateAuditorDivide
-    ) external auth {
+    ) external onlyOwner {
         address components = IMurmes(Murmes).componentGlobal();
         address platforms = IComponentGlobal(components).platforms();
         IPlatforms(platforms).setPlatformRate(
@@ -258,10 +259,10 @@ contract PlatformKepper is ChainlinkClient, ConfirmedOwner {
     }
 
     /**
-     * @notice 提取合约内未用尽的 link 代币
+     * @notice 提取合约内未用尽的link代币
      * Fn 10
      */
-    function withdrawLink() public auth {
+    function withdrawLink() public onlyOwner {
         LinkTokenInterface link = LinkTokenInterface(chainlinkTokenAddress());
         require(
             link.transfer(msg.sender, link.balanceOf(address(this))),

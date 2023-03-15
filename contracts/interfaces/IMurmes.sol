@@ -27,11 +27,11 @@ interface IMurmes {
 
     function gutUserGuard(address user) external view returns (address);
 
-    function getRequireNoteById(
-        uint32 requireId
+    function requiresNoteById(
+        uint256 requireId
     ) external view returns (string memory);
 
-    function getRequireIdByNote(
+    function requiresIdByNote(
         string memory requireNote
     ) external view returns (uint256);
 
@@ -42,9 +42,14 @@ interface IMurmes {
     ) external;
 
     // ***** ItemManager *****
-    function getItem(
+    function itemsNFT(
         uint256 itemId
     ) external view returns (DataTypes.ItemStruct memory);
+
+    function holdItemStateByDAO(
+        uint256 itemId,
+        DataTypes.ItemState state
+    ) external;
 
     // ***** TaskManager *****
     function totalTasks() external view returns (uint256);
@@ -60,6 +65,20 @@ interface IMurmes {
     function getTaskPaymentModuleAndItems(
         uint256 taskId
     ) external view returns (DataTypes.SettlementType, uint256[] memory);
+
+    function getTaskItemsState(
+        uint256 taskId
+    ) external view returns (uint256, uint256, uint256);
+
+    function updateTask(
+        uint256 taskId,
+        uint256 plusAmount,
+        uint256 plusTime
+    ) external;
+
+    function cancelTask(uint256 taskId) external;
+
+    function resetTask(uint256 taskId, uint256 amount) external;
 
     // ***** Murmes *****
     function preDivideBySettlementModule(
@@ -88,4 +107,10 @@ interface IMurmes {
     function getItemCustomModuleOfTask(
         uint256 itemId
     ) external view returns (address, address, address);
+
+    function postTask(
+        DataTypes.PostTaskData calldata vars
+    ) external returns (uint256);
+
+    function updateItemRevenue(uint256 taskId, uint256 counts) external;
 }

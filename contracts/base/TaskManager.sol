@@ -104,7 +104,17 @@ contract TaskManager is ItemManager {
 
     function getTaskPaymentModuleAndItems(
         uint256 taskId
-    ) public view returns (DataTypes.SettlementType, uint256[] memory) {
+    ) external view returns (DataTypes.SettlementType, uint256[] memory) {
         return (tasks[taskId].settlement, tasks[taskId].items);
+    }
+
+    function getTaskItemsState(
+        uint256 taskId
+    ) external view returns (uint256, uint256, uint256) {
+        return (
+            tasks[taskId].items.length,
+            tasks[taskId].adopted,
+            tasks[taskId].deadline
+        );
     }
 }

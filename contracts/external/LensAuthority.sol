@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 import "../interfaces/IPlatforms.sol";
 import "../interfaces/IAuthorityBase.sol";
+import "../interfaces/IPlatformToken.sol";
 import "../common/token/ERC20/IERC20.sol";
 import "../interfaces/IComponentGlobal.sol";
 import "../interfaces/ILensFeeModuleForMurmes.sol";
@@ -43,8 +44,8 @@ contract LensAuthority is IAuthorityBase {
         uint256 boxId,
         string memory source,
         address caller,
-        DataTypes.SettlementType settlement
-    ) external returns (uint256) {
+        DataTypes.SettlementType
+    ) external override returns (uint256) {
         (uint256 profileId, bool result) = _stringToUint256(source);
         require(result, "LA11");
         address owner = ILensHub(Lens).ownerOf(profileId);
@@ -59,7 +60,7 @@ contract LensAuthority is IAuthorityBase {
             realId
         );
         if (orderId == 0) {
-            orderId = IPlatform(platforms).createBox(realId, Lens, caller);
+            orderId = IPlatforms(platforms).createBox(realId, Lens, caller);
             boxLensItemMap[realId].profileId = profileId;
             boxLensItemMap[realId].pubId = boxId;
         }
@@ -71,7 +72,7 @@ contract LensAuthority is IAuthorityBase {
         address platform,
         uint256,
         address caller
-    ) external returns (bool) {
+    ) external view override returns (bool) {
         if (platform != Lens || !MurmesInterface(Murmes).isOperator(caller)) {
             return false;
         } else {
@@ -82,9 +83,9 @@ contract LensAuthority is IAuthorityBase {
     // Fn 3
     function forUpdateBoxRevenue(
         uint256 realId,
-        uint256 counts,
-        address platform,
-        address caller
+        uint256,
+        address,
+        address
     ) external override returns (uint256) {
         uint256 profileId = boxLensItemMap[realId].profileId;
         uint256 pubId = boxLensItemMap[realId].pubId;
@@ -92,10 +93,10 @@ contract LensAuthority is IAuthorityBase {
         require(whitelistedLensModule[module] = true, "LA35");
         uint256 amount = ILensFeeModuleForMurmes(module)
             .getTotalRevenueForMurmes(profileId, pubId);
-        uint256 increase = amount > videoLensMap[realId].revenue
-            ? amount - videoLensMap[realId].revenue
+        uint256 increase = amount > boxLensItemMap[realId].revenue
+            ? amount - boxLensItemMap[realId].revenue
             : 0;
-        videoLensMap[realId].revenue = amount;
+        boxLensItemMap[realId].revenue = amount;
         return increase;
     }
 
@@ -119,22 +120,22 @@ contract LensAuthority is IAuthorityBase {
     function setWhitelistedLensModule(address module, bool result) external {
         require(MurmesInterface(Murmes).owner() == msg.sender, "LA65");
         whitelistedLensModule[module] = result;
-        emit SetWhitelistedLensModule(module, usability);
+        emit SetWhitelistedLensModule(module, result);
     }
 
     // Fn 6
     function getSettlableToken(uint256 boxId) public view returns (uint256) {
         address components = MurmesInterface(Murmes).componentGlobal();
         address platforms = IComponentGlobal(components).platforms();
-        DataTypes.BoxStruct memory box = IPlatform(paltforms).getBox(boxId);
+        DataTypes.BoxStruct memory box = IPlatforms(platforms).getBox(boxId);
         require(box.platform == Lens, "LA66");
-        uint256 profileId = boxLensItemMap[realId].profileId;
-        uint256 pubId = boxLensItemMap[realId].pubId;
+        uint256 profileId = boxLensItemMap[box.id].profileId;
+        uint256 pubId = boxLensItemMap[box.id].pubId;
         address module = ILensHub(Lens).getCollectModule(profileId, pubId);
         uint256 amount = ILensFeeModuleForMurmes(module)
             .getTotalRevenueForMurmes(profileId, pubId);
-        uint256 increase = amount > boxLensItemMap[realId].revenue
-            ? amount - boxLensItemMap[realId].revenue
+        uint256 increase = amount > boxLensItemMap[box.id].revenue
+            ? amount - boxLensItemMap[box.id].revenue
             : 0;
         return increase;
     }

@@ -4,18 +4,13 @@ import "../interfaces/IMurmes.sol";
 import "../interfaces/IItemNFT.sol";
 import "../interfaces/IDetectionModule.sol";
 import "../interfaces/IComponentGlobal.sol";
+import "../interfaces/IItemVersionManagement.sol";
 import {DataTypes} from "../libraries/DataTypes.sol";
 
-contract ItemVersionManagement {
+contract ItemVersionManagement is IItemVersionManagement {
     address public Murmes;
 
     mapping(uint256 => version[]) items;
-
-    struct version {
-        string source;
-        uint256 fingerprint;
-        bool invalid;
-    }
 
     event UpdateItemVersion(
         uint256 itemId,
@@ -47,7 +42,7 @@ contract ItemVersionManagement {
         uint256 version0 = IItemNFT(itemToken).getItemFingerprint(itemId);
 
         {
-            DataTypes.ItemStruct memory item = IMurmes(Murmes).getItem(itemId);
+            DataTypes.ItemStruct memory item = IMurmes(Murmes).itemsNFT(itemId);
             require(item.state != DataTypes.ItemState.DELETED, "VM16");
         }
         address owner = IItemNFT(itemToken).ownerOf(itemId);
@@ -94,7 +89,10 @@ contract ItemVersionManagement {
      * @param versionId 无效的版本号
      * Fn 2
      */
-    function reportInvalidVersion(uint256 itemId, uint256 versionId) public {
+    function reportInvalidVersion(
+        uint256 itemId,
+        uint256 versionId
+    ) public override {
         require(IMurmes(Murmes).isOperator(msg.sender), "VM25");
         for (uint256 i = versionId; i < items[itemId].length; i++) {
             items[itemId][i].invalid = true;
@@ -108,7 +106,7 @@ contract ItemVersionManagement {
      * Fn 3
      */
     function deleteInvaildItem(uint256 itemId) public {
-        DataTypes.ItemStruct memory item = IMurmes(Murmes).getItem(itemId);
+        DataTypes.ItemStruct memory item = IMurmes(Murmes).itemsNFT(itemId);
         require(item.state == DataTypes.ItemState.DELETED, "VM31");
         address components = IMurmes(Murmes).componentGlobal();
         uint256 lockUpTime = IComponentGlobal(components).lockUpTime();
@@ -131,14 +129,14 @@ contract ItemVersionManagement {
     function getSpecifyVersion(
         uint256 itemId,
         uint256 versionId
-    ) public view returns (version memory) {
+    ) public view override returns (version memory) {
         require(items[itemId][versionId].fingerprint != 0, "ER1");
         return items[itemId][versionId];
     }
 
     function getVersionNumebr(
         uint256 itemId
-    ) public view returns (uint256, uint256) {
+    ) public view override returns (uint256, uint256) {
         if (items[itemId].length == 0) return (0, 0);
         uint256 validNumber = 0;
         for (uint256 i = 0; i < items[itemId].length; i++) {
@@ -154,7 +152,7 @@ contract ItemVersionManagement {
 
     function getLatestValidVersion(
         uint256 itemId
-    ) public view returns (string memory, uint256) {
+    ) public view override returns (string memory, uint256) {
         string memory source;
         uint256 fingerprint;
         for (uint256 i = items[itemId].length; i > 0; i--) {

@@ -67,7 +67,7 @@ contract PlatformToken is ERC1155, IPlatformToken {
         address account,
         uint256 platformId,
         uint256 value
-    ) public virtual {
+    ) public virtual override {
         require(
             account == _msgSender() || isApprovedForAll(account, _msgSender()),
             "PT35"

@@ -15,7 +15,7 @@ interface IAuthorityBase {
         address platform,
         uint256 platformId,
         address caller
-    ) external returns (bool);
+    ) external view returns (bool);
 
     function forUpdateBoxRevenue(
         uint256 realId,

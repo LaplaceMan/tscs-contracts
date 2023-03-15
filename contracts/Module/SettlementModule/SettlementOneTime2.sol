@@ -93,7 +93,7 @@ contract SettlementOneTime2 is ISettlementModule {
         uint256,
         uint256 amount,
         uint16
-    ) external auth {
+    ) external override auth {
         settlements[taskId].unsettled += amount;
     }
 
@@ -103,7 +103,10 @@ contract SettlementOneTime2 is ISettlementModule {
      * @param amount 恢复的代币数量
      * Fn 4
      */
-    function resetSettlement(uint256 taskId, uint256 amount) external auth {
+    function resetSettlement(
+        uint256 taskId,
+        uint256 amount
+    ) external override auth {
         settlements[taskId].unsettled += amount;
         settlements[taskId].settled -= amount;
     }
@@ -111,7 +114,7 @@ contract SettlementOneTime2 is ISettlementModule {
     // ***************** View Functions *****************
     function getSettlementBaseData(
         uint256 taskId
-    ) external view returns (uint256, uint256) {
+    ) external view override returns (uint256, uint256) {
         return (settlements[taskId].settled, settlements[taskId].unsettled);
     }
 }

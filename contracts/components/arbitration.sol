@@ -1,24 +1,35 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.0;
-
-import "../interfaces/IST.sol";
 import "../interfaces/IVault.sol";
 import "../interfaces/IMurmes.sol";
-import "../interfaces/IAccessStrategy.sol";
-import "../interfaces/ISubtitleVersionManagement.sol";
+import "../interfaces/IItemNFT.sol";
+import "../interfaces/IAccessModule.sol";
+import "../interfaces/IComponentGlobal.sol";
+import "../interfaces/IItemVersionManagement.sol";
 
 contract Arbitration {
-    /**
-     * @notice Murmes 合约地址
-     */
-    address immutable Murmes;
+    address public Murmes;
+
+    uint256 numberOfReports;
+
+    uint256 constant MIN_PUNISHMENT_FOR_REPOTER = 8 * 10 ** 18;
+
+    uint256 constant MIN_PUNISHMENT_FOR_VALIDATOR = 4 * 10 ** 18;
+
+    uint256 constant MIN_COMPENSATE_FOR_USER = 1 * 10 ** 18;
+
+    uint256 constant MIN_COMPENSATE_REPUTATION = 15;
+
+    mapping(uint256 => reportItem) reports;
+
+    mapping(uint256 => uint256[]) itemReports;
 
     /**
      * @notice 举报理由
      * @param PLAGIARIZE 侵权
      * @param WRONG 恶意
      * @param MISTAKEN 误删
-     * @param MISMATCH 字幕与哈希不对应
+     * @param MISMATCH 指纹不对应
      */
     enum Reason {
         PLAGIARIZE,
@@ -27,44 +38,19 @@ contract Arbitration {
         MISMATCH
     }
 
-    /**
-     * @notice 每一个举报都会拥有相应的 reportItem 结构
-     * @param reporter 举报者
-     * @param reason 举报理由
-     * @param subtitleId 被举报的字幕 ST ID
-     * @param uintProof 证明材料，一般为被侵权的字幕 ST ID，可选
-     * @param stringProof 证明材料，一般为需要补充的大量材料，可以 IPFS 的形式提交，可选
-     * @param resultProof 多签提交 DAO 审核结果时同时提交的由链下摘要生成的证明信息
-     * @param result 最终举报结果
-     */
     struct reportItem {
         address reporter;
         Reason reason;
-        uint256 subtitleId;
+        uint256 itemId;
         uint256 uintProof;
         string stringProof;
         string resultProof;
         bool result;
     }
 
-    /**
-     * @notice 平台内产生的举报总数
-     */
-    uint256 numberOfReports;
-
-    /**
-     * @notice 举报 ID 与 reportItem 结构体的映射
-     */
-    mapping(uint256 => reportItem) reports;
-
-    /**
-     * @notice 字幕 ID 与 举报 ID （集合）的映射，防止重复举报
-     */
-    mapping(uint256 => uint256[]) subtitleReports;
-
     event NewReport(
         Reason reason,
-        uint256 subtitleId,
+        uint256 itemId,
         uint256 proofSubtitleId,
         string otherProof,
         address reporter
@@ -79,65 +65,66 @@ contract Arbitration {
     /**
      * @notice 发起一个新的举报
      * @param reason 举报理由/原因
-     * @param subtitleId 被举报字幕 ST ID
+     * @param itemId 被举报Item的ID
      * @param uintProof 证明材料，类型为 UINT
      * @param stringProof 证明材料，类型为 STRING
-     * label A1
+     * Fn 1
      */
     function report(
         Reason reason,
-        uint256 subtitleId,
+        uint256 itemId,
         uint256 uintProof,
         string memory stringProof
     ) public {
         {
             (uint256 reputation, int256 deposit) = IMurmes(Murmes)
-                .getUserBaseInfo(msg.sender);
-            address st = IMurmes(Murmes).subtitleToken();
-            address access = IMurmes(Murmes).accessStrategy();
+                .getUserBaseData(msg.sender);
+            address components = IMurmes(Murmes).componentGlobal();
+            address access = IComponentGlobal(components).access();
+            require(IAccessModule(access).access(reputation, deposit), "A15");
             require(
-                IAccessStrategy(access).access(reputation, deposit),
-                "A1-5"
+                deposit >= int256(IAccessModule(access).depositUnit()),
+                "A15-2"
             );
+            address itemNFT = IComponentGlobal(components).itemToken();
+            require(IItemNFT(itemNFT).ownerOf(itemId) != address(0), "A11");
+            DataTypes.ItemStruct memory item = IMurmes(Murmes).itemsNFT(itemId);
+            uint256 lockUpTime = IComponentGlobal(components).lockUpTime();
             require(
-                deposit >= int256(IAccessStrategy(access).minDeposit()),
-                "A1-5-2"
+                block.timestamp <= item.stateChangeTime + lockUpTime,
+                "A16"
             );
-            require(IST(st).ownerOf(subtitleId) != address(0), "A1-1");
-            (uint8 state, , uint256 changeTime, , ) = IMurmes(Murmes)
-                .getSubtitleBaseInfo(subtitleId);
-            uint256 lockUpTime = IMurmes(Murmes).lockUpTime();
-            require(block.timestamp <= changeTime + lockUpTime, "A1-6");
             if (reason != Reason.MISTAKEN) {
-                require(state == 1, "A1-1-2");
+                require(item.state == DataTypes.ItemState.ADOPTED, "A11-2");
             } else {
-                require(state == 2, "A1-1-3");
+                require(item.state == DataTypes.ItemState.DELETED, "A11-3");
             }
         }
-        if (subtitleReports[subtitleId].length > 0) {
-            for (uint256 i = 0; i < subtitleReports[subtitleId].length; i++) {
-                uint256 reportId = subtitleReports[subtitleId][i];
+
+        if (itemReports[itemId].length > 0) {
+            for (uint256 i = 0; i < itemReports[itemId].length; i++) {
+                uint256 reportId = itemReports[itemId][i];
                 assert(reports[reportId].reason != reason);
             }
         }
 
         numberOfReports++;
-        subtitleReports[subtitleId].push(numberOfReports);
+        itemReports[itemId].push(numberOfReports);
         reports[numberOfReports].reason = reason;
         reports[numberOfReports].reporter = msg.sender;
-        reports[numberOfReports].subtitleId = subtitleId;
+        reports[numberOfReports].itemId = itemId;
         reports[numberOfReports].stringProof = stringProof;
         reports[numberOfReports].uintProof = uintProof;
-        emit NewReport(reason, subtitleId, uintProof, stringProof, msg.sender);
+        emit NewReport(reason, itemId, uintProof, stringProof, msg.sender);
     }
 
     /**
-     * @notice 由多签返回经由 DAO 审核后的结果
-     * @param reportId 举报 ID
-     * @param resultProof 由链下 DAO 成员共识产生的摘要聚合而成的证明材料
-     * @param result 审核结果，true 表示举报合理，通过
+     * @notice 由多签返回经由DAO审核后的结果
+     * @param reportId 唯一标识举报的ID
+     * @param resultProof 由链下DAO成员共识产生的摘要聚合而成的证明材料
+     * @param result 审核结果，true表示举报合理，通过
      * @param params 为了节省链上结算成本和优化逻辑，一些必要的参数由链下提供，这里指的是已经支付的字幕制作费用
-     * label A2
+     * Fn 2
      */
     function uploadDAOVerificationResult(
         uint256 reportId,
@@ -148,46 +135,43 @@ contract Arbitration {
         require(
             IMurmes(Murmes).multiSig() == msg.sender ||
                 IMurmes(Murmes).owner() == msg.sender,
-            "A2-5"
+            "A25"
         );
         reports[reportId].resultProof = resultProof;
         reports[reportId].result = result;
-        address access = IMurmes(Murmes).accessStrategy();
+        address components = IMurmes(Murmes).componentGlobal();
+        address access = IComponentGlobal(components).access();
         if (result == true) {
-            (
-                ,
-                uint256 taskId,
-                ,
-                address[] memory supporters,
-                address[] memory dissenters
-            ) = IMurmes(Murmes).getSubtitleBaseInfo(
-                    reports[reportId].subtitleId
-                );
-            address st = IMurmes(Murmes).subtitleToken();
-            (address maker, , , ) = IST(st).getSTBaseInfo(
-                reports[reportId].subtitleId
+            DataTypes.ItemStruct memory item = IMurmes(Murmes).itemsNFT(
+                reports[reportId].itemId
+            );
+            address itemNFT = IComponentGlobal(components).itemToken();
+            (address maker, , ) = IItemNFT(itemNFT).getItemBaseData(
+                reports[reportId].itemId
             );
             if (reports[reportId].reason != Reason.MISTAKEN) {
-                _deleteSubtitle(reports[reportId].subtitleId);
-                _liquidatingMaliciousUser(access, supporters);
-                _liquidatingNormalUser(access, dissenters);
-                _liquidatingSubtitleMaker(maker, reportId);
-                address platform = IMurmes(Murmes).getPlatformByTaskId(taskId);
+                _deleteItem(components, reports[reportId].itemId);
+                _liquidatingMaliciousUser(access, item.supporters);
+                _liquidatingNormalUser(access, components, item.opponents);
+                _liquidatingItemMaker(maker, components, reportId);
+                address platform = IMurmes(Murmes).getPlatformAddressByTaskId(
+                    item.taskId
+                );
                 _processRevenue(
                     platform,
-                    taskId,
+                    item.taskId,
                     params[0],
                     params[1],
                     params[2],
-                    supporters,
+                    item.supporters,
                     maker,
                     params[3]
                 );
             } else {
-                _recoverSubtitle(reports[reportId].subtitleId);
-                _liquidatingMaliciousUser(access, dissenters);
-                _liquidatingNormalUser(access, supporters);
-                _recoverSubtitleMaker(maker, access);
+                _recoverItem(reports[reportId].itemId);
+                _liquidatingMaliciousUser(access, item.opponents);
+                _liquidatingNormalUser(access, components, item.supporters);
+                _recoverItemMaker(maker, access, components);
             }
         } else {
             _punishRepoter(reportId, access);
@@ -196,19 +180,18 @@ contract Arbitration {
     }
 
     /**
-     * @notice 当举报经由 DAO 审核不通过时，相应的 reporter 受到惩罚，这是为了防止恶意攻击的举措
-     * @param reportId 举报 ID
-     * @param access Murmes 合约的 access 策略合约地址
-     * label A3
+     * @notice 当举报经由DAO审核不通过时，相应的reporter受到惩罚，这是为了防止恶意攻击的举措
+     * @param reportId 唯一标识举报的ID
+     * @param access Murmes合约的access模块合约地址
+     * Fn 3
      */
     function _punishRepoter(uint256 reportId, address access) internal {
-        (uint256 reputation, ) = IMurmes(Murmes).getUserBaseInfo(msg.sender);
+        (uint256 reputation, ) = IMurmes(Murmes).getUserBaseData(msg.sender);
 
-        (
-            uint256 reputationPunishment,
-            uint256 tokenPunishment
-        ) = IAccessStrategy(access).spread(reputation, 2);
-        if (tokenPunishment == 0) tokenPunishment = 8 * 10 ** 18;
+        (uint256 reputationPunishment, uint256 tokenPunishment) = IAccessModule(
+            access
+        ).variation(reputation, 2);
+        if (tokenPunishment == 0) tokenPunishment = MIN_PUNISHMENT_FOR_REPOTER;
         IMurmes(Murmes).updateUser(
             reports[reportId].reporter,
             int256(reputationPunishment) * -1,
@@ -217,63 +200,56 @@ contract Arbitration {
     }
 
     /**
-     * @notice 删除恶意字幕，并撤销后续版本的有效性
-     * @param subtitleId 被举报字幕 ST ID
-     * label A4
+     * @notice 删除恶意Item，并撤销后续版本的有效性
+     * @param itemId 被举报的Item的ID
+     * Fn 4
      */
-    function _deleteSubtitle(uint256 subtitleId) internal {
-        IMurmes(Murmes).holdSubtitleStateByDAO(subtitleId, 2);
-        address svm = IMurmes(Murmes).versionManagement();
-        ISubtitleVersionManagement(svm).reportInvalidVersion(subtitleId, 0);
+    function _deleteItem(address components, uint256 itemId) internal {
+        IMurmes(Murmes).holdItemStateByDAO(itemId, DataTypes.ItemState.DELETED);
+        address vm = IComponentGlobal(components).version();
+        IItemVersionManagement(vm).reportInvalidVersion(itemId, 0);
     }
 
     /**
-     * @notice 当字幕是被恶意举报导致删除时，用于恢复字幕的有效性，由于无法确定对后续版本的影响，并未对版本状态作更新，所以字幕制作者可能蒙受损失
-     * @param subtitleId 被举报的 ST ID
-     * label A5
+     * @notice 当Item是被恶意举报导致删除时，用于恢复Item的有效性，由于无法确定对后续版本的影响，并未对版本状态作更新，所以Item制作者可能蒙受损失
+     * @param itemId 被举报的Item的ID
+     * Fn 5
      */
-    function _recoverSubtitle(uint256 subtitleId) internal {
-        IMurmes(Murmes).holdSubtitleStateByDAO(subtitleId, 0);
+    function _recoverItem(uint256 itemId) internal {
+        IMurmes(Murmes).holdItemStateByDAO(itemId, DataTypes.ItemState.NORMAL);
     }
 
     /**
      * @notice 清算恶意评价者
-     * @param access Murmes 合约的 access 策略合约地址
-     * @param suppoters 恶意评价者
-     * label A6
+     * @param access Murmes合约的access模块合约地址
+     * @param users 恶意评价者
+     * Fn 6
      */
     function _liquidatingMaliciousUser(
         address access,
-        address[] memory suppoters
+        address[] memory users
     ) internal {
-        for (uint256 i = 0; i < suppoters.length; i++) {
-            (uint256 reputation, ) = IMurmes(Murmes).getUserBaseInfo(
-                suppoters[i]
-            );
-            uint256 lastReputation = IAccessStrategy(access).lastReputation(
+        for (uint256 i = 0; i < users.length; i++) {
+            (uint256 reputation, ) = IMurmes(Murmes).getUserBaseData(users[i]);
+            uint256 lastReputation = IAccessModule(access).lastReputation(
                 reputation,
-                1
-            );
-            (, uint256 tokenPunishment1) = IAccessStrategy(access).spread(
-                lastReputation,
                 1
             );
             // 一般来说，lastReputation 小于 reputation
             (
                 uint256 reputationPunishment,
-                uint256 tokenPunishment2
-            ) = IAccessStrategy(access).spread(lastReputation, 2);
-            int256 spread = int256(lastReputation) -
+                uint256 tokenPunishment
+            ) = IAccessModule(access).variation(lastReputation, 2);
+            int256 variation = int256(lastReputation) -
                 int256(reputation) -
                 int256(reputationPunishment);
-            // 当 Zimu 激励代币发送完毕时，恶意用户获得额外的惩罚 tokenFixedReward
-            uint256 punishmentToken = tokenPunishment1 + tokenPunishment2 >
-                4 * 10 ** 18
-                ? tokenPunishment1 + tokenPunishment2
-                : 4 * 10 ** 18;
+            uint256 punishmentToken = tokenPunishment >
+                MIN_PUNISHMENT_FOR_VALIDATOR
+                ? tokenPunishment
+                : MIN_PUNISHMENT_FOR_VALIDATOR;
             IMurmes(Murmes).updateUser(
-                suppoters[i],
-                spread,
+                users[i],
+                variation,
                 int256(punishmentToken) * -1
             );
         }
@@ -281,125 +257,139 @@ contract Arbitration {
 
     /**
      * @notice 恢复诚实评价者被系统扣除的信誉度和代币
-     * @param access Murmes 合约的 access 策略合约地址
-     * @param dissenters 诚实评价者
-     * label A7
+     * @param access Murmes合约的access模块合约地址
+     * @param components 全局组件模块合约地址
+     * @param users 诚实评价者
+     * Fn 7
      */
     function _liquidatingNormalUser(
         address access,
-        address[] memory dissenters
+        address components,
+        address[] memory users
     ) internal {
-        for (uint256 i = 0; i < dissenters.length; i++) {
-            (uint256 reputation, ) = IMurmes(Murmes).getUserBaseInfo(
-                dissenters[i]
-            );
-            uint256 lastReputation = IAccessStrategy(access).lastReputation(
+        for (uint256 i = 0; i < users.length; i++) {
+            (uint256 reputation, ) = IMurmes(Murmes).getUserBaseData(users[i]);
+            uint256 lastReputation = IAccessModule(access).lastReputation(
                 reputation,
                 2
             );
-            (, uint256 tokenReward) = IAccessStrategy(access).spread(
+            (, uint256 tokenReward) = IAccessModule(access).variation(
                 lastReputation,
                 2
             );
             // 一般来说，lastReputation 大于 reputation
-            tokenReward = tokenReward > 1 * 10 ** 18
+            tokenReward = tokenReward > MIN_COMPENSATE_FOR_USER
                 ? tokenReward
-                : 1 * 10 ** 18;
-            int256 spread = int256(lastReputation) - int256(reputation) + 10;
-            address vault = IMurmes(Murmes).vault();
-            address zimu = IMurmes(Murmes).zimuToken();
-            // 当 Zimu 激励代币发送完毕时，诚实用户获得额外的奖励 tokenFixedReward
-            IVault(vault).transferPenalty(zimu, dissenters[i], tokenReward);
-            IMurmes(Murmes).updateUser(dissenters[i], spread, 0);
+                : MIN_COMPENSATE_FOR_USER;
+            int256 variation = int256(lastReputation) -
+                int256(reputation) +
+                int256(MIN_COMPENSATE_REPUTATION);
+            address vault = IComponentGlobal(components).vault();
+            address token = IComponentGlobal(components)
+                .defaultDespoitableToken();
+            IVault(vault).transferPenalty(token, users[i], tokenReward);
+            IMurmes(Murmes).updateUser(users[i], variation, 0);
         }
     }
 
     /**
-     * @notice 清算恶意字幕制作者
-     * @param maker 恶意字幕制作者
-     * @param reportId 举报 ID
-     * label A8
+     * @notice 清算恶意Item制作者
+     * @param maker 恶意Item制作者
+     * @param components 全局组件模块合约
+     * @param reportId 唯一标识举报的ID
+     * Fn 8
      */
-    function _liquidatingSubtitleMaker(
+    function _liquidatingItemMaker(
         address maker,
+        address components,
         uint256 reportId
     ) internal {
-        (uint256 reputation, int256 deposit) = IMurmes(Murmes).getUserBaseInfo(
+        (uint256 reputation, int256 deposit) = IMurmes(Murmes).getUserBaseData(
             maker
         );
-        if (deposit < 0) deposit = 0;
-        // 恶意字幕能够被确认，说明字幕制作者贿赂了支持者，负主要责任，进行最严厉的惩罚
+        int256 oldDeposit = deposit;
+        if (deposit < 0) oldDeposit = 0;
+
         IMurmes(Murmes).updateUser(
             maker,
-            int256(reputation) * -1 + 10,
-            int256(deposit) * -1
+            int256(reputation) * -1,
+            int256(oldDeposit) * -1
         );
         if (deposit > 0) {
-            _rewardRepoter(uint256(deposit), reportId);
+            _rewardRepoter(components, uint256(deposit), reportId);
         }
     }
 
     /**
      * @notice 奖励举报人，当举报验证通过时
-     * @param deposit 恶意字幕制作者被扣除的 Zimu 代币数
-     * @param reportId 举报 ID
-     * label A9
+     * @param components 全局组件合约
+     * @param deposit 恶意Item制作者被扣除的代币数
+     * @param reportId 唯一标识举报的ID
+     * Fn 9
      */
-    function _rewardRepoter(uint256 deposit, uint256 reportId) internal {
-        address vault = IMurmes(Murmes).vault();
-        address zimu = IMurmes(Murmes).zimuToken();
+    function _rewardRepoter(
+        address components,
+        uint256 deposit,
+        uint256 reportId
+    ) internal {
+        address vault = IComponentGlobal(components).vault();
+        address token = IComponentGlobal(components).defaultDespoitableToken();
         IVault(vault).transferPenalty(
-            zimu,
+            token,
             reports[reportId].reporter,
-            (deposit * 90) / 100
+            deposit / 2
         );
     }
 
     /**
-     * @notice 当字幕被恶意举报导致删除时，恢复字幕制作者被扣除的信誉度和代币
-     * @param maker 字幕制作者
-     * @param access Murmes 合约的 access 策略合约地址
-     * label A10
+     * @notice 当Item被恶意举报导致删除时，恢复Item制作者被扣除的信誉度和代币
+     * @param maker Item制作者
+     * @param access Murmes的access模块合约地址
+     * @param components 全局组件模块合约
+     * Fn 10
      */
-    function _recoverSubtitleMaker(address maker, address access) internal {
-        (uint256 reputation, ) = IMurmes(Murmes).getUserBaseInfo(maker);
-        uint256 lastReputation = IAccessStrategy(access).lastReputation(
+    function _recoverItemMaker(
+        address maker,
+        address access,
+        address components
+    ) internal {
+        (uint256 reputation, ) = IMurmes(Murmes).getUserBaseData(maker);
+        uint256 lastReputation = IAccessModule(access).lastReputation(
             reputation,
             2
         );
-        uint8 multipler = IAccessStrategy(access).multiplier();
+        uint8 multipler = IAccessModule(access).multiplier();
         uint256 _reputationSpread = ((lastReputation - reputation) *
             multipler) / 100;
         lastReputation = reputation + _reputationSpread;
 
-        (, uint256 tokenPunishment) = IAccessStrategy(access).spread(
+        (, uint256 tokenPunishment) = IAccessModule(access).variation(
             lastReputation,
             1
         );
-        // 多补偿被扣掉代币数的百分之三
-        address vault = IMurmes(Murmes).vault();
-        address zimu = IMurmes(Murmes).zimuToken();
-        // 当 Zimu 激励代币发送完毕时，诚实用户获得额外的奖励 tokenFixedReward
-        tokenPunishment = (tokenPunishment * (multipler + 3)) / 100;
-        IVault(vault).transferPenalty(
-            zimu,
-            maker,
-            tokenPunishment > 3 * 10 ** 18 ? tokenPunishment : 3 * 10 ** 18
-        );
+        if (tokenPunishment > 0) {
+            // 多补偿被扣掉代币数的百分之一
+            address vault = IComponentGlobal(components).vault();
+            address token = IComponentGlobal(components)
+                .defaultDespoitableToken();
+            tokenPunishment = (tokenPunishment * (multipler + 1)) / 100;
+            IVault(vault).transferPenalty(token, maker, tokenPunishment);
+        }
+
         IMurmes(Murmes).updateUser(maker, int256(_reputationSpread), 0);
     }
 
     /**
      * @notice 清算收益
-     * @param platform 字幕所属申请，申请所属视频，视频所属的平台（申请所属的平台）
+     * @param platform Item所属众包任务，申请所属Box，Box所属的平台
      * @param taskId 申请/任务 ID
-     * @param share 在结算时每个字幕支持者获得的代币数量
-     * @param main 字幕制作者获得的代币数量
-     * @param all 申请中设定的字幕制作总费用
-     * @param suppoters 字幕的支持者，分成收益的评价者
-     * @param maker 字幕制作者
+     * @param share 在结算时每个Item支持者获得的代币数量
+     * @param main Item制作者获得的代币数量
+     * @param all 申请中设定的Item制作总费用
+     * @param suppoters Item的支持者，分成收益的评价者
+     * @param maker Item制作者
      * @param day 结算发生的日期
-     * label A11
+     * Fn 11
      */
     function _processRevenue(
         address platform,
@@ -411,7 +401,7 @@ contract Arbitration {
         address maker,
         uint256 day
     ) internal {
-        require(share * suppoters.length + main == all, "A11-1");
+        require(share * suppoters.length + main == all, "A111");
         for (uint256 i = 0; i < suppoters.length; i++) {
             IMurmes(Murmes).updateLockReward(
                 platform,
@@ -426,7 +416,6 @@ contract Arbitration {
             int256(main) * -1,
             maker
         );
-        // 重置申请
-        IMurmes(Murmes).resetApplication(taskId, all);
+        IMurmes(Murmes).resetTask(taskId, all);
     }
 }

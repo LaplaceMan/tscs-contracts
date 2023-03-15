@@ -2,51 +2,30 @@
 pragma solidity ^0.8.0;
 import "../interfaces/IMurmes.sol";
 import "../common/token/ERC20/IERC20.sol";
-import "../interfaces/IPlatformToken.sol";
+import "../interfaces/IComponentGlobal.sol";
+import "../common/token/ERC1155/IERC1155.sol";
+import {DataTypes} from "../libraries/DataTypes.sol";
 
 contract Crowdfunding {
-    /**
-     * @notice 总的众筹申请个数
-     */
-    uint256 public all;
-    /**
-     * @notice 协议主合约地址
-     */
-    address immutable Murmes;
-    /**
-     * @notice 总贡献的代币数
-     */
-    uint256 public cumulative;
-    /**
-     * @notice 当延迟申请的持续时间时，默认延时为30天
-     */
-    uint256 constant defaultDelayed = 30 days;
-    /**
-     * @notice 众筹申请号和 crowd 结构的映射
-     */
-    mapping(uint256 => crowd) public crowds;
-    /**
-     * @notice 用户贡献过的代币数
-     */
-    mapping(address => uint256) public contribution;
-    /**
-     * @notice 用户是否参与过某个众筹
-     */
-    mapping(address => mapping(uint256 => bool)) participated;
+    address public Murmes;
 
-    constructor(address ms) {
-        Murmes = ms;
-    }
+    uint256 public numberOfCrowds;
+
+    uint256 constant defaultDelayed = 7 days;
+
+    mapping(uint256 => crowd) crowds;
+
+    mapping(address => mapping(address => uint256)) grants;
 
     event NewCrowdfunding(
         string source,
         uint256 deadline,
-        uint112 target,
-        uint112 initial,
-        uint32 language,
+        uint128 target,
+        uint128 initial,
+        uint256 requireId,
         uint256 end
     );
-    event NewDonation(address helper, uint256 index, uint112 number);
+    event NewDonation(address helpers, uint256 index, uint128 number);
     event Success(uint256 index, uint256 indexInMurmes);
     event CancelWithOvertime(uint256 index);
     event CancelWithMurmesOvertime(
@@ -61,6 +40,11 @@ contract Crowdfunding {
     );
     event ExtractAfterCancle(address caller, uint256 index, uint256 number);
     event ExtractVT(address caller, uint256 numebr);
+
+    constructor(address ms) {
+        Murmes = ms;
+    }
+
     /**
      * @notice 每个众筹申请都会有一个相应的 crowd 结构
      * @param source 源视频链接
@@ -72,8 +56,6 @@ contract Crowdfunding {
      * @param taskId 当众筹成功后返回的协议内该申请的 applyId
      * @param frozen 该众筹申请的状态，false 表示仍在进行中
      * @param currency 筹集的代币类型
-     * @param helper 参与众筹的用户地址
-     * @param token 参与众筹的用户所贡献的代币数目
      */
     struct crowd {
         string source;
@@ -85,8 +67,10 @@ contract Crowdfunding {
         uint256 taskId;
         bool frozen;
         address currency;
-        address[] helper;
-        uint128[] token;
+        address auditModule;
+        address detectionModule;
+        address[] helpers;
+        uint256[] tokens;
     }
 
     /**
@@ -108,10 +92,12 @@ contract Crowdfunding {
         uint128 initial,
         address currency,
         uint256 requireId,
+        address auditModule,
+        address detectionModule,
         uint256 end
     ) external returns (uint256) {
         require(target > 0 && end > block.timestamp, "CF11");
-        all++;
+        numberOfCrowds++;
         if (initial > 0) {
             require(
                 IERC20(currency).transferFrom(
@@ -121,229 +107,248 @@ contract Crowdfunding {
                 ),
                 "CF112"
             );
-            crowds[all].raised += initial;
-            crowds[all].helper.push(msg.sender);
-            crowds[all].token.push(initial);
-            emit NewDonation(msg.sender, all, initial);
+            crowds[numberOfCrowds].raised += initial;
+            crowds[numberOfCrowds].helpers.push(msg.sender);
+            crowds[numberOfCrowds].tokens.push(initial);
+            emit NewDonation(msg.sender, numberOfCrowds, initial);
         }
-        crowds[all].source = source;
-        crowds[all].deadline = deadline;
-        crowds[all].target = target;
-        crowds[all].currency = currency;
-        crowds[all].requireId = requireId;
-        crowds[all].end = end;
-        participated[msg.sender][all] = true;
+        crowds[numberOfCrowds].source = source;
+        crowds[numberOfCrowds].deadline = deadline;
+        crowds[numberOfCrowds].target = target;
+        crowds[numberOfCrowds].currency = currency;
+        crowds[numberOfCrowds].requireId = requireId;
+        crowds[numberOfCrowds].auditModule = auditModule;
+        crowds[numberOfCrowds].detectionModule = detectionModule;
+        crowds[numberOfCrowds].end = end;
+
         emit NewCrowdfunding(source, deadline, target, initial, requireId, end);
-        return all;
+        return numberOfCrowds;
     }
 
     /**
      * @notice 参与捐赠
      * @param index 众筹申请的 ID
-     * @param number 捐赠/贡献的代币数目
-     * label CF2
+     * @param amount 捐赠/贡献的代币数目
+     * Fn 2
      */
-    function donation(
-        uint256 index,
-        uint112 number
-    ) external returns (uint256) {
+    function donation(uint256 index, uint128 amount) external {
         require(
-            !crowds[index].frozen &&
-                crowds[index].target > 0 &&
-                block.timestamp < crowds[index].end,
-            "CF2-5"
+            !crowds[index].frozen && block.timestamp < crowds[index].end,
+            "CF26"
         );
-        require(number > 0, "CF2-1");
-        address zimu = IMurmes(Murmes).zimuToken();
+        require(amount > 0, "CF21");
         require(
-            IZimu(zimu).transferFrom(msg.sender, address(this), number),
-            "CF2-12"
+            IERC20(crowds[index].currency).transferFrom(
+                msg.sender,
+                address(this),
+                amount
+            ),
+            "CF212"
         );
-        crowds[index].helper.push(msg.sender);
-        crowds[index].token.push(number);
-        assert(crowds[index].helper.length == crowds[index].token.length);
-        crowds[index].raised += number;
-        participated[msg.sender][index] = true;
-        emit NewDonation(msg.sender, index, number);
-        return crowds[index].helper.length - 1;
+        crowds[index].raised += amount;
+        crowds[index].helpers.push(msg.sender);
+        crowds[index].tokens.push(amount);
+        assert(crowds[index].helpers.length == crowds[index].tokens.length);
+        emit NewDonation(msg.sender, index, amount);
     }
 
     /**
-     * @notice 当筹集到预期的款项时在 Murmes 协议中发起申请
-     * @param index 众筹申请 ID
-     * @return 在 Murmes 协议中发出申请后返回的申请 ID
-     * label CF3
+     * @notice 当筹集到预期的款项时在Murmes协议中发起申请
+     * @param index 众筹申请ID
+     * @return 在Murmes协议中发出申请后返回的申请 ID
+     * Fn 3
      */
     function success(uint256 index) external returns (uint256) {
         require(
             crowds[index].raised >= crowds[index].target &&
                 block.timestamp < crowds[index].end,
-            "CF3-5"
+            "CF36"
         );
-        address zimu = IMurmes(Murmes).zimuToken();
-        require(IZimu(zimu).approve(Murmes, crowds[index].raised), "CF3-12");
-        uint256 id = IMurmes(Murmes).submitApplication(
-            Murmes,
-            0,
-            0,
-            crowds[index].raised,
-            crowds[index].language,
-            crowds[index].deadline,
-            crowds[index].source
+        require(
+            IERC20(crowds[index].currency).approve(
+                Murmes,
+                crowds[index].raised
+            ),
+            "CF312"
         );
-        crowds[index].applyId = id;
+        uint256 taskId = IMurmes(Murmes).postTask(
+            DataTypes.PostTaskData({
+                platform: Murmes,
+                sourceId: 0,
+                requireId: crowds[index].requireId,
+                source: crowds[index].source,
+                settlement: DataTypes.SettlementType.ONETIME,
+                amount: crowds[index].raised,
+                currency: crowds[index].currency,
+                auditModule: crowds[index].auditModule,
+                detectionModule: crowds[index].detectionModule,
+                deadline: crowds[index].deadline
+            })
+        );
+
+        crowds[index].taskId = taskId;
         crowds[index].frozen = true;
-        for (uint256 i = 0; i < crowds[index].helper.length; i++) {
-            address helper = crowds[index].helper[i];
-            uint256 amount = crowds[index].token[i];
-            contribution[helper] += amount;
-            cumulative += amount;
+        for (uint256 i = 0; i < crowds[index].helpers.length; i++) {
+            address helpers = crowds[index].helpers[i];
+            uint256 amount = crowds[index].tokens[i];
+            grants[helpers][crowds[index].currency] += amount;
         }
-        emit Success(index, id);
-        return id;
+        emit Success(index, taskId);
+        return taskId;
     }
 
     /**
      * @notice 由于未筹集够金额（超时）而取消申请
      * @param index 众筹申请 ID
-     * @param refund 如果调用者为利益相关者，可提取自己捐赠的额度
-     * label CF4
+     * @param fundId 如果调用者为利益相关者，可提取自己捐赠的额度
+     * Fn 4
      */
-    function cancel(uint256 index, uint256 refund) external {
+    function cancel(uint256 index, uint256 fundId) external {
         require(
             block.timestamp > crowds[index].end &&
-                crowds[index].frozen == false,
-            "CF4-5"
+                crowds[index].raised < crowds[index].target,
+            "CF45"
         );
         crowds[index].frozen = true;
-        if (crowds[index].helper[refund] == msg.sender) {
-            address zimu = IMurmes(Murmes).zimuToken();
+        if (crowds[index].helpers[fundId] == msg.sender) {
             require(
-                IZimu(zimu).transferFrom(
+                IERC20(crowds[index].currency).transferFrom(
                     address(this),
                     msg.sender,
-                    crowds[index].token[refund]
+                    crowds[index].tokens[fundId]
                 ),
-                "CF4-12"
+                "CF412"
             );
-            crowds[index].token[refund] = 0;
+            crowds[index].tokens[fundId] = 0;
         }
         emit CancelWithOvertime(index);
     }
 
     /**
-     * @notice 当在 Murmes 协议发出的申请冻结时，任意一个利益相关者可以决定取消该申请（进行退款）还是恢复申请（取消冻结）。
+     * @notice 当在Murmes协议发出的申请冻结时，任意一个利益相关者可以决定取消该任务（进行退款）还是恢复任务（取消冻结）。
      * @param index 众筹申请 ID
+     * @param fundId 资助顺位
      * @param or 是取消还是恢复
-     * @param number 若取消时是利益相关者的捐赠顺位，恢复时是额外补充的资金
-     * label CF5
+     * @param amount 恢复时额外补充的资金
+     * @param times 恢复时延迟时间
+     * Fn 5
      */
     function cancel2OrContinue(
         uint256 index,
+        uint256 fundId,
         bool or,
-        uint112 number
+        uint128 amount,
+        uint128 times
     ) external {
-        require(participated[msg.sender][index] = true, "CF5-5");
+        require(crowds[index].helpers[fundId] == msg.sender, "CF55");
         require(
-            crowds[index].frozen == true && crowds[index].applyId != 0,
-            "CF5-5-2"
+            crowds[index].frozen == true && crowds[index].taskId != 0,
+            "CF51"
         );
-        (
-            ,
-            ,
-            ,
-            ,
-            ,
-            ,
-            ,
-            uint256[] memory subtitles,
-            uint256 adopted,
-            uint256 deadline
-        ) = IMurmes(Murmes).tasks(crowds[index].applyId);
+        (uint256 items, uint256 adopted, uint256 deadline) = IMurmes(Murmes)
+            .getTaskItemsState(crowds[index].taskId);
         require(
-            subtitles.length == 0 && adopted == 0 && block.timestamp > deadline,
-            "CF5-5-3"
+            items == 0 && adopted == 0 && block.timestamp > deadline,
+            "CF56"
         );
         if (or == true) {
-            IMurmes(Murmes).cancel(crowds[index].applyId);
-            if (crowds[index].helper[number] == msg.sender) {
-                address zimu = IMurmes(Murmes).zimuToken();
-                require(
-                    IZimu(zimu).transferFrom(
-                        address(this),
-                        msg.sender,
-                        crowds[index].token[number]
-                    ),
-                    "CF5-12"
-                );
-                crowds[index].token[number] = 0;
-                emit CancelWithMurmesOvertime(
+            IMurmes(Murmes).cancelTask(crowds[index].taskId);
+            require(
+                IERC20(crowds[index].currency).transferFrom(
+                    address(this),
                     msg.sender,
-                    index,
-                    crowds[index].applyId
-                );
-            }
-            crowds[index].applyId = 0;
+                    crowds[index].tokens[fundId]
+                ),
+                "CF512"
+            );
+            crowds[index].tokens[fundId] = 0;
+            emit CancelWithMurmesOvertime(
+                msg.sender,
+                index,
+                crowds[index].taskId
+            );
+            crowds[index].taskId = 0;
         } else {
-            if (number > 0) {
-                address zimu = IMurmes(Murmes).zimuToken();
-                require(
-                    IZimu(zimu).transferFrom(msg.sender, address(this), number),
-                    "CF5-12-2"
-                );
-                require(IZimu(zimu).approve(Murmes, number), "CF5-12-3");
-                crowds[index].helper.push(msg.sender);
-                crowds[index].token.push(number);
-                emit NewDonation(msg.sender, index, number);
-            }
-            IMurmes(Murmes).updateApplication(
-                crowds[index].applyId,
-                number,
-                defaultDelayed
+            require(amount > 0, "CF51-2");
+            require(
+                IERC20(crowds[index].currency).transferFrom(
+                    msg.sender,
+                    address(this),
+                    amount
+                ),
+                "CF512-2"
+            );
+            require(
+                IERC20(crowds[index].currency).approve(Murmes, amount),
+                "CF512-3"
+            );
+            crowds[index].helpers.push(msg.sender);
+            crowds[index].tokens.push(amount);
+            emit NewDonation(msg.sender, index, amount);
+            IMurmes(Murmes).updateTask(
+                crowds[index].taskId,
+                amount,
+                defaultDelayed * times
             );
             emit ContinueWithMurmesOvertime(
                 msg.sender,
                 index,
-                crowds[index].applyId
+                crowds[index].taskId
             );
         }
     }
 
     /**
      * @notice 当众筹申请被取消时，提取自己的捐赠额度
-     * @param index 众筹申请 ID
-     * @param refund 在捐赠者中的索引
-     * label CF6
+     * @param index 众筹申请ID
+     * Fn 6
      */
-    function exit(uint256 index, uint256[] memory refund) external {
-        require(crowds[index].frozen && crowds[index].applyId == 0, "CF6-1");
-        address zimu = IMurmes(Murmes).zimuToken();
+    function exit(uint256 index) external {
+        require(crowds[index].frozen && crowds[index].taskId == 0, "CF66");
         uint256 amount;
-        for (uint256 i = 0; i < refund.length; i++) {
-            require(crowds[index].helper[refund[i]] == msg.sender, "CF6-5");
-            amount += crowds[index].token[refund[i]];
-            crowds[index].token[refund[i]] = 0;
+        for (uint256 i = 0; i < crowds[index].helpers.length; i++) {
+            if (crowds[index].helpers[i] == msg.sender) {
+                amount += crowds[index].tokens[i];
+                crowds[index].tokens[i] = 0;
+            }
         }
         if (amount > 0) {
             require(
-                IZimu(zimu).transferFrom(address(this), msg.sender, amount),
-                "CF6-12"
+                IERC20(crowds[index].currency).transferFrom(
+                    address(this),
+                    msg.sender,
+                    amount
+                ),
+                "CF612"
             );
         }
         emit ExtractAfterCancle(msg.sender, index, amount);
     }
 
     /**
-     * @notice 提取所有成功发起众筹申请后所获得的 ID 为 0 的代币
-     * label CF7
+     * @notice 提取所有成功发起众筹申请后所获得的ID为0的Murmes平台代币
+     * @param currency 捐赠的代币类型
+     * Fn 7
      */
-    function reward() external {
-        require(contribution[msg.sender] > 0, "CF7-5");
-        address vt = IMurmes(Murmes).videoToken();
-        uint256 balance = IVT(vt).balanceOf(address(this), 0);
-        uint256 amount = (balance * contribution[msg.sender]) / cumulative;
-        IVT(vt).safeTransferFrom(address(this), msg.sender, 0, amount, "");
-        delete contribution[msg.sender];
+    function reward(address currency) external {
+        require(grants[msg.sender][currency] > 0, "CF75");
+        address components = IMurmes(Murmes).componentGlobal();
+        address platformToken = IComponentGlobal(components).platformToken();
+        uint256 balanceForReward = IERC1155(platformToken).balanceOf(
+            address(this),
+            0
+        );
+        uint256 balanceForGrant = IERC20(currency).balanceOf(address(this));
+        uint256 amount = (balanceForReward * grants[msg.sender][currency]) /
+            balanceForGrant;
+        IERC1155(platformToken).safeTransferFrom(
+            address(this),
+            msg.sender,
+            0,
+            amount,
+            ""
+        );
+        grants[msg.sender][currency] = 0;
         emit ExtractVT(msg.sender, amount);
     }
 }

@@ -39,7 +39,7 @@ contract LensFeeModuleForMurmes is
 {
     using SafeERC20 for IERC20;
 
-    address public immutable Murmes;
+    address public Murmes;
 
     mapping(uint256 => mapping(uint256 => ProfilePublicationData))
         internal _dataByPublicationByProfile;
@@ -165,11 +165,19 @@ contract LensFeeModuleForMurmes is
         if (tasks.length > 0) open = true;
     }
 
-    function getTotalrevenueForMurmes(
+    function getTotalRevenueForMurmes(
         uint256 profileId,
         uint256 pubId
-    ) external view returns (uint256) {
+    ) external view override returns (uint256) {
         return _revenueForMurmesByPublicationByProfile[profileId][pubId];
+    }
+
+    function _murmesRecipient() internal view returns (address) {
+        address components = IMurmes(Murmes).componentGlobal();
+        address platform = IComponentGlobal(components).platforms();
+        address murmesRecipient = IPlatforms(platform)
+            .getPlatformAuthorityModule(HUB);
+        return murmesRecipient;
     }
 
     function _processCollect(
@@ -196,10 +204,9 @@ contract LensFeeModuleForMurmes is
                 adjustedAmount
             );
         } else {
-            address murmesRecipient = IMurmes(Murmes).authorityStrategy();
             IERC20(currency).safeTransferFrom(
                 collector,
-                murmesRecipient,
+                _murmesRecipient(),
                 adjustedAmount
             );
             _revenueForMurmesByPublicationByProfile[profileId][
@@ -265,10 +272,9 @@ contract LensFeeModuleForMurmes is
                 adjustedAmount
             );
         } else {
-            address murmesRecipient = IMurmes(Murmes).authorityStrategy();
             IERC20(currency).safeTransferFrom(
                 collector,
-                murmesRecipient,
+                _murmesRecipient(),
                 adjustedAmount
             );
             _revenueForMurmesByPublicationByProfile[profileId][

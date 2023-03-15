@@ -7,7 +7,7 @@ contract ItemManager is EntityManager {
     /**
      * @notice 记录Item详细信息
      */
-    mapping(uint256 => DataTypes.ItemStruct) itemsNFT;
+    mapping(uint256 => DataTypes.ItemStruct) public itemsNFT;
     /**
      * @notice 用户是否对Item评价过
      */
@@ -22,7 +22,7 @@ contract ItemManager is EntityManager {
      * @param itemId 恶意Item ID
      * Fn 1
      */
-    function holdSubtitleStateByDAO(
+    function holdItemStateByDAO(
         uint256 itemId,
         DataTypes.ItemState state
     ) external auth {
@@ -78,12 +78,5 @@ contract ItemManager is EntityManager {
             itemsNFT[itemId].opponents.push(evaluator);
         }
         evaluated[evaluator][itemId] = true;
-    }
-
-    // ***************** View Functions *****************
-    function getItem(
-        uint256 itemId
-    ) external view returns (DataTypes.ItemStruct memory item) {
-        return itemsNFT[itemId];
     }
 }

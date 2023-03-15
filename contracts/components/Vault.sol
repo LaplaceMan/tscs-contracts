@@ -33,7 +33,7 @@ contract Vault is IVault {
      * @param amount 新增罚没代币数量
      * Fn 2
      */
-    function updatePenalty(uint256 amount) public auth {
+    function updatePenalty(uint256 amount) public override auth {
         penalty += amount;
     }
 
@@ -47,7 +47,7 @@ contract Vault is IVault {
         address token,
         address to,
         uint256 amount
-    ) external {
+    ) external override {
         require(MurmesInterface(Murmes).owner() == msg.sender, "V25");
         if (amount > penalty) amount = penalty;
         penalty -= amount;

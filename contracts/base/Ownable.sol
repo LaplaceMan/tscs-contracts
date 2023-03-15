@@ -36,7 +36,7 @@ abstract contract Ownable {
     function transferMutliSig(address newMutliSig) external {
         require(msg.sender == _multiSig || msg.sender == _owner, "O45");
         require(newMutliSig != address(0), "O41");
-        _multiSig = newMutliSig;
+        _setMutliSig(newMutliSig);
     }
 
     // Fn 5
@@ -52,13 +52,11 @@ abstract contract Ownable {
 
     // Fn 6
     function _setOwner(address newOwner) internal {
-        // address oldOwner = _owner;
         _owner = newOwner;
     }
 
     // Fn 7
     function _setMutliSig(address newMutliSig) internal {
-        // address oldMutliSig = _multiSig;
         _multiSig = newMutliSig;
     }
 

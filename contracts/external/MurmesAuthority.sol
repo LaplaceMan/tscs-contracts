@@ -21,7 +21,7 @@ contract MurmesAuthority is IAuthorityBase {
         address,
         uint256,
         address
-    ) external override returns (bool) {
+    ) external view override returns (bool) {
         return false;
     }
 

@@ -120,11 +120,12 @@ contract Platforms is IPlatforms {
         uint256 realId,
         address platform,
         address creator
-    ) external returns (uint256) {
+    ) external override returns (uint256) {
         address components = IMurmes(Murmes).componentGlobal();
         address authority = IComponentGlobal(components).authority();
         require(
             IAuthorityModule(authority).isOwnCreateBoxAuthority(
+                components,
                 platform,
                 platforms[platform].platformId,
                 msg.sender
@@ -149,7 +150,7 @@ contract Platforms is IPlatforms {
     function updateBoxTasksByMurmes(
         uint256 boxId,
         uint256[] memory tasks
-    ) external auth {
+    ) external override auth {
         boxes[boxId].tasks = tasks;
     }
 
@@ -162,7 +163,7 @@ contract Platforms is IPlatforms {
     function updateBoxUnsettledRevenueByMurmes(
         uint256 boxId,
         int256 differ
-    ) external auth {
+    ) external override auth {
         int256 unsettled = int256(boxes[boxId].unsettled) + differ;
         boxes[boxId].unsettled = unsettled > 0 ? uint256(unsettled) : 0;
     }
@@ -175,7 +176,7 @@ contract Platforms is IPlatforms {
     function updateBoxesRevenue(
         uint256[] memory ids,
         uint256[] memory amounts
-    ) external {
+    ) external override {
         assert(ids.length == amounts.length);
         address components = IMurmes(Murmes).componentGlobal();
         address authority = IComponentGlobal(components).authority();
@@ -185,7 +186,8 @@ contract Platforms is IPlatforms {
                     boxes[ids[i]].id,
                     amounts[i],
                     boxes[ids[i]].platform,
-                    msg.sender
+                    msg.sender,
+                    components
                 );
             boxes[ids[i]].unsettled += amount;
             for (uint256 j; j < boxes[ids[i]].tasks.length; j++) {

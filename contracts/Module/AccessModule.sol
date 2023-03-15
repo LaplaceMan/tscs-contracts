@@ -94,7 +94,7 @@ contract AccessModule is IAccessModule {
     function lastReputation(
         uint256 reputation,
         uint8 flag
-    ) public pure returns (uint256) {
+    ) public pure override returns (uint256) {
         uint256 last = 0;
         if (flag == 2) {
             uint256 _4ac = 4 * BASE_RATIO;

@@ -6,6 +6,7 @@ interface IAuthorityModule {
     function Murmes() external view returns (address);
 
     function isOwnCreateBoxAuthority(
+        address components,
         address platform,
         uint256 platformId,
         address caller
@@ -15,7 +16,8 @@ interface IAuthorityModule {
         uint256 realId,
         uint256 counts,
         address platform,
-        address caller
+        address caller,
+        address components
     ) external returns (uint256);
 
     function formatBoxIdOfPostTask(
@@ -27,12 +29,4 @@ interface IAuthorityModule {
         DataTypes.SettlementType settlement,
         uint256 amount
     ) external returns (uint256);
-
-    function swapInLens(uint256 amount) external returns (bool);
-
-    function setWhitelistedLensModule(address module, bool usability) external;
-
-    function getSettlableInLens(
-        uint256 videoId
-    ) external view returns (uint256);
 }

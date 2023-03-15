@@ -5,7 +5,6 @@ import "../interfaces/IVault.sol";
 import "../interfaces/IModuleGlobal.sol";
 import "../common/token/ERC20/IERC20.sol";
 import "../interfaces/IComponentGlobal.sol";
-
 import {DataTypes} from "../libraries/DataTypes.sol";
 
 contract EntityManager is Ownable {
@@ -28,11 +27,11 @@ contract EntityManager is Ownable {
     /**
      * @notice 提交申请时额外条件的集合，id => 说明
      */
-    string[] requiresNoteById;
+    string[] public requiresNoteById;
     /**
      * @notice 提交申请时额外条件的集合，说明 => id
      */
-    mapping(string => uint256) requiresIdByNote;
+    mapping(string => uint256) public requiresIdByNote;
     /**
      * @notice 记录Murmes内每个用户的信息
      */
@@ -186,6 +185,7 @@ contract EntityManager is Ownable {
      * @param user 用户区块链地址
      * @param reputationSpread 信誉度变化
      * @param tokenSpread 质押代币数目变化
+     * Fn 10
      */
     function _updateUser(
         address user,
@@ -205,6 +205,9 @@ contract EntityManager is Ownable {
                 }
                 address vault = IComponentGlobal(componentGlobal).vault();
                 IVault(vault).updatePenalty(penalty);
+                address token = IComponentGlobal(componentGlobal)
+                    .defaultDespoitableToken();
+                require(IERC20(token).transfer(vault, penalty), "E1012");
             }
             users[user].deposit = users[user].deposit + tokenSpread;
         }
@@ -230,17 +233,5 @@ contract EntityManager is Ownable {
         uint256 day
     ) external view returns (uint256) {
         return users[user].locks[platform][day];
-    }
-
-    function getRequireNoteById(
-        uint32 requireId
-    ) external view returns (string memory) {
-        return requiresNoteById[requireId];
-    }
-
-    function getRequireIdByNote(
-        string memory requireNote
-    ) external view returns (uint256) {
-        return requiresIdByNote[requireNote];
     }
 }

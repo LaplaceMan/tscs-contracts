@@ -66,7 +66,6 @@ library DataTypes {
         DataTypes.SettlementType settlement;
         uint256 amount;
         address currency;
-        address submitModule;
         address auditModule;
         address detectionModule;
         uint256 deadline;
