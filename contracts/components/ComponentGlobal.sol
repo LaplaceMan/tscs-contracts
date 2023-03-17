@@ -17,6 +17,8 @@ contract ComponentGlobal is IComponentGlobal {
 
     address public platforms;
 
+    address public settlement;
+
     address public authority;
 
     address public arbitration;
@@ -29,8 +31,9 @@ contract ComponentGlobal is IComponentGlobal {
 
     uint256 public lockUpTime;
 
-    constructor(address ms) {
+    constructor(address ms, address token) {
         Murmes = ms;
+        defaultDespoitableToken = token;
     }
 
     // Fn 1
@@ -55,12 +58,14 @@ contract ComponentGlobal is IComponentGlobal {
         } else if (note == 3) {
             platforms = addr;
         } else if (note == 4) {
-            authority = addr;
+            settlement = addr;
         } else if (note == 5) {
-            arbitration = addr;
+            authority = addr;
         } else if (note == 6) {
-            itemToken = addr;
+            arbitration = addr;
         } else if (note == 7) {
+            itemToken = addr;
+        } else if (note == 8) {
             platformToken = addr;
         }
         emit SystemSetComponent(note, addr);
@@ -75,14 +80,5 @@ contract ComponentGlobal is IComponentGlobal {
         uint256 oldTime = lockUpTime;
         lockUpTime = time;
         emit SystemSetLockUpTime(oldTime, time);
-    }
-
-    /**
-     * @notice 设置协议内默认支持的质押代币类型
-     * @param token 代币合约地址
-     */
-    function setDefaultDespoitableToken(address token) external auth {
-        defaultDespoitableToken = token;
-        emit SystemSetDefaultDepositToken(token);
     }
 }

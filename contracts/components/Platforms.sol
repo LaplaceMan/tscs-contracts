@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "../interfaces/IMurmes.sol";
 import "../interfaces/IPlatforms.sol";
+import "../interfaces/ISettlement.sol";
 import "../interfaces/IModuleGlobal.sol";
 import "../interfaces/IPlatformToken.sol";
 import "../interfaces/IComponentGlobal.sol";
@@ -193,14 +194,15 @@ contract Platforms is IPlatforms {
             for (uint256 j; j < boxes[ids[i]].tasks.length; j++) {
                 uint256 taskId = boxes[ids[i]].tasks[j];
                 (
-                    DataTypes.SettlementType settlement,
+                    DataTypes.SettlementType settlementType,
                     uint256[] memory items
-                ) = IMurmes(Murmes).getTaskPaymentModuleAndItems(taskId);
+                ) = IMurmes(Murmes).getTaskSettlementModuleAndItems(taskId);
                 if (
-                    settlement == DataTypes.SettlementType.DIVIDEND &&
+                    settlementType == DataTypes.SettlementType.DIVIDEND &&
                     items.length > 0
                 ) {
-                    IMurmes(Murmes).updateItemRevenue(taskId, amount);
+                    address settlement = IComponentGlobal(components).settlement();
+                    ISettlement(settlement).updateItemRevenue(taskId, amount);
                 }
             }
         }

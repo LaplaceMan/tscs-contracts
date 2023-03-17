@@ -42,7 +42,7 @@ contract ItemVersionManagement is IItemVersionManagement {
         uint256 version0 = IItemNFT(itemToken).getItemFingerprint(itemId);
 
         {
-            DataTypes.ItemStruct memory item = IMurmes(Murmes).itemsNFT(itemId);
+            DataTypes.ItemStruct memory item = IMurmes(Murmes).getItem(itemId);
             require(item.state != DataTypes.ItemState.DELETED, "VM16");
         }
         address owner = IItemNFT(itemToken).ownerOf(itemId);
@@ -106,7 +106,7 @@ contract ItemVersionManagement is IItemVersionManagement {
      * Fn 3
      */
     function deleteInvaildItem(uint256 itemId) public {
-        DataTypes.ItemStruct memory item = IMurmes(Murmes).itemsNFT(itemId);
+        DataTypes.ItemStruct memory item = IMurmes(Murmes).getItem(itemId);
         require(item.state == DataTypes.ItemState.DELETED, "VM31");
         address components = IMurmes(Murmes).componentGlobal();
         uint256 lockUpTime = IComponentGlobal(components).lockUpTime();

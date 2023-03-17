@@ -2,9 +2,9 @@
 pragma solidity ^0.8.0;
 import "./Ownable.sol";
 import "../interfaces/IVault.sol";
-import "../interfaces/IModuleGlobal.sol";
 import "../common/token/ERC20/IERC20.sol";
 import "../interfaces/IComponentGlobal.sol";
+import {Constant} from "../libraries/Constant.sol";
 import {DataTypes} from "../libraries/DataTypes.sol";
 
 contract EntityManager is Ownable {
@@ -17,21 +17,13 @@ contract EntityManager is Ownable {
      */
     address public componentGlobal;
     /**
-     * @notice 常用的被除数
-     */
-    uint16 constant BASE_RATE = 10000;
-    /**
-     * @notice Murmes内用户信誉度分数初始化为100.0，精度为10
-     */
-    uint16 constant BASE_REPUTATION = 1000;
-    /**
      * @notice 提交申请时额外条件的集合，id => 说明
      */
-    string[] public requiresNoteById;
+    string[] requiresNoteById;
     /**
-     * @notice 提交申请时额外条件的集合，说明 => id
+     * @notice 提交申请时额外条件的映射，说明 => id
      */
-    mapping(string => uint256) public requiresIdByNote;
+    mapping(string => uint256) requiresIdByNote;
     /**
      * @notice 记录Murmes内每个用户的信息
      */
@@ -53,6 +45,7 @@ contract EntityManager is Ownable {
     /**
      * @notice 主动加入协议, 并质押一定数目的代币
      * @param user 用户区块链地址
+     * @param deposit 质押的代币数量
      * Fn 2
      */
     function userJoin(address user, uint256 deposit) external {
@@ -73,11 +66,11 @@ contract EntityManager is Ownable {
     }
 
     /**
-     * @notice 用户设置自己的用于筛选字幕制作者的守护合约
-     * @param guard 新的守护合约地址
+     * @notice 用户设置自己的用于筛选Item制作者的模块
+     * @param guard 新的守护模块地址
      * Fn 3
      */
-    function setGuard(address guard) external {
+    function setUserGuard(address guard) external {
         require(users[msg.sender].reputation > 0, "E32");
         users[msg.sender].guard = guard;
     }
@@ -120,7 +113,7 @@ contract EntityManager is Ownable {
      * @notice 更新用户（在平台内的）被锁定代币数量
      * @param platform 平台地址 / 代币合约地址
      * @param day "天"的Unix格式
-     * @param amount 有正负（新增或扣除）的代币数量（为锁定状态）
+     * @param amount 有正负（新增或扣除）的锁定的代币数量
      * @param user 用户区块链地址
      * Fn 6
      */
@@ -137,44 +130,14 @@ contract EntityManager is Ownable {
     }
 
     /**
-     * @notice 预结算（分发）代币, 因为是先记录, 当达到特定天数后才能正式提取, 所以是 "预"
-     * @param platform Platform地址 / 代币合约地址
-     * @param to 用户区块链地址
-     * @param amount 新增锁定代币数量
-     * Fn 7
-     */
-    function _preDivide(address platform, address to, uint256 amount) internal {
-        updateLockReward(platform, block.timestamp / 86400, int256(amount), to);
-    }
-
-    /**
-     * @notice 同_preDivide(), 只不过同时改变多个用户的状态
-     * Fn 8
-     */
-    function _preDivideBatch(
-        address platform,
-        address[] memory to,
-        uint256 amount
-    ) internal {
-        for (uint256 i = 0; i < to.length; i++) {
-            updateLockReward(
-                platform,
-                block.timestamp / 86400,
-                int256(amount),
-                to[i]
-            );
-        }
-    }
-
-    /**
      * @notice 用户初始化，辅助作用是更新最新操作时间
      * @param user 用户区块链地址
      * @param amount 质押代币数
-     * Fn 9
+     * Fn 7
      */
     function _userInitialization(address user, uint256 amount) internal {
         if (users[user].reputation == 0) {
-            users[user].reputation = BASE_REPUTATION;
+            users[user].reputation = Constant.BASE_REPUTATION;
             users[user].deposit = int256(amount);
         }
         users[user].operate = block.timestamp;
@@ -185,7 +148,7 @@ contract EntityManager is Ownable {
      * @param user 用户区块链地址
      * @param reputationSpread 信誉度变化
      * @param tokenSpread 质押代币数目变化
-     * Fn 10
+     * Fn 8
      */
     function _updateUser(
         address user,
@@ -207,7 +170,7 @@ contract EntityManager is Ownable {
                 IVault(vault).updatePenalty(penalty);
                 address token = IComponentGlobal(componentGlobal)
                     .defaultDespoitableToken();
-                require(IERC20(token).transfer(vault, penalty), "E1012");
+                require(IERC20(token).transfer(vault, penalty), "E812");
             }
             users[user].deposit = users[user].deposit + tokenSpread;
         }
@@ -233,5 +196,13 @@ contract EntityManager is Ownable {
         uint256 day
     ) external view returns (uint256) {
         return users[user].locks[platform][day];
+    }
+
+    function getRequiresNoteById(uint256 requireId) external view returns(string memory) {
+        return requiresNoteById[requireId];
+    }
+
+    function getRequiresIdByNote(string memory note) external view returns(uint256) {
+        return requiresIdByNote[note];
     }
 }

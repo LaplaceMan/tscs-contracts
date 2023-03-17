@@ -12,6 +12,8 @@ interface IComponentGlobal {
 
     function platforms() external view returns (address);
 
+    function settlement() external view returns(address);
+
     function authority() external view returns (address);
 
     function arbitration() external view returns (address);

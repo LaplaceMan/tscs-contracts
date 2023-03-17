@@ -19,12 +19,44 @@ contract Settlement is ISettlement {
     }
 
     /**
+     * @notice 更新Item收益
+     * @param taskId Item所属任务ID
+     * @param counts 更新的收益
+     * Fn 7
+     */
+    function updateItemRevenue(uint256 taskId, uint256 counts) external {
+        address platform = IMurmes(Murmes).getPlatformAddressByTaskId(taskId);
+        require(
+            IMurmes(Murmes).isOperator(msg.sender) || msg.sender == platform,
+            "75"
+        );
+        (DataTypes.SettlementType settlementType, , uint256 amount) = IMurmes(
+            Murmes
+        ).getTaskSettlementData(taskId);
+        require(settlementType == DataTypes.SettlementType.DIVIDEND, "76");
+        address componentGlobal = IMurmes(Murmes).componentGlobal();
+        address platforms = IComponentGlobal(componentGlobal).platforms();
+        (uint16 rateCountsToProfit, ) = IPlatforms(platforms).getPlatformRate(
+            platform
+        );
+        address moduleGlobal = IMurmes(Murmes).moduleGlobal();
+        address settlement = IModuleGlobal(moduleGlobal)
+            .getSettlementModuleAddress(settlementType);
+        ISettlementModule(settlement).updateDebtOrRevenue(
+            taskId,
+            counts,
+            amount,
+            rateCountsToProfit
+        );
+    }
+
+    /**
      * @notice 预结算收益，众包任务的结算类型为：一次性
      * @param taskId 众包任务ID
      */
     function preExtractForNormal(uint256 taskId) external {
         (DataTypes.SettlementType settlementType, ) = IMurmes(Murmes)
-            .getTaskPaymentModuleAndItems(taskId);
+            .getTaskSettlementModuleAndItems(taskId);
         require(settlementType == DataTypes.SettlementType.ONETIME, "");
         address componentGlobal = IMurmes(Murmes).componentGlobal();
         address moduleGlobal = IMurmes(Murmes).moduleGlobal();
@@ -64,17 +96,18 @@ contract Settlement is ISettlement {
             .getPlatform(box.platform);
         uint256 unsettled = (platform.rateCountsToProfit *
             box.unsettled *
-            (10 ** 6)) / BASE_RATE;
+            (10**6)) / BASE_RATE;
         uint256 surplus = _ergodic(
-            componentGlobal,
-            boxId,
+            IComponentGlobal(componentGlobal).itemToken(),
             unsettled,
-            platforms,
+            box.platform,
+            box.tasks,
             platform.rateAuditorDivide
         );
-        address platformToken = IComponentGlobal(componentGlobal)
-            .platformToken();
+
         if (surplus > 0) {
+            address platformToken = IComponentGlobal(componentGlobal)
+                .platformToken();
             IPlatformToken(platformToken).mintPlatformTokenByMurmes(
                 platform.platformId,
                 box.creator,
@@ -89,37 +122,33 @@ contract Settlement is ISettlement {
 
     /**
      * @notice 遍历结算Box的所有众包任务
-     * @param boxId 唯一标识Box的ID
      * @param unsettled 可支付代币数目
-     * @param platforms platform组件合约地址
+     * @param platform box所属平台
      * @param rateAuditorDivide 审核分成比率
      * Fn 12
      */
     function _ergodic(
-        address componentGlobal,
-        uint256 boxId,
+        address itemToken,
         uint256 unsettled,
-        address platforms,
+        address platform,
+        uint256[] memory tasks,
         uint16 rateAuditorDivide
     ) internal returns (uint256) {
-        DataTypes.BoxStruct memory box = IPlatforms(platforms).getBox(boxId);
-        address itemNFT = IComponentGlobal(componentGlobal).itemToken();
-        address moduleGlobal = IMurmes(Murmes).moduleGlobal();
-        for (uint256 i = 0; i < box.tasks.length; i++) {
-            uint256 taskId = box.tasks[i];
-            (
-                uint256 adoptedItemId,
-                address currency,
-                address[] memory supporters
-            ) = IMurmes(Murmes).getAdoptedItemData(taskId);
+        for (uint256 i = 0; i < tasks.length; i++) {
+            (uint256 adoptedItemId, , address[] memory supporters) = IMurmes(
+                Murmes
+            ).getAdoptedItemData(tasks[i]);
             if (adoptedItemId > 0 && unsettled > 0) {
-                address settlement = IModuleGlobal(moduleGlobal)
-                    .getSettlementModuleAddress(tasks[taskId].settlement);
+                (DataTypes.SettlementType settlementType, ) = IMurmes(Murmes)
+                    .getTaskSettlementModuleAndItems(tasks[i]);
+                address settlement = IModuleGlobal(
+                    IMurmes(Murmes).moduleGlobal()
+                ).getSettlementModuleAddress(settlementType);
                 uint256 itemGetRevenue = ISettlementModule(settlement)
                     .settlement(
-                        taskId,
-                        box.platform,
-                        IItemNFT(itemNFT).ownerOf(adoptedItemId),
+                        tasks[i],
+                        platform,
+                        IItemNFT(itemToken).ownerOf(adoptedItemId),
                         unsettled,
                         rateAuditorDivide,
                         supporters

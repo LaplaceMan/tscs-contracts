@@ -9,7 +9,7 @@ interface MurmesInterface {
 
     function componentGlobal() external view returns (address);
 
-    function getTaskPaymentModuleAndItems(
+    function getTaskSettlementModuleAndItems(
         uint256 taskId
     ) external view returns (DataTypes.SettlementType, uint256[] memory);
 }
@@ -63,7 +63,7 @@ contract DetectionModule is IDetectionModule {
         uint256 taskId
     ) internal view returns (uint256[] memory) {
         (, uint256[] memory items) = MurmesInterface(Murmes)
-            .getTaskPaymentModuleAndItems(taskId);
+            .getTaskSettlementModuleAndItems(taskId);
         uint256[] memory history = new uint256[](items.length);
         address components = MurmesInterface(Murmes).componentGlobal();
         address itemToken = IComponentGlobal(components).itemToken();

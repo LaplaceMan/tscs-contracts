@@ -24,23 +24,28 @@ contract Murmes is TaskManager {
     /**
      * @notice 发布众包任务
      * @param vars 任务的信息和需求
-     * @return 任务 ID
+     * @return 任务ID
      * Fn 1
      */
-    function postTask(
-        DataTypes.PostTaskData calldata vars
-    ) external returns (uint256) {
+    function postTask(DataTypes.PostTaskData calldata vars)
+        external
+        returns (uint256)
+    {
         require(
             vars.deadline > block.timestamp &&
                 vars.requireId < requiresNoteById.length,
             "11"
         );
 
-        _validatePostTaskData(
-            vars.currency,
-            vars.auditModule,
-            vars.detectionModule
+        require(
+            IModuleGlobal(moduleGlobal).isPostTaskModuleValid(
+                vars.currency,
+                vars.auditModule,
+                vars.detectionModule
+            ),
+            "16"
         );
+
         _userInitialization(msg.sender, 0);
         _validateCaller(msg.sender);
 
@@ -92,7 +97,7 @@ contract Murmes is TaskManager {
 
         tasks[totalTasks].applicant = msg.sender;
         tasks[totalTasks].platform = vars.platform;
-        tasks[totalTasks].sourceId = boxId;
+        tasks[totalTasks].boxId = boxId;
         tasks[totalTasks].requireId = vars.requireId;
         tasks[totalTasks].source = vars.source;
         tasks[totalTasks].settlement = vars.settlement;
@@ -112,16 +117,30 @@ contract Murmes is TaskManager {
      * @return 成果ID
      * Fn 2
      */
-    function submitItem(
-        DataTypes.ItemMetadata calldata vars
-    ) external returns (uint256) {
+    function submitItem(DataTypes.ItemMetadata calldata vars)
+        external
+        returns (uint256)
+    {
         require(tasks[vars.taskId].adopted == 0, "23");
         if (tasks[vars.taskId].items.length == 0) {
-            require(block.timestamp <= tasks[vars.taskId].deadline, "26");
+            require(block.timestamp < tasks[vars.taskId].deadline, "26");
         }
         require(vars.requireId == tasks[vars.taskId].requireId, "29");
 
-        _validateSubmitItemData(vars.taskId, vars.fingerprint);
+        if (
+            tasks[vars.taskId].detectionModule != address(0) &&
+            tasks[vars.taskId].items.length > 0
+        ) {
+            address detection = tasks[vars.taskId].detectionModule;
+            require(
+                IDetectionModule(detection).detectionInSubmitItem(
+                    vars.taskId,
+                    vars.fingerprint
+                ),
+                "26-2"
+            );
+        }
+
         _userInitialization(msg.sender, 0);
         _validateCaller(msg.sender);
 
@@ -138,7 +157,7 @@ contract Murmes is TaskManager {
             );
         }
 
-        uint256 itemId = _createItem(msg.sender, vars);
+        uint256 itemId = _submitItem(msg.sender, vars);
         tasks[vars.taskId].items.push(itemId);
 
         _rewardMurmesToken(msg.sender);
@@ -146,21 +165,21 @@ contract Murmes is TaskManager {
     }
 
     /**
-     * @notice 审核/检测成果
-     * @param itemId 成果的ID
+     * @notice 审核/检测Item
+     * @param itemId Item的ID
      * @param attitude 检测结果，支持或反对
      * Fn 3
      */
-    function auditItem(
-        uint256 itemId,
-        DataTypes.AuditAttitude attitude
-    ) external {
+    function auditItem(uint256 itemId, DataTypes.AuditAttitude attitude)
+        external
+    {
         uint256 taskId = itemsNFT[itemId].taskId;
         require(taskId > 0, "31");
         require(tasks[taskId].adopted == 0, "33");
 
         _userInitialization(msg.sender, 0);
         _validateCaller(msg.sender);
+
         {
             address access = IComponentGlobal(componentGlobal).access();
             require(
@@ -168,7 +187,22 @@ contract Murmes is TaskManager {
                 "35"
             );
         }
-        _evaluateItem(itemId, attitude, msg.sender);
+
+        address guard = users[tasks[taskId].applicant].guard;
+        if (guard != address(0)) {
+            require(
+                IGuard(guard).beforeAuditItem(
+                    msg.sender,
+                    users[msg.sender].reputation,
+                    users[msg.sender].deposit,
+                    tasks[taskId].requireId
+                ),
+                "35-2"
+            );
+        }
+
+        _auditItem(itemId, attitude, msg.sender);
+
         (
             uint256 uploaded,
             uint256 support,
@@ -195,60 +229,25 @@ contract Murmes is TaskManager {
     }
 
     /**
-     * @notice 预结算Box收益，同时完成众包任务结算
-     * @param boxId Box ID
-     * Fn 5
-     */
-    function preExtractOther(uint256 boxId) external {
-        address platforms = IComponentGlobal(componentGlobal).platforms();
-        DataTypes.BoxStruct memory box = IPlatforms(platforms).getBox(boxId);
-        require(box.unsettled > 0, "511");
-        _userInitialization(msg.sender, 0);
-        DataTypes.PlatformStruct memory platform = IPlatforms(platforms)
-            .getPlatform(box.platform);
-        uint256 unsettled = (platform.rateCountsToProfit *
-            box.unsettled *
-            (10 ** 6)) / BASE_RATE;
-        uint256 surplus = _ergodic(
-            boxId,
-            unsettled,
-            platforms,
-            platform.rateAuditorDivide
-        );
-        address platformToken = IComponentGlobal(componentGlobal)
-            .platformToken();
-        if (surplus > 0) {
-            IPlatformToken(platformToken).mintPlatformTokenByMurmes(
-                platform.platformId,
-                box.creator,
-                surplus
-            );
-        }
-        IPlatforms(platforms).updateBoxUnsettledRevenueByMurmes(
-            boxId,
-            int256(box.unsettled) * -1
-        );
-    }
-
-    /**
-     * @notice 提取锁定的代币/收益
+     * @notice 提取锁定的代币收益
      * @param platform 所属平台/代币类型
      * @param day 解锁的日期
      * @return 减去手续费外，提取的代币总数
-     * Fn 6
+     * Fn 4
      */
-    function withdraw(
-        address platform,
-        uint256[] memory day
-    ) external returns (uint256) {
+    function withdraw(address platform, uint256[] memory day)
+        external
+        returns (uint256)
+    {
         _userInitialization(msg.sender, 0);
 
         uint256 all = 0;
+        uint256 lockUpTime = IComponentGlobal(componentGlobal).lockUpTime();
         for (uint256 i = 0; i < day.length; i++) {
             if (
                 users[msg.sender].locks[platform][day[i]] > 0 &&
                 block.timestamp >
-                day[i] + IComponentGlobal(componentGlobal).lockUpTime()
+                day[i] + lockUpTime
             ) {
                 all += users[msg.sender].locks[platform][day[i]];
                 users[msg.sender].locks[platform][day[i]] = 0;
@@ -257,7 +256,7 @@ contract Murmes is TaskManager {
 
         if (all > 0) {
             address platforms = IComponentGlobal(componentGlobal).platforms();
-            DataTypes.PlatformStruct memory platformInfo = IPlatforms(platforms)
+            DataTypes.PlatformStruct memory platformData = IPlatforms(platforms)
                 .getPlatform(platform);
             address vault = IComponentGlobal(componentGlobal).vault();
             uint256 fee = IVault(vault).fee();
@@ -265,101 +264,78 @@ contract Murmes is TaskManager {
                 .platformToken();
 
             if (fee > 0) {
-                uint256 thisFee = (all * fee) / BASE_RATE;
+                uint256 thisFee = (all * fee) / Constant.BASE_RATE;
                 address recipient = IVault(vault).feeRecipient();
                 all -= thisFee;
-                if (platformInfo.platformId > 0) {
+                if (platformData.platformId > 0) {
                     IPlatformToken(platformToken).mintPlatformTokenByMurmes(
-                        platformInfo.platformId,
+                        platformData.platformId,
                         recipient,
                         thisFee
                     );
                 } else {
                     require(
                         IERC20(platform).transfer(recipient, thisFee),
-                        "612"
+                        "412"
                     );
                 }
             }
 
-            if (platformInfo.platformId > 0) {
+            if (platformData.platformId > 0) {
                 IPlatformToken(platformToken).mintPlatformTokenByMurmes(
-                    platformInfo.platformId,
+                    platformData.platformId,
                     msg.sender,
                     all
                 );
             } else {
-                require(IERC20(platform).transfer(msg.sender, all), "6122");
+                require(IERC20(platform).transfer(msg.sender, all), "412-2");
             }
         }
         return all;
     }
 
     /**
-     * @notice 更新Item收益
-     * @param taskId Item所属任务ID
-     * @param counts 更新的收益
-     * Fn 7
-     */
-    function updateItemRevenue(uint256 taskId, uint256 counts) external {
-        require(
-            isOperator(msg.sender) || msg.sender == tasks[taskId].platform,
-            "75"
-        );
-        require(
-            tasks[taskId].settlement == DataTypes.SettlementType.DIVIDEND,
-            "76"
-        );
-
-        address platforms = IComponentGlobal(componentGlobal).platforms();
-        (uint16 rateCountsToProfit, ) = IPlatforms(platforms).getPlatformRate(
-            tasks[taskId].platform
-        );
-        address settlement = IModuleGlobal(moduleGlobal)
-            .getSettlementModuleAddress(tasks[taskId].settlement);
-        ISettlementModule(settlement).updateDebtOrRevenue(
-            taskId,
-            counts,
-            tasks[taskId].amount,
-            rateCountsToProfit
-        );
-    }
-
-    /**
      * @notice 更新单个利益相关者的收益情况，更新后的收益为锁定状态
      * @param platform 所属平台/代币类型
-     * @param to 收益/代币接收方
-     * @param amount 收益/代币数目
-     * Fn 8
+     * @param to 代币接收方
+     * @param amount 代币数目
+     * Fn 5
      */
     function preDivideBySettlementModule(
         address platform,
         address to,
         uint256 amount
     ) external auth {
-        _preDivide(platform, to, amount);
+        updateLockReward(platform, block.timestamp / 86400, int256(amount), to);
     }
 
     /**
      * @notice 更新多个利益相关者的收益情况，更新后的收益为锁定状态
      * @param platform 所属平台/代币类型
-     * @param to 收益/代币接收方
-     * @param amount 收益/代币数目
-     * Fn 9
+     * @param to 代币接收方
+     * @param amount 代币数目
+     * Fn 6
      */
     function preDivideBatchBySettlementModule(
         address platform,
         address[] memory to,
         uint256 amount
     ) external auth {
-        _preDivideBatch(platform, to, amount);
+        for (uint256 i = 0; i < to.length; i++) {
+            updateLockReward(
+                platform,
+                block.timestamp / 86400,
+                int256(amount),
+                to[i]
+            );
+        }
     }
 
     /**
      * @notice 根据Item状态变化更新多个利益相关者的信息
      * @param itemId 唯一标识Item的ID
      * @param state Item更新后的状态
-     * Fn 10
+     * Fn 7
      */
     function _updateUsers(uint256 itemId, DataTypes.ItemState state) internal {
         int8 flag = 1;
@@ -375,13 +351,11 @@ contract Murmes is TaskManager {
         }
 
         for (uint256 i = 0; i < itemsNFT[itemId].supporters.length; i++) {
-            address supporter = itemsNFT[itemId].supporters[i];
-            _updateUser(supporter, access, flag, uint8(state), 100);
+            _updateUser(itemsNFT[itemId].supporters[i], access, flag, uint8(state), 100);
         }
 
         for (uint256 i = 0; i < itemsNFT[itemId].opponents.length; i++) {
-            address opponent = itemsNFT[itemId].opponents[i];
-            _updateUser(opponent, access, flag * (-1), reverseState, 100);
+            _updateUser(itemsNFT[itemId].opponents[i], access, flag * (-1), reverseState, 100);
         }
     }
 
@@ -392,7 +366,7 @@ contract Murmes is TaskManager {
      * @param flag 默认判断标志
      * @param state 状态
      * @param multiplier 奖惩倍数
-     * Fn 11
+     * Fn 8
      */
     function _updateUser(
         address user,
@@ -411,48 +385,12 @@ contract Murmes is TaskManager {
     }
 
     /**
-     * @notice 遍历结算Box的所有众包任务
-     * @param boxId 唯一标识Box的ID
-     * @param unsettled 可支付代币数目
-     * @param platforms platform组件合约地址
-     * @param rateAuditorDivide 审核分成比率
-     * Fn 12
-     */
-    function _ergodic(
-        uint256 boxId,
-        uint256 unsettled,
-        address platforms,
-        uint16 rateAuditorDivide
-    ) internal returns (uint256) {
-        DataTypes.BoxStruct memory box = IPlatforms(platforms).getBox(boxId);
-        address itemNFT = IComponentGlobal(componentGlobal).itemToken();
-        for (uint256 i = 0; i < box.tasks.length; i++) {
-            uint256 taskId = box.tasks[i];
-            if (tasks[taskId].adopted > 0 && unsettled > 0) {
-                address settlement = IModuleGlobal(moduleGlobal)
-                    .getSettlementModuleAddress(tasks[taskId].settlement);
-                uint256 itemGetRevenue = ISettlementModule(settlement)
-                    .settlement(
-                        taskId,
-                        box.platform,
-                        IItemNFT(itemNFT).ownerOf(tasks[taskId].adopted),
-                        unsettled,
-                        rateAuditorDivide,
-                        itemsNFT[tasks[taskId].adopted].supporters
-                    );
-                unsettled -= itemGetRevenue;
-            }
-        }
-        return unsettled;
-    }
-
-    /**
-     * @notice 根据结算策略的优先级保持Box众包任务集合的有序性
+     * @notice 根据结算策略的优先级保持Box众包任务ID集合的有序性
      * @param arr 众包任务ID集合
      * @param spot 新的众包任务的结算策略
      * @param id 新的众包任务的ID
      * @return 针对特定Box排好序的众包任务集合
-     * Fn 13
+     * Fn 9
      */
     function _sortSettlementPriority(
         uint256[] memory arr,
@@ -483,9 +421,9 @@ contract Murmes is TaskManager {
     }
 
     /**
-     * @notice 奖励用户ID为0的PlatformToken
+     * @notice 奖励用户ID为0的平台Token
      * @param to 接收代币地址
-     * Fn 14
+     * Fn 10
      */
     function _rewardMurmesToken(address to) internal {
         address platformToken = IComponentGlobal(componentGlobal)
@@ -498,31 +436,9 @@ contract Murmes is TaskManager {
     }
 
     /**
-     * @notice 发起新的众包任务时对用于支付的代币和模块进行检测
-     * @param currency 用于支付的代币类型
-     * @param audit 审计合约
-     * @param detection 检测合约
-     * Fn 15
-     */
-    function _validatePostTaskData(
-        address currency,
-        address audit,
-        address detection
-    ) internal view {
-        require(
-            IModuleGlobal(moduleGlobal).isPostTaskModuleValid(
-                currency,
-                audit,
-                detection
-            ),
-            "156"
-        );
-    }
-
-    /**
-     * @notice 根据信誉度分数和质押资产数判断调用者是否有调用权限
+     * @notice 根据信誉度分数和质押资产数判断用户是否有调用权限
      * @param caller 调用者地址
-     * Fn 16
+     * Fn 11
      */
     function _validateCaller(address caller) internal view {
         address access = IComponentGlobal(componentGlobal).access();
@@ -531,32 +447,7 @@ contract Murmes is TaskManager {
                 users[caller].reputation,
                 users[caller].deposit
             ),
-            "165"
+            "115"
         );
-    }
-
-    /**
-     * @notice 根据众包任务中设置的检测逻辑，判断新提交的Item是否符合要求
-     * @param taskId 所属的众包任务ID
-     * @param fingerprint 新上传Item的指纹值
-     * Fn 17
-     */
-    function _validateSubmitItemData(
-        uint256 taskId,
-        uint256 fingerprint
-    ) internal view {
-        if (
-            tasks[taskId].detectionModule != address(0) &&
-            tasks[taskId].items.length > 0
-        ) {
-            address detection = tasks[taskId].detectionModule;
-            require(
-                IDetectionModule(detection).detectionInSubmitItem(
-                    taskId,
-                    fingerprint
-                ),
-                "176"
-            );
-        }
     }
 }

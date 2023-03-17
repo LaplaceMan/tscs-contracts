@@ -30,7 +30,7 @@ library DataTypes {
     struct ItemMetadata {
         uint256 taskId;
         string cid;
-        uint32 requireId;
+        uint256 requireId;
         uint256 fingerprint;
     }
 
@@ -45,7 +45,7 @@ library DataTypes {
     struct TaskStruct {
         address applicant;
         address platform;
-        uint256 sourceId;
+        uint256 boxId;
         uint256 requireId;
         string source;
         DataTypes.SettlementType settlement;

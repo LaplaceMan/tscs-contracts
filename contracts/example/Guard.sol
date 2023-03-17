@@ -18,7 +18,7 @@ contract Guard is IGuard {
         address caller,
         uint256 reputation,
         int256 deposit,
-        uint32 requireId
+        uint256 requireId
     ) external view override returns (bool result) {
         result = true;
         // 当众包人物条件的ID为0时，要求制作者在申请者设置的白名单中
@@ -35,7 +35,7 @@ contract Guard is IGuard {
         address caller,
         uint256 reputation,
         int256 deposit,
-        uint32 requireId
+        uint256 requireId
     ) external view override returns (bool result) {
         result = true;
         // 当众包人物条件的ID为0时，要求审核员在申请者设置的白名单中

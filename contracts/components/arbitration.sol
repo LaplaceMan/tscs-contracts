@@ -88,7 +88,7 @@ contract Arbitration {
             );
             address itemNFT = IComponentGlobal(components).itemToken();
             require(IItemNFT(itemNFT).ownerOf(itemId) != address(0), "A11");
-            DataTypes.ItemStruct memory item = IMurmes(Murmes).itemsNFT(itemId);
+            DataTypes.ItemStruct memory item = IMurmes(Murmes).getItem(itemId);
             uint256 lockUpTime = IComponentGlobal(components).lockUpTime();
             require(
                 block.timestamp <= item.stateChangeTime + lockUpTime,
@@ -142,7 +142,7 @@ contract Arbitration {
         address components = IMurmes(Murmes).componentGlobal();
         address access = IComponentGlobal(components).access();
         if (result == true) {
-            DataTypes.ItemStruct memory item = IMurmes(Murmes).itemsNFT(
+            DataTypes.ItemStruct memory item = IMurmes(Murmes).getItem(
                 reports[reportId].itemId
             );
             address itemNFT = IComponentGlobal(components).itemToken();

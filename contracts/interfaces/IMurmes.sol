@@ -15,9 +15,10 @@ interface IMurmes {
 
     function moduleGlobal() external view returns (address);
 
-    function getUserBaseData(
-        address user
-    ) external view returns (uint256, int256);
+    function getUserBaseData(address user)
+        external
+        view
+        returns (uint256, int256);
 
     function getUserLockReward(
         address user,
@@ -27,13 +28,15 @@ interface IMurmes {
 
     function gutUserGuard(address user) external view returns (address);
 
-    function requiresNoteById(
-        uint256 requireId
-    ) external view returns (string memory);
+    function getRequiresNoteById(uint256 requireId)
+        external
+        view
+        returns (string memory);
 
-    function requiresIdByNote(
-        string memory requireNote
-    ) external view returns (uint256);
+    function getRequiresIdByNote(string memory note)
+        external
+        view
+        returns (uint256);
 
     function updateUser(
         address user,
@@ -41,34 +44,86 @@ interface IMurmes {
         int256 tokenSpread
     ) external;
 
-    // ***** ItemManager *****
-    function itemsNFT(
-        uint256 itemId
-    ) external view returns (DataTypes.ItemStruct memory);
-
-    function holdItemStateByDAO(
-        uint256 itemId,
-        DataTypes.ItemState state
+    function updateLockReward(
+        address platform,
+        uint256 day,
+        int256 amount,
+        address user
     ) external;
+
+    // ***** ItemManager *****
+    function getItem(uint256 itemId)
+        external
+        view
+        returns (DataTypes.ItemStruct memory);
+
+    function holdItemStateByDAO(uint256 itemId, DataTypes.ItemState state)
+        external;
 
     // ***** TaskManager *****
     function totalTasks() external view returns (uint256);
 
-    function tasks(
-        uint256 taskId
-    ) external view returns (DataTypes.TaskStruct memory);
+    function tasks(uint256 taskId)
+        external
+        view
+        returns (DataTypes.TaskStruct memory);
 
-    function getPlatformAddressByTaskId(
-        uint256 taskId
-    ) external view returns (address);
+    function getPlatformAddressByTaskId(uint256 taskId)
+        external
+        view
+        returns (address);
 
-    function getTaskPaymentModuleAndItems(
-        uint256 taskId
-    ) external view returns (DataTypes.SettlementType, uint256[] memory);
+    function getTaskSettlementModuleAndItems(uint256 taskId)
+        external
+        view
+        returns (DataTypes.SettlementType, uint256[] memory);
 
-    function getTaskItemsState(
-        uint256 taskId
-    ) external view returns (uint256, uint256, uint256);
+    function getTaskItemsState(uint256 taskId)
+        external
+        view
+        returns (
+            uint256,
+            uint256,
+            uint256
+        );
+
+    function getTaskSettlementData(uint256 taskId)
+        external
+        view
+        returns (
+            DataTypes.SettlementType,
+            address,
+            uint256
+        );
+
+    function getAdoptedItemData(uint256 taskId)
+        external
+        view
+        returns (
+            uint256,
+            address,
+            address[] memory
+        );
+
+    function getItemCustomModuleOfTask(uint256 itemId)
+        external
+        view
+        returns (
+            address,
+            address,
+            address
+        );
+
+    function getItemAuditData(uint256 itemId)
+        external
+        view
+        returns (
+            uint256,
+            uint256,
+            uint256,
+            uint256,
+            uint256
+        );
 
     function updateTask(
         uint256 taskId,
@@ -93,28 +148,9 @@ interface IMurmes {
         uint256 amount
     ) external;
 
-    function updateLockReward(
-        address platform,
-        uint256 day,
-        int256 amount,
-        address user
-    ) external;
-
-    function postTask(
-        DataTypes.PostTaskData calldata vars
-    ) external returns (uint256);
+    function postTask(DataTypes.PostTaskData calldata vars)
+        external
+        returns (uint256);
 
     function updateItemRevenue(uint256 taskId, uint256 counts) external;
-
-    function getItemAuditData(
-        uint256 itemId
-    ) external view returns (uint256, uint256, uint256, uint256, uint256);
-
-    function getItemCustomModuleOfTask(
-        uint256 itemId
-    ) external view returns (address, address, address);
-
-    function getAdoptedItemData(
-        uint256 taskId
-    ) external view returns (uint256, address, address[] memory);
 }

@@ -6,13 +6,13 @@ interface IGuard {
         address caller,
         uint256 reputation,
         int256 deposit,
-        uint32 requireId
+        uint256 requireId
     ) external view returns (bool);
 
     function beforeAuditItem(
         address caller,
         uint256 reputation,
         int256 deposit,
-        uint32 requireId
+        uint256 requireId
     ) external view returns (bool);
 }
