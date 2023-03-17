@@ -117,4 +117,44 @@ contract TaskManager is ItemManager {
             tasks[taskId].deadline
         );
     }
+
+    function getAdoptedItemData(
+        uint256 taskId
+    ) external view returns (uint256, address, address[] memory) {
+        return (
+            tasks[taskId].adopted,
+            tasks[taskId].currency,
+            itemsNFT[tasks[taskId].adopted].supporters
+        );
+    }
+
+    function getItemCustomModuleOfTask(
+        uint256 itemId
+    ) external view returns (address, address, address) {
+        uint256 taskId = itemsNFT[itemId].taskId;
+        return (
+            tasks[taskId].currency,
+            tasks[taskId].auditModule,
+            tasks[taskId].detectionModule
+        );
+    }
+
+    function getItemAuditData(
+        uint256 itemId
+    ) public view returns (uint256, uint256, uint256, uint256, uint256) {
+        uint256 taskId = itemsNFT[itemId].taskId;
+        uint256 uploaded = tasks[taskId].items.length;
+        uint256 allSupport;
+        for (uint256 i = 0; i < uploaded; i++) {
+            uint256 singleItem = tasks[taskId].items[i];
+            allSupport += itemsNFT[singleItem].supporters.length;
+        }
+        return (
+            uploaded,
+            itemsNFT[itemId].supporters.length,
+            itemsNFT[itemId].opponents.length,
+            allSupport,
+            itemsNFT[itemId].stateChangeTime
+        );
+    }
 }

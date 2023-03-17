@@ -100,6 +100,12 @@ interface IMurmes {
         address user
     ) external;
 
+    function postTask(
+        DataTypes.PostTaskData calldata vars
+    ) external returns (uint256);
+
+    function updateItemRevenue(uint256 taskId, uint256 counts) external;
+
     function getItemAuditData(
         uint256 itemId
     ) external view returns (uint256, uint256, uint256, uint256, uint256);
@@ -108,9 +114,7 @@ interface IMurmes {
         uint256 itemId
     ) external view returns (address, address, address);
 
-    function postTask(
-        DataTypes.PostTaskData calldata vars
-    ) external returns (uint256);
-
-    function updateItemRevenue(uint256 taskId, uint256 counts) external;
+    function getAdoptedItemData(
+        uint256 taskId
+    ) external view returns (uint256, address, address[] memory);
 }

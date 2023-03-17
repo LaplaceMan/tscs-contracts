@@ -195,35 +195,6 @@ contract Murmes is TaskManager {
     }
 
     /**
-     * @notice 预结算收益，众包任务的结算类型为：一次性
-     * @param taskId 众包任务ID
-     * Fn 4
-     */
-    function preExtractForNormal(uint256 taskId) external {
-        require(
-            tasks[taskId].settlement == DataTypes.SettlementType.ONETIME,
-            "46"
-        );
-        _userInitialization(msg.sender, 0);
-        address platforms = IComponentGlobal(componentGlobal).platforms();
-        (, uint16 rateAuditorDivide) = IPlatforms(platforms).getPlatformRate(
-            address(this)
-        );
-        address settlement = IModuleGlobal(moduleGlobal)
-            .getSettlementModuleAddress(DataTypes.SettlementType.ONETIME);
-        address itemNFT = IComponentGlobal(componentGlobal).itemToken();
-        uint256 adoptedItemId = tasks[taskId].adopted;
-        ISettlementModule(settlement).settlement(
-            taskId,
-            tasks[taskId].currency,
-            IItemNFT(itemNFT).ownerOf(adoptedItemId),
-            0,
-            rateAuditorDivide,
-            itemsNFT[adoptedItemId].supporters
-        );
-    }
-
-    /**
      * @notice 预结算Box收益，同时完成众包任务结算
      * @param boxId Box ID
      * Fn 5
@@ -587,36 +558,5 @@ contract Murmes is TaskManager {
                 "176"
             );
         }
-    }
-
-    // ***************** View Functions *****************
-    function getItemAuditData(
-        uint256 itemId
-    ) public view returns (uint256, uint256, uint256, uint256, uint256) {
-        uint256 taskId = itemsNFT[itemId].taskId;
-        uint256 uploaded = tasks[taskId].items.length;
-        uint256 allSupport;
-        for (uint256 i = 0; i < uploaded; i++) {
-            uint256 singleItem = tasks[taskId].items[i];
-            allSupport += itemsNFT[singleItem].supporters.length;
-        }
-        return (
-            uploaded,
-            itemsNFT[itemId].supporters.length,
-            itemsNFT[itemId].opponents.length,
-            allSupport,
-            itemsNFT[itemId].stateChangeTime
-        );
-    }
-
-    function getItemCustomModuleOfTask(
-        uint256 itemId
-    ) external view returns (address, address, address) {
-        uint256 taskId = itemsNFT[itemId].taskId;
-        return (
-            tasks[taskId].currency,
-            tasks[taskId].auditModule,
-            tasks[taskId].detectionModule
-        );
     }
 }

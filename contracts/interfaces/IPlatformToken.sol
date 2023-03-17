@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
-
 import "../common/token/ERC1155/IERC1155.sol";
 
 interface IPlatformToken is IERC1155 {
