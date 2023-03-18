@@ -7,6 +7,7 @@
 pragma solidity ^0.8.0;
 import "./base/TaskManager.sol";
 import "./interfaces/IGuard.sol";
+import "./interfaces/IVault.sol";
 import "./interfaces/IPlatforms.sol";
 import "./interfaces/IAuditModule.sol";
 import "./interfaces/IAccessModule.sol";
@@ -27,10 +28,9 @@ contract Murmes is TaskManager {
      * @return 任务ID
      * Fn 1
      */
-    function postTask(DataTypes.PostTaskData calldata vars)
-        external
-        returns (uint256)
-    {
+    function postTask(
+        DataTypes.PostTaskData calldata vars
+    ) external returns (uint256) {
         require(
             vars.deadline > block.timestamp &&
                 vars.requireId < requiresNoteById.length,
@@ -117,10 +117,9 @@ contract Murmes is TaskManager {
      * @return 成果ID
      * Fn 2
      */
-    function submitItem(DataTypes.ItemMetadata calldata vars)
-        external
-        returns (uint256)
-    {
+    function submitItem(
+        DataTypes.ItemMetadata calldata vars
+    ) external returns (uint256) {
         require(tasks[vars.taskId].adopted == 0, "23");
         if (tasks[vars.taskId].items.length == 0) {
             require(block.timestamp < tasks[vars.taskId].deadline, "26");
@@ -170,9 +169,10 @@ contract Murmes is TaskManager {
      * @param attitude 检测结果，支持或反对
      * Fn 3
      */
-    function auditItem(uint256 itemId, DataTypes.AuditAttitude attitude)
-        external
-    {
+    function auditItem(
+        uint256 itemId,
+        DataTypes.AuditAttitude attitude
+    ) external {
         uint256 taskId = itemsNFT[itemId].taskId;
         require(taskId > 0, "31");
         require(tasks[taskId].adopted == 0, "33");
@@ -235,10 +235,10 @@ contract Murmes is TaskManager {
      * @return 减去手续费外，提取的代币总数
      * Fn 4
      */
-    function withdraw(address platform, uint256[] memory day)
-        external
-        returns (uint256)
-    {
+    function withdraw(
+        address platform,
+        uint256[] memory day
+    ) external returns (uint256) {
         _userInitialization(msg.sender, 0);
 
         uint256 all = 0;
@@ -246,8 +246,7 @@ contract Murmes is TaskManager {
         for (uint256 i = 0; i < day.length; i++) {
             if (
                 users[msg.sender].locks[platform][day[i]] > 0 &&
-                block.timestamp >
-                day[i] + lockUpTime
+                block.timestamp > day[i] + lockUpTime
             ) {
                 all += users[msg.sender].locks[platform][day[i]];
                 users[msg.sender].locks[platform][day[i]] = 0;
@@ -331,6 +330,7 @@ contract Murmes is TaskManager {
         }
     }
 
+    // ***************** Internal Functions *****************
     /**
      * @notice 根据Item状态变化更新多个利益相关者的信息
      * @param itemId 唯一标识Item的ID
@@ -351,11 +351,23 @@ contract Murmes is TaskManager {
         }
 
         for (uint256 i = 0; i < itemsNFT[itemId].supporters.length; i++) {
-            _updateUser(itemsNFT[itemId].supporters[i], access, flag, uint8(state), 100);
+            _updateUser(
+                itemsNFT[itemId].supporters[i],
+                access,
+                flag,
+                uint8(state),
+                100
+            );
         }
 
         for (uint256 i = 0; i < itemsNFT[itemId].opponents.length; i++) {
-            _updateUser(itemsNFT[itemId].opponents[i], access, flag * (-1), reverseState, 100);
+            _updateUser(
+                itemsNFT[itemId].opponents[i],
+                access,
+                flag * (-1),
+                reverseState,
+                100
+            );
         }
     }
 

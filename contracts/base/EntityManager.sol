@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.0;
 import "./Ownable.sol";
-import "../interfaces/IVault.sol";
 import "../common/token/ERC20/IERC20.sol";
 import "../interfaces/IComponentGlobal.sol";
 import {Constant} from "../libraries/Constant.sol";
@@ -129,6 +128,7 @@ contract EntityManager is Ownable {
         users[user].locks[platform][day] = (newLock > 0 ? uint256(newLock) : 0);
     }
 
+    // ***************** Internal Functions *****************
     /**
      * @notice 用户初始化，辅助作用是更新最新操作时间
      * @param user 用户区块链地址
@@ -167,7 +167,6 @@ contract EntityManager is Ownable {
                     penalty = uint256(users[user].deposit);
                 }
                 address vault = IComponentGlobal(componentGlobal).vault();
-                IVault(vault).updatePenalty(penalty);
                 address token = IComponentGlobal(componentGlobal)
                     .defaultDespoitableToken();
                 require(IERC20(token).transfer(vault, penalty), "E812");
@@ -198,11 +197,15 @@ contract EntityManager is Ownable {
         return users[user].locks[platform][day];
     }
 
-    function getRequiresNoteById(uint256 requireId) external view returns(string memory) {
+    function getRequiresNoteById(
+        uint256 requireId
+    ) external view returns (string memory) {
         return requiresNoteById[requireId];
     }
 
-    function getRequiresIdByNote(string memory note) external view returns(uint256) {
+    function getRequiresIdByNote(
+        string memory note
+    ) external view returns (uint256) {
         return requiresIdByNote[note];
     }
 }

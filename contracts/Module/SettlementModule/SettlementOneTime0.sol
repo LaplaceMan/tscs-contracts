@@ -17,16 +17,14 @@ interface MurmesInterface {
 }
 
 contract SettlementOneTime0 is ISettlementModule {
+    /**
+     * @notice Murmes主合约地址
+     */
     address public Murmes;
-
-    uint16 constant BASE_RATE = 10000;
-
+    /**
+     * @notice 记录每个Item的详细结算信息
+     */
     mapping(uint256 => ItemSettlement) settlements;
-
-    struct ItemSettlement {
-        uint256 settled;
-        uint256 unsettled;
-    }
 
     constructor(address ms) {
         Murmes = ms;
@@ -59,7 +57,8 @@ contract SettlementOneTime0 is ISettlementModule {
         uint256 itemGet;
         if (settlements[taskId].unsettled > 0) {
             itemGet = settlements[taskId].unsettled;
-            uint256 supporterGet = (itemGet * auditorDivide) / BASE_RATE;
+            uint256 supporterGet = (itemGet * auditorDivide) /
+                Constant.BASE_RATE;
             uint256 divide = supporterGet / supporters.length;
             MurmesInterface(Murmes).preDivideBySettlementModule(
                 platform,
@@ -107,9 +106,9 @@ contract SettlementOneTime0 is ISettlementModule {
     }
 
     // ***************** View Functions *****************
-    function getSettlementBaseData(
+    function getItemSettlement(
         uint256 taskId
-    ) external view override returns (uint256, uint256) {
-        return (settlements[taskId].settled, settlements[taskId].unsettled);
+    ) external view override returns (ItemSettlement memory) {
+        return settlements[taskId];
     }
 }

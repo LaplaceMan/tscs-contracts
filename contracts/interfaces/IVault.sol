@@ -6,11 +6,7 @@ interface IVault {
 
     function fee() external view returns (uint16);
 
-    function penalty() external view returns (uint256);
-
     function feeRecipient() external view returns (address);
-
-    function updatePenalty(uint256 amount) external;
 
     function transferPenalty(
         address token,

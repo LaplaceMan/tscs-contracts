@@ -7,14 +7,25 @@ import "../common/token/ERC1155/IERC1155.sol";
 import {DataTypes} from "../libraries/DataTypes.sol";
 
 contract Crowdfunding {
+    /**
+     * @notice Murmes主合约地址
+     */
     address public Murmes;
-
-    uint256 public numberOfCrowds;
-
+    /**
+     * @notice 众筹申请总数
+     */
+    uint256 public totalCrowds;
+    /**
+     * @notice 更新已经在Murmes成功提交的众包任务的有效时间时，默认的延迟时间
+     */
     uint256 constant defaultDelayed = 7 days;
-
+    /**
+     * @notice 记录众筹申请的详细信息
+     */
     mapping(uint256 => crowd) crowds;
-
+    /**
+     * @notice 用户参与捐赠的不同代币的数目
+     */
     mapping(address => mapping(address => uint256)) grants;
 
     event NewCrowdfunding(
@@ -45,42 +56,32 @@ contract Crowdfunding {
         Murmes = ms;
     }
 
-    /**
-     * @notice 每个众筹申请都会有一个相应的 crowd 结构
-     * @param source 源视频链接
-     * @param raised 已筹集的代币数量
-     * @param target 用于发起申请的目标（字幕制作）费用
-     * @param requireId 所需条件
-     * @param deadline 申请截至时间
-     * @param end 众筹申请的截至时间（未凑齐款项时取消申请）
-     * @param taskId 当众筹成功后返回的协议内该申请的 applyId
-     * @param frozen 该众筹申请的状态，false 表示仍在进行中
-     * @param currency 筹集的代币类型
-     */
     struct crowd {
-        string source;
-        uint128 raised;
-        uint128 target;
-        uint256 requireId;
-        uint256 deadline;
-        uint256 end;
-        uint256 taskId;
-        bool frozen;
-        address currency;
-        address auditModule;
-        address detectionModule;
-        address[] helpers;
-        uint256[] tokens;
+        string source; // 源视频链接
+        uint128 raised; // 已筹集的代币数量
+        uint128 target; // 用于发起申请的目标费用
+        uint256 requireId; // 所需条件
+        uint256 deadline; // 申请截至时间
+        uint256 end; // 众筹申请的截至时间（未凑齐款项时取消申请）
+        uint256 taskId; // 当众筹成功后返回的Murmes内该申请的 applyId
+        bool frozen; // 该众筹申请的状态，false 表示仍在进行中
+        address currency; // 筹集的代币类型
+        address auditModule; // 众包任务所采用的审核（Item状态改变）模块
+        address detectionModule; // 众包任务所采用的Item检测模块
+        address[] helpers; // 参与众筹的用户
+        uint256[] tokens; // 用户捐赠的代币数目
     }
 
     /**
      * @notice 发出众筹申请
      * @param source 任务必要的源链接
      * @param deadline 众筹成功发出申请后，申请的截至（冻结）日期
-     * @param target 用于发起申请的目标（字幕制作）费用
+     * @param target 用于发起申请的目标费用
      * @param initial 众筹申请发起者初始时贡献的代币数
      * @param currency 用于众筹的代币类型
      * @param requireId 所需条件的ID
+     * @param auditModule 众包任务所采用的审核（Item状态改变）模块合约地址
+     * @param detectionModule 众包任务所采用的Item检测模块合约地址
      * @param end 众筹申请的截至时间（未凑齐款项时取消申请）
      * @return 众筹申请 ID
      * Fn 1
@@ -97,7 +98,7 @@ contract Crowdfunding {
         uint256 end
     ) external returns (uint256) {
         require(target > 0 && end > block.timestamp, "CF11");
-        numberOfCrowds++;
+        totalCrowds++;
         if (initial > 0) {
             require(
                 IERC20(currency).transferFrom(
@@ -107,27 +108,27 @@ contract Crowdfunding {
                 ),
                 "CF112"
             );
-            crowds[numberOfCrowds].raised += initial;
-            crowds[numberOfCrowds].helpers.push(msg.sender);
-            crowds[numberOfCrowds].tokens.push(initial);
-            emit NewDonation(msg.sender, numberOfCrowds, initial);
+            crowds[totalCrowds].raised += initial;
+            crowds[totalCrowds].helpers.push(msg.sender);
+            crowds[totalCrowds].tokens.push(initial);
+            emit NewDonation(msg.sender, totalCrowds, initial);
         }
-        crowds[numberOfCrowds].source = source;
-        crowds[numberOfCrowds].deadline = deadline;
-        crowds[numberOfCrowds].target = target;
-        crowds[numberOfCrowds].currency = currency;
-        crowds[numberOfCrowds].requireId = requireId;
-        crowds[numberOfCrowds].auditModule = auditModule;
-        crowds[numberOfCrowds].detectionModule = detectionModule;
-        crowds[numberOfCrowds].end = end;
+        crowds[totalCrowds].source = source;
+        crowds[totalCrowds].deadline = deadline;
+        crowds[totalCrowds].target = target;
+        crowds[totalCrowds].currency = currency;
+        crowds[totalCrowds].requireId = requireId;
+        crowds[totalCrowds].auditModule = auditModule;
+        crowds[totalCrowds].detectionModule = detectionModule;
+        crowds[totalCrowds].end = end;
 
         emit NewCrowdfunding(source, deadline, target, initial, requireId, end);
-        return numberOfCrowds;
+        return totalCrowds;
     }
 
     /**
      * @notice 参与捐赠
-     * @param index 众筹申请的 ID
+     * @param index 众筹申请的ID
      * @param amount 捐赠/贡献的代币数目
      * Fn 2
      */
@@ -155,7 +156,7 @@ contract Crowdfunding {
     /**
      * @notice 当筹集到预期的款项时在Murmes协议中发起申请
      * @param index 众筹申请ID
-     * @return 在Murmes协议中发出申请后返回的申请 ID
+     * @return 在Murmes协议中发出申请后返回的申请ID
      * Fn 3
      */
     function success(uint256 index) external returns (uint256) {
@@ -199,7 +200,7 @@ contract Crowdfunding {
 
     /**
      * @notice 由于未筹集够金额（超时）而取消申请
-     * @param index 众筹申请 ID
+     * @param index 众筹申请ID
      * @param fundId 如果调用者为利益相关者，可提取自己捐赠的额度
      * Fn 4
      */
@@ -226,7 +227,7 @@ contract Crowdfunding {
 
     /**
      * @notice 当在Murmes协议发出的申请冻结时，任意一个利益相关者可以决定取消该任务（进行退款）还是恢复任务（取消冻结）。
-     * @param index 众筹申请 ID
+     * @param index 众筹申请ID
      * @param fundId 资助顺位
      * @param or 是取消还是恢复
      * @param amount 恢复时额外补充的资金

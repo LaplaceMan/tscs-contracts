@@ -5,20 +5,16 @@ import "../interfaces/IItemNFT.sol";
 import "../interfaces/IDetectionModule.sol";
 import "../interfaces/IComponentGlobal.sol";
 import "../interfaces/IItemVersionManagement.sol";
-import {DataTypes} from "../libraries/DataTypes.sol";
 
 contract ItemVersionManagement is IItemVersionManagement {
+    /**
+     * @notice Murmes主合约地址
+     */
     address public Murmes;
-
-    mapping(uint256 => version[]) items;
-
-    event UpdateItemVersion(
-        uint256 itemId,
-        uint256 fingerprint,
-        string source,
-        uint256 versionId
-    );
-    event ReportInvalidVersion(uint256 itemId, uint256 versionId);
+    /**
+     * @notice 记录Item不同版本的信息
+     */
+    mapping(uint256 => DataTypes.VersionStruct[]) items;
 
     constructor(address ms) {
         Murmes = ms;
@@ -35,7 +31,7 @@ contract ItemVersionManagement is IItemVersionManagement {
         uint256 itemId,
         uint256 fingerprint,
         string memory source
-    ) external {
+    ) external override returns (uint256) {
         address components = IMurmes(Murmes).componentGlobal();
         address itemToken = IComponentGlobal(components).itemToken();
         (address maker, , ) = IItemNFT(itemToken).getItemBaseData(itemId);
@@ -73,7 +69,11 @@ contract ItemVersionManagement is IItemVersionManagement {
             }
         }
         items[itemId].push(
-            version({source: source, fingerprint: fingerprint, invalid: false})
+            DataTypes.VersionStruct({
+                source: source,
+                fingerprint: fingerprint,
+                invalid: false
+            })
         );
         emit UpdateItemVersion(
             itemId,
@@ -81,6 +81,7 @@ contract ItemVersionManagement is IItemVersionManagement {
             source,
             items[itemId].length
         );
+        return items[itemId].length;
     }
 
     /**
@@ -92,7 +93,7 @@ contract ItemVersionManagement is IItemVersionManagement {
     function reportInvalidVersion(
         uint256 itemId,
         uint256 versionId
-    ) public override {
+    ) external override {
         require(IMurmes(Murmes).isOperator(msg.sender), "VM25");
         for (uint256 i = versionId; i < items[itemId].length; i++) {
             items[itemId][i].invalid = true;
@@ -105,7 +106,7 @@ contract ItemVersionManagement is IItemVersionManagement {
      * @param itemId 唯一标识Item的ID
      * Fn 3
      */
-    function deleteInvaildItem(uint256 itemId) public {
+    function deleteInvaildItem(uint256 itemId) external {
         DataTypes.ItemStruct memory item = IMurmes(Murmes).getItem(itemId);
         require(item.state == DataTypes.ItemState.DELETED, "VM31");
         address components = IMurmes(Murmes).componentGlobal();
@@ -129,12 +130,12 @@ contract ItemVersionManagement is IItemVersionManagement {
     function getSpecifyVersion(
         uint256 itemId,
         uint256 versionId
-    ) public view override returns (version memory) {
+    ) public view override returns (DataTypes.VersionStruct memory) {
         require(items[itemId][versionId].fingerprint != 0, "ER1");
         return items[itemId][versionId];
     }
 
-    function getVersionNumebr(
+    function getAllVersion(
         uint256 itemId
     ) public view override returns (uint256, uint256) {
         if (items[itemId].length == 0) return (0, 0);

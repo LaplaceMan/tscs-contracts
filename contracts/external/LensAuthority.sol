@@ -17,12 +17,21 @@ interface MurmesInterface {
 }
 
 contract LensAuthority is IAuthorityBase {
+    /**
+     * @notice Murmes主合约地址
+     */
     address public Murmes;
-
+    /**
+     * @notice Lens数据存储合约地址
+     */
     address public Lens;
-
+    /**
+     * @notice 记录Box的Real ID与Lens publication的映射
+     */
     mapping(uint256 => LensItem) boxLensItemMap;
-
+    /**
+     * @notice 记录白名单内的Lens collect模块合约地址
+     */
     mapping(address => bool) whitelistedLensModule;
 
     event SetWhitelistedLensModule(address module, bool result);
@@ -33,12 +42,20 @@ contract LensAuthority is IAuthorityBase {
     }
 
     struct LensItem {
-        uint256 profileId;
-        uint256 pubId;
-        uint256 revenue;
+        uint256 profileId; // profile的ID
+        uint256 pubId; // publication的ID
+        uint256 revenue; // 已获得的总代币收益
     }
 
-    // Fn 1
+    /**
+     * @notice 提交任务之前，判断提交者的权限
+     * @param platform 任务所属平台地址
+     * @param boxId 任务所属Box的ID
+     * @param source 众包任务的源地址（详细说明）
+     * @param caller 提交众包任务者
+     * @return 实际与该众包任务关联Box的ID
+     * Fn 1
+     */
     function forPostTask(
         address platform,
         uint256 boxId,
@@ -67,7 +84,13 @@ contract LensAuthority is IAuthorityBase {
         return orderId;
     }
 
-    // Fn 2
+    /**
+     * @notice 创建Box之前，判断创建者权限
+     * @param platform Box所属的平台地址
+     * @param caller 创建Box者
+     * @return 是否有权限
+     * Fn 2
+     */
     function forCreateBox(
         address platform,
         uint256,
@@ -80,7 +103,11 @@ contract LensAuthority is IAuthorityBase {
         }
     }
 
-    // Fn 3
+    /**
+     * @notice 更新Box收益之前，检查更新者权限
+     * @param realId Box在第三方平台内的real ID
+     * @return 最终可更新的收益数量
+     */
     function forUpdateBoxRevenue(
         uint256 realId,
         uint256,
@@ -100,7 +127,12 @@ contract LensAuthority is IAuthorityBase {
         return increase;
     }
 
-    // Fn 4
+    /**
+     * @notice 代币兑换（平台代币 => 默认支持的质押代币）
+     * @param amount 兑换数量
+     * @return 最终兑换回的数量
+     * Fn 4
+     */
     function swap(uint256 amount) external returns (uint256) {
         address components = MurmesInterface(Murmes).componentGlobal();
         address platforms = IComponentGlobal(components).platforms();
@@ -116,14 +148,37 @@ contract LensAuthority is IAuthorityBase {
         return fix;
     }
 
-    // Fn 5
+    /**
+     * @notice 设置支持的Lens collect模块合约地址
+     * @param module 模块合约地址
+     * @param result 是否支持
+     * Fn 5
+     */
     function setWhitelistedLensModule(address module, bool result) external {
         require(MurmesInterface(Murmes).owner() == msg.sender, "LA65");
         whitelistedLensModule[module] = result;
         emit SetWhitelistedLensModule(module, result);
     }
 
-    // Fn 6
+    // ***************** Internal Functions *****************
+    function _stringToUint256(
+        string memory str
+    ) internal pure returns (uint256 value, bool result) {
+        for (uint256 i = 0; i < bytes(str).length; i++) {
+            if (
+                (uint8(bytes(str)[i]) - 48) < 0 ||
+                (uint8(bytes(str)[i]) - 48) > 9
+            ) {
+                return (0, false);
+            }
+            value +=
+                (uint8(bytes(str)[i]) - 48) *
+                10 ** (bytes(str).length - i - 1);
+        }
+        return (value, true);
+    }
+
+    // ***************** View Functions *****************
     function getSettlableToken(uint256 boxId) public view returns (uint256) {
         address components = MurmesInterface(Murmes).componentGlobal();
         address platforms = IComponentGlobal(components).platforms();
@@ -140,20 +195,13 @@ contract LensAuthority is IAuthorityBase {
         return increase;
     }
 
-    function _stringToUint256(
-        string memory str
-    ) internal pure returns (uint256 value, bool result) {
-        for (uint256 i = 0; i < bytes(str).length; i++) {
-            if (
-                (uint8(bytes(str)[i]) - 48) < 0 ||
-                (uint8(bytes(str)[i]) - 48) > 9
-            ) {
-                return (0, false);
-            }
-            value +=
-                (uint8(bytes(str)[i]) - 48) *
-                10 ** (bytes(str).length - i - 1);
-        }
-        return (value, true);
+    function getLensItem(
+        uint256 realId
+    ) external view returns (LensItem memory) {
+        return boxLensItemMap[realId];
+    }
+
+    function isModuleWhitelisted(address module) external view returns (bool) {
+        return whitelistedLensModule[module];
     }
 }

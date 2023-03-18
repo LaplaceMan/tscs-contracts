@@ -4,12 +4,21 @@ import "../interfaces/IItemNFT.sol";
 import "../common/token/ERC721/ERC721.sol";
 
 contract ItemToken is ERC721, IItemNFT {
+    /**
+     * @notice Murmes主合约地址
+     */
     address public Murmes;
-
+    /**
+     * @notice Item Token总数
+     */
     uint256 private _tokenIdTracker;
-
+    /**
+     * @notice Item Token的创作者，与所有者区分
+     */
     mapping(uint256 => address) private _tokenCreator;
-
+    /**
+     * @notice Item的基本信息
+     */
     mapping(uint256 => DataTypes.ItemMetadata) itemsNFT;
 
     constructor(address ms) {

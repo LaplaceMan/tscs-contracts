@@ -4,21 +4,38 @@ import "../interfaces/IModuleGlobal.sol";
 
 interface MurmesInterface {
     function owner() external view returns (address);
+
+    function setOperatorByTool(address old, address replace) external;
 }
 
 contract ModuleGlobal is IModuleGlobal {
+    /**
+     * @notice Murmes主合约地址
+     */
     address public Murmes;
-
+    /**
+     * @notice 记录白名单内的审核（Item状态改变）模块合约地址
+     */
     mapping(address => bool) whitelistAuditModule;
-
+    /**
+     * @notice 记录白名单内的个人守护模块合约地址
+     */
     mapping(address => bool) whitelistGuardModule;
-
+    /**
+     * @notice 记录白名单内的Item检测模块合约地址
+     */
     mapping(address => bool) whitelistDetectionModule;
-
+    /**
+     * @notice 记录白名单内的特殊权限模块合约地址
+     */
     mapping(address => bool) whitelistAuthorityModule;
-
+    /**
+     * @notice 记录不同结算策略的模块合约地址
+     */
     mapping(DataTypes.SettlementType => address) settlementModule;
-
+    /**
+     * @notice 记录白名单内的代币合约地址
+     */
     mapping(address => bool) whitelistCurrency;
 
     constructor(address ms) {
@@ -41,6 +58,10 @@ contract ModuleGlobal is IModuleGlobal {
         DataTypes.SettlementType moduleId,
         address module
     ) external auth {
+        MurmesInterface(Murmes).setOperatorByTool(
+            settlementModule[moduleId],
+            module
+        );
         settlementModule[moduleId] = module;
         emit SystemSetSettlementModule(moduleId, module);
     }

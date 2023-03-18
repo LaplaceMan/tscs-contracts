@@ -3,60 +3,29 @@ pragma solidity ^0.8.0;
 import "../interfaces/IVault.sol";
 import "../interfaces/IMurmes.sol";
 import "../interfaces/IItemNFT.sol";
+import "../interfaces/IArbitration.sol";
 import "../interfaces/IAccessModule.sol";
 import "../interfaces/IComponentGlobal.sol";
 import "../interfaces/IItemVersionManagement.sol";
+import {Constant} from "../libraries/Constant.sol";
 
-contract Arbitration {
-    address public Murmes;
-
-    uint256 numberOfReports;
-
-    uint256 constant MIN_PUNISHMENT_FOR_REPOTER = 8 * 10 ** 18;
-
-    uint256 constant MIN_PUNISHMENT_FOR_VALIDATOR = 4 * 10 ** 18;
-
-    uint256 constant MIN_COMPENSATE_FOR_USER = 1 * 10 ** 18;
-
-    uint256 constant MIN_COMPENSATE_REPUTATION = 15;
-
-    mapping(uint256 => reportItem) reports;
-
-    mapping(uint256 => uint256[]) itemReports;
-
+contract Arbitration is IArbitration {
     /**
-     * @notice 举报理由
-     * @param PLAGIARIZE 侵权
-     * @param WRONG 恶意
-     * @param MISTAKEN 误删
-     * @param MISMATCH 指纹不对应
+     * @notice Murmes主合约地址
      */
-    enum Reason {
-        PLAGIARIZE,
-        WRONG,
-        MISTAKEN,
-        MISMATCH
-    }
-
-    struct reportItem {
-        address reporter;
-        Reason reason;
-        uint256 itemId;
-        uint256 uintProof;
-        string stringProof;
-        string resultProof;
-        bool result;
-    }
-
-    event NewReport(
-        Reason reason,
-        uint256 itemId,
-        uint256 proofSubtitleId,
-        string otherProof,
-        address reporter
-    );
-
-    event ReportResult(uint256 reportId, string resultProof, bool result);
+    address public Murmes;
+    /**
+     * @notice 已产生的举报总数
+     */
+    uint256 public totalReports;
+    /**
+     * @notice 记录每个report的具体信息
+     */
+    mapping(uint256 => DataTypes.ReportStruct) reports;
+    /**
+     * @notice 记录与Item相关的所有举报ID
+     */
+    mapping(uint256 => uint256[]) itemReports;
 
     constructor(address ms) {
         Murmes = ms;
@@ -71,11 +40,11 @@ contract Arbitration {
      * Fn 1
      */
     function report(
-        Reason reason,
+        DataTypes.ReportReason reason,
         uint256 itemId,
         uint256 uintProof,
         string memory stringProof
-    ) public {
+    ) external override returns (uint256) {
         {
             (uint256 reputation, int256 deposit) = IMurmes(Murmes)
                 .getUserBaseData(msg.sender);
@@ -94,7 +63,7 @@ contract Arbitration {
                 block.timestamp <= item.stateChangeTime + lockUpTime,
                 "A16"
             );
-            if (reason != Reason.MISTAKEN) {
+            if (reason != DataTypes.ReportReason.MISTAKEN) {
                 require(item.state == DataTypes.ItemState.ADOPTED, "A11-2");
             } else {
                 require(item.state == DataTypes.ItemState.DELETED, "A11-3");
@@ -108,14 +77,15 @@ contract Arbitration {
             }
         }
 
-        numberOfReports++;
-        itemReports[itemId].push(numberOfReports);
-        reports[numberOfReports].reason = reason;
-        reports[numberOfReports].reporter = msg.sender;
-        reports[numberOfReports].itemId = itemId;
-        reports[numberOfReports].stringProof = stringProof;
-        reports[numberOfReports].uintProof = uintProof;
+        totalReports++;
+        itemReports[itemId].push(totalReports);
+        reports[totalReports].reason = reason;
+        reports[totalReports].reporter = msg.sender;
+        reports[totalReports].itemId = itemId;
+        reports[totalReports].stringProof = stringProof;
+        reports[totalReports].uintProof = uintProof;
         emit NewReport(reason, itemId, uintProof, stringProof, msg.sender);
+        return totalReports;
     }
 
     /**
@@ -123,7 +93,7 @@ contract Arbitration {
      * @param reportId 唯一标识举报的ID
      * @param resultProof 由链下DAO成员共识产生的摘要聚合而成的证明材料
      * @param result 审核结果，true表示举报合理，通过
-     * @param params 为了节省链上结算成本和优化逻辑，一些必要的参数由链下提供，这里指的是已经支付的字幕制作费用
+     * @param params 为了节省链上结算成本和优化逻辑，一些必要的参数由链下提供，这里指的是已经支付的Item制作费用
      * Fn 2
      */
     function uploadDAOVerificationResult(
@@ -131,7 +101,7 @@ contract Arbitration {
         string memory resultProof,
         bool result,
         uint256[] memory params
-    ) public {
+    ) external override {
         require(
             IMurmes(Murmes).multiSig() == msg.sender ||
                 IMurmes(Murmes).owner() == msg.sender,
@@ -149,7 +119,7 @@ contract Arbitration {
             (address maker, , ) = IItemNFT(itemNFT).getItemBaseData(
                 reports[reportId].itemId
             );
-            if (reports[reportId].reason != Reason.MISTAKEN) {
+            if (reports[reportId].reason != DataTypes.ReportReason.MISTAKEN) {
                 _deleteItem(components, reports[reportId].itemId);
                 _liquidatingMaliciousUser(access, item.supporters);
                 _liquidatingNormalUser(access, components, item.opponents);
@@ -187,11 +157,11 @@ contract Arbitration {
      */
     function _punishRepoter(uint256 reportId, address access) internal {
         (uint256 reputation, ) = IMurmes(Murmes).getUserBaseData(msg.sender);
-
         (uint256 reputationPunishment, uint256 tokenPunishment) = IAccessModule(
             access
         ).variation(reputation, 2);
-        if (tokenPunishment == 0) tokenPunishment = MIN_PUNISHMENT_FOR_REPOTER;
+        if (tokenPunishment == 0)
+            tokenPunishment = Constant.MIN_PUNISHMENT_FOR_REPOTER;
         IMurmes(Murmes).updateUser(
             reports[reportId].reporter,
             int256(reputationPunishment) * -1,
@@ -201,6 +171,7 @@ contract Arbitration {
 
     /**
      * @notice 删除恶意Item，并撤销后续版本的有效性
+     * @param components Murmes全局组件管理合约地址
      * @param itemId 被举报的Item的ID
      * Fn 4
      */
@@ -244,9 +215,9 @@ contract Arbitration {
                 int256(reputation) -
                 int256(reputationPunishment);
             uint256 punishmentToken = tokenPunishment >
-                MIN_PUNISHMENT_FOR_VALIDATOR
+                Constant.MIN_PUNISHMENT_FOR_VALIDATOR
                 ? tokenPunishment
-                : MIN_PUNISHMENT_FOR_VALIDATOR;
+                : Constant.MIN_PUNISHMENT_FOR_VALIDATOR;
             IMurmes(Murmes).updateUser(
                 users[i],
                 variation,
@@ -258,7 +229,7 @@ contract Arbitration {
     /**
      * @notice 恢复诚实评价者被系统扣除的信誉度和代币
      * @param access Murmes合约的access模块合约地址
-     * @param components 全局组件模块合约地址
+     * @param components Murmes全局组件管理合约地址
      * @param users 诚实评价者
      * Fn 7
      */
@@ -278,12 +249,12 @@ contract Arbitration {
                 2
             );
             // 一般来说，lastReputation 大于 reputation
-            tokenReward = tokenReward > MIN_COMPENSATE_FOR_USER
+            tokenReward = tokenReward > Constant.MIN_COMPENSATE_FOR_USER
                 ? tokenReward
-                : MIN_COMPENSATE_FOR_USER;
+                : Constant.MIN_COMPENSATE_FOR_USER;
             int256 variation = int256(lastReputation) -
                 int256(reputation) +
-                int256(MIN_COMPENSATE_REPUTATION);
+                int256(Constant.MIN_COMPENSATE_REPUTATION);
             address vault = IComponentGlobal(components).vault();
             address token = IComponentGlobal(components)
                 .defaultDespoitableToken();
@@ -295,7 +266,7 @@ contract Arbitration {
     /**
      * @notice 清算恶意Item制作者
      * @param maker 恶意Item制作者
-     * @param components 全局组件模块合约
+     * @param components Murmes全局组件管理合约地址
      * @param reportId 唯一标识举报的ID
      * Fn 8
      */
@@ -322,7 +293,7 @@ contract Arbitration {
 
     /**
      * @notice 奖励举报人，当举报验证通过时
-     * @param components 全局组件合约
+     * @param components Murmes全局组件管理合约地址
      * @param deposit 恶意Item制作者被扣除的代币数
      * @param reportId 唯一标识举报的ID
      * Fn 9
@@ -345,7 +316,7 @@ contract Arbitration {
      * @notice 当Item被恶意举报导致删除时，恢复Item制作者被扣除的信誉度和代币
      * @param maker Item制作者
      * @param access Murmes的access模块合约地址
-     * @param components 全局组件模块合约
+     * @param components Murmes全局组件管理合约地址
      * Fn 10
      */
     function _recoverItemMaker(
@@ -417,5 +388,18 @@ contract Arbitration {
             maker
         );
         IMurmes(Murmes).resetTask(taskId, all);
+    }
+
+    // ***************** View Functions *****************
+    function getReport(
+        uint256 reportId
+    ) external view override returns (DataTypes.ReportStruct memory) {
+        return reports[reportId];
+    }
+
+    function getItemReports(
+        uint256 itemId
+    ) external view override returns (uint256[] memory) {
+        return itemReports[itemId];
     }
 }

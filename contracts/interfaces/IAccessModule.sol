@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
+import {Constant} from "../libraries/Constant.sol";
 import {DataTypes} from "../libraries/DataTypes.sol";
 
 interface IAccessModule {

@@ -8,10 +8,17 @@ interface MurmesInterface {
 }
 
 contract PlatformToken is ERC1155, IPlatformToken {
+    /**
+     * @notice Murmes主合约地址
+     */
     address public Murmes;
-
+    /**
+     * @notice 标记Token类型的文本后缀
+     */
     mapping(uint256 => string) suffix;
-
+    /**
+     * @notice 第三方平台的标志性地址
+     */
     mapping(uint256 => address) platforms;
 
     constructor(address ms) ERC1155("PlatformToken") {
@@ -67,7 +74,7 @@ contract PlatformToken is ERC1155, IPlatformToken {
         address account,
         uint256 platformId,
         uint256 value
-    ) public virtual override {
+    ) external override {
         require(
             account == _msgSender() || isApprovedForAll(account, _msgSender()),
             "PT35"
@@ -77,7 +84,7 @@ contract PlatformToken is ERC1155, IPlatformToken {
     }
 
     // ***************** View Functions *****************
-    function decimals() public view virtual override returns (uint8) {
+    function decimals() external pure override returns (uint8) {
         return 6;
     }
 

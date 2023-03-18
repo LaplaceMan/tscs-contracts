@@ -17,24 +17,23 @@ interface MurmesInterface {
 }
 
 contract SettlementDivide1 is ISettlementModule {
+    /**
+     * @notice Murmes主合约地址
+     */
     address public Murmes;
-
-    uint16 constant BASE_RATE = 10000;
-
+    /**
+     * @notice 记录每个Item的详细结算信息
+     */
     mapping(uint256 => ItemSettlement) settlements;
 
-    struct ItemSettlement {
-        uint256 settled;
-        uint256 unsettled;
+    constructor(address ms) {
+        Murmes = ms;
     }
+
     // Fn 1
     modifier auth() {
         require(msg.sender == Murmes, "SD15");
         _;
-    }
-
-    constructor(address ms) {
-        Murmes = ms;
     }
 
     /**
@@ -65,7 +64,7 @@ contract SettlementDivide1 is ISettlementModule {
             }
 
             uint256 divide = ((itemGet * auditorDivide) /
-                BASE_RATE /
+                Constant.BASE_RATE /
                 supporters.length);
             MurmesInterface(Murmes).preDivideBatchBySettlementModule(
                 platform,
@@ -98,8 +97,8 @@ contract SettlementDivide1 is ISettlementModule {
         uint16 rateCountsToProfit
     ) external override auth {
         uint256 unpaidToken0 = (rateCountsToProfit * number * (10 ** 6)) /
-            BASE_RATE;
-        uint256 unpaidToken1 = (unpaidToken0 * amount) / BASE_RATE;
+            Constant.BASE_RATE;
+        uint256 unpaidToken1 = (unpaidToken0 * amount) / Constant.BASE_RATE;
         settlements[taskId].unsettled += unpaidToken1;
     }
 
@@ -118,9 +117,9 @@ contract SettlementDivide1 is ISettlementModule {
     }
 
     // ***************** View Functions *****************
-    function getSettlementBaseData(
+    function getItemSettlement(
         uint256 taskId
-    ) external view override returns (uint256, uint256) {
-        return (settlements[taskId].settled, settlements[taskId].unsettled);
+    ) external view override returns (ItemSettlement memory) {
+        return settlements[taskId];
     }
 }

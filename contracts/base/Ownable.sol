@@ -26,21 +26,33 @@ abstract contract Ownable {
         _;
     }
 
-    // Fn 3
+    /**
+     * @notice 转移Owner权限
+     * @param newOwner 新的Owner地址
+     * Fn 3
+     */
     function transferOwnership(address newOwner) external virtual onlyOwner {
         require(newOwner != address(0), "O31");
         _setOwner(newOwner);
     }
 
-    // Fn 4
+    /**
+     * @notice 转移多签权限
+     * @param newMutliSig 新的多签地址
+     * @ Fn 4
+     */
     function transferMutliSig(address newMutliSig) external {
         require(msg.sender == _multiSig || msg.sender == _owner, "O45");
         require(newMutliSig != address(0), "O41");
         _setMutliSig(newMutliSig);
     }
 
-    // Fn 5
-    function setOperatorByTool(address old, address replace) internal {
+    /**
+     * @notice 设置/替换拥有特殊权限的操作员（合约）地址
+     * @param old 旧的操作员地址，被撤销
+     * @param replace 新的操作员权限，被授予
+     */
+    function setOperatorByTool(address old, address replace) public {
         require(opeators[msg.sender] == true, "O55");
         if (old == address(0)) {
             opeators[replace] = true;
@@ -50,12 +62,11 @@ abstract contract Ownable {
         }
     }
 
-    // Fn 6
+    // ***************** Internal Functions *****************
     function _setOwner(address newOwner) internal {
         _owner = newOwner;
     }
 
-    // Fn 7
     function _setMutliSig(address newMutliSig) internal {
         _multiSig = newMutliSig;
     }

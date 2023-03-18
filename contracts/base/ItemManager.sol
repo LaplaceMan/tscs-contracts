@@ -19,17 +19,19 @@ contract ItemManager is EntityManager {
 
     /**
      * @notice 当DAO判定Item为恶意时，"删除"它
-     * @param itemId 恶意Item ID
+     * @param itemId 恶意Item的ID
+     * @param state Item新的状态
      * Fn 1
      */
-    function holdItemStateByDAO(uint256 itemId, DataTypes.ItemState state)
-        external
-        auth
-    {
+    function holdItemStateByDAO(
+        uint256 itemId,
+        DataTypes.ItemState state
+    ) external auth {
         assert(state != DataTypes.ItemState.ADOPTED);
         _changeItemState(itemId, state);
     }
 
+    // ***************** Internal Functions *****************
     /**
      * @notice 创建Item
      * @param maker Item制作者地址
@@ -37,10 +39,10 @@ contract ItemManager is EntityManager {
      * @return 相应Item ID
      * Fn 2
      */
-    function _submitItem(address maker, DataTypes.ItemMetadata calldata vars)
-        internal
-        returns (uint256)
-    {
+    function _submitItem(
+        address maker,
+        DataTypes.ItemMetadata calldata vars
+    ) internal returns (uint256) {
         address itemToken = IComponentGlobal(componentGlobal).itemToken();
         uint256 itemId = IItemNFT(itemToken).mintItemTokenByMurmes(maker, vars);
         itemsNFT[itemId].taskId = vars.taskId;
@@ -54,9 +56,10 @@ contract ItemManager is EntityManager {
      * @param state 改变后的状态
      * Fn 3
      */
-    function _changeItemState(uint256 itemId, DataTypes.ItemState state)
-        internal
-    {
+    function _changeItemState(
+        uint256 itemId,
+        DataTypes.ItemState state
+    ) internal {
         itemsNFT[itemId].state = state;
         itemsNFT[itemId].stateChangeTime = block.timestamp;
     }
@@ -85,9 +88,11 @@ contract ItemManager is EntityManager {
         }
         evaluated[auditor][itemId] = true;
     }
-    
+
     // ***************** View Functions *****************
-    function getItem(uint256 itemId) external view returns(DataTypes.ItemStruct memory) {
+    function getItem(
+        uint256 itemId
+    ) external view returns (DataTypes.ItemStruct memory) {
         return itemsNFT[itemId];
     }
 }

@@ -4,31 +4,58 @@ import "../interfaces/IComponentGlobal.sol";
 
 interface MurmesInterface {
     function owner() external view returns (address);
+
+    function setOperatorByTool(address old, address replace) external;
 }
 
 contract ComponentGlobal is IComponentGlobal {
+    /**
+     * @notice Murmes主合约地址
+     */
     address public Murmes;
-
+    /**
+     * @notice 金库模块合约地址
+     */
     address public vault;
-
+    /**
+     * @notice 访问控制模块合约地址
+     */
     address public access;
-
+    /**
+     * @notice Item版本管理模块合约地址
+     */
     address public version;
-
+    /**
+     * @notice 平台管理模块合约地址
+     */
     address public platforms;
-
+    /**
+     * @notice 收益结算模块合约地址
+     */
     address public settlement;
-
+    /**
+     * @notice 特殊权限管理模块合约地址
+     */
     address public authority;
-
+    /**
+     * @notice 仲裁模块合约地址
+     */
     address public arbitration;
-
+    /**
+     * @notice Item NFT合约地址
+     */
     address public itemToken;
-
+    /**
+     * @notice 平台代币合约地址
+     */
     address public platformToken;
-
+    /**
+     * @notice 默认支持的用于质押的代币类型
+     */
     address public defaultDespoitableToken;
-
+    /**
+     * @notice 审核期
+     */
     uint256 public lockUpTime;
 
     constructor(address ms, address token) {
@@ -57,12 +84,15 @@ contract ComponentGlobal is IComponentGlobal {
             version = addr;
         } else if (note == 3) {
             platforms = addr;
+            MurmesInterface(Murmes).setOperatorByTool(platforms, addr);
         } else if (note == 4) {
             settlement = addr;
+            MurmesInterface(Murmes).setOperatorByTool(settlement, addr);
         } else if (note == 5) {
             authority = addr;
         } else if (note == 6) {
             arbitration = addr;
+            MurmesInterface(Murmes).setOperatorByTool(arbitration, addr);
         } else if (note == 7) {
             itemToken = addr;
         } else if (note == 8) {

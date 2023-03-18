@@ -11,13 +11,22 @@ interface MurmesInterface {
 }
 
 contract DefaultAuthority is IAuthorityBase {
+    /**
+     * @notice Murmes主合约地址
+     */
     address public Murmes;
 
     constructor(address ms) {
         Murmes = ms;
     }
 
-    // Fn 1
+    /**
+     * @notice 提交任务之前，判断提交者的权限
+     * @param boxId 任务所属Box的ID
+     * @param caller 提交众包任务者
+     * @return 实际与该众包任务关联Box的ID
+     * Fn 1
+     */
     function forPostTask(
         address,
         uint256 boxId,
@@ -32,7 +41,14 @@ contract DefaultAuthority is IAuthorityBase {
         return boxId;
     }
 
-    // Fn 2
+    /**
+     * @notice 创建Box之前，判断创建者权限
+     * @param platform Box所属的平台地址
+     * @param platformId Box所属平台在Murmes内的ID
+     * @param caller 创建Box者
+     * @return 是否有权限
+     * Fn 2
+     */
     function forCreateBox(
         address platform,
         uint256 platformId,
@@ -45,7 +61,13 @@ contract DefaultAuthority is IAuthorityBase {
         }
     }
 
-    // Fn 3
+    /**
+     * @notice 更新Box收益之前，检查更新者权限
+     * @param counts 更新的收益数量
+     * @param platform Box所属平台
+     * @param caller 更新Box收益者
+     * @return 最终可更新的收益数量
+     */
     function forUpdateBoxRevenue(
         uint256,
         uint256 counts,

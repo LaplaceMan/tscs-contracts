@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.0;
-
 import "../interfaces/IVault.sol";
 import "../common/token/ERC20/IERC20.sol";
 
@@ -9,12 +8,17 @@ interface MurmesInterface {
 }
 
 contract Vault is IVault {
+    /**
+     * @notice Murmes主合约地址
+     */
     address public Murmes;
-
+    /**
+     * @notice Murmes手续费比例
+     */
     uint16 public fee;
-
-    uint256 public penalty;
-
+    /**
+     * @notice Murmes手续费接收地址
+     */
     address public feeRecipient;
 
     constructor(address ms, address recipient) {
@@ -22,23 +26,9 @@ contract Vault is IVault {
         feeRecipient = recipient;
     }
 
-    // Fn 1
-    modifier auth() {
-        require(msg.sender == Murmes, "V15");
-        _;
-    }
-
-    /**
-     * @notice Murmes内罚没的资产
-     * @param amount 新增罚没代币数量
-     * Fn 2
-     */
-    function updatePenalty(uint256 amount) public override auth {
-        penalty += amount;
-    }
-
     /**
      * @notice 提取平台内产生的罚款
+     * @param token 欲提取代币的合约地址
      * @param to 代币接收地址
      * @param amount 提取罚款数量
      * Fn 2
@@ -49,8 +39,6 @@ contract Vault is IVault {
         uint256 amount
     ) external override {
         require(MurmesInterface(Murmes).owner() == msg.sender, "V25");
-        if (amount > penalty) amount = penalty;
-        penalty -= amount;
         require(IERC20(token).transfer(to, amount), "V212");
     }
 

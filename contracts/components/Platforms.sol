@@ -8,19 +8,31 @@ import "../interfaces/IModuleGlobal.sol";
 import "../interfaces/IPlatformToken.sol";
 import "../interfaces/IComponentGlobal.sol";
 import "../interfaces/IAuthorityModule.sol";
-import {DataTypes} from "../libraries/DataTypes.sol";
 
 contract Platforms is IPlatforms {
+    /**
+     * @notice Murmes主合约地址
+     */
     address public Murmes;
-
+    /**
+     * @notice 注册的Box总数
+     */
     uint256 public totalBoxes;
-
+    /**
+     * @notice 注册的第三方平台总数
+     */
     uint256 public totalPlatforms;
-
+    /**
+     * @notice 记录Box的详细信息
+     */
     mapping(uint256 => DataTypes.BoxStruct) boxes;
-
+    /**
+     * @notice 记录第三方平台的详细信息
+     */
     mapping(address => DataTypes.PlatformStruct) platforms;
-
+    /**
+     * @notice Box在第三方平台内ID与在Murmes内ID的映射
+     */
     mapping(address => mapping(uint256 => uint256)) idRealToMurmes;
 
     constructor(address ms) {
@@ -43,6 +55,7 @@ contract Platforms is IPlatforms {
      * @param symbol 平台符号
      * @param rate1 收益转化率
      * @param rate2 审核分成率
+     * @param authority 与该平台相关的特殊权限管理合约
      * @return 根据顺位的Platform ID
      * Fn 2
      */
@@ -89,7 +102,7 @@ contract Platforms is IPlatforms {
      * @param rate2 新的审核分成率
      * Fn 3
      */
-    function setPlatformRate(uint16 rate1, uint16 rate2) external {
+    function setPlatformRate(uint16 rate1, uint16 rate2) external override {
         require(platforms[msg.sender].platformId != 0, "P32");
         if (rate1 != 0) {
             platforms[msg.sender].rateCountsToProfit = rate1;
@@ -201,7 +214,8 @@ contract Platforms is IPlatforms {
                     settlementType == DataTypes.SettlementType.DIVIDEND &&
                     items.length > 0
                 ) {
-                    address settlement = IComponentGlobal(components).settlement();
+                    address settlement = IComponentGlobal(components)
+                        .settlement();
                     ISettlement(settlement).updateItemRevenue(taskId, amount);
                 }
             }

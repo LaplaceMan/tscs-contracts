@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
-
 import "../interfaces/IMurmes.sol";
 import "../interfaces/IPlatforms.sol";
 import "../interfaces/IComponentGlobal.sol";
@@ -104,9 +103,9 @@ contract PlatformKepper is ChainlinkClient, ConfirmedOwner {
     }
 
     /**
-     * @notice Chainlink 返回特定视频ID的播放量
+     * @notice Chainlink 返回特定Box ID的收益
      * @param _requestId Chainlink 申请ID
-     * @param _counts 根据平台提供的API返回的特定视频最新的播放量
+     * @param _counts 根据平台提供的API返回的特定Box最新的收益
      * Fn 2
      */
     function fulfillUpdateBoxRevenue(
@@ -120,6 +119,11 @@ contract PlatformKepper is ChainlinkClient, ConfirmedOwner {
 
     /**
      * @notice 由平台方提供服务，使用数字签名的方式更新Box收益
+     * @param boxId Box的ID
+     * @param counts 更新的收益数目
+     * @param v 签名相关
+     * @param r 签名相关
+     * @param s 签名相关
      * @return result 更新结果
      * Fn 3
      */
@@ -144,30 +148,12 @@ contract PlatformKepper is ChainlinkClient, ConfirmedOwner {
     }
 
     /**
-     * @notice 内部功能，调用Murmes协议updateBoxesRevenue更新Box收益
-     * Fn 4
-     */
-    function _updateBoxRevenue(
-        uint256 _id,
-        uint256 _counts
-    ) internal returns (bool) {
-        if (_counts > boxRevenue[_id]) {
-            uint256[] memory update = new uint256[](1);
-            update[0] = _counts - boxRevenue[_id];
-            uint256[] memory id = new uint256[](1);
-            id[0] = _id;
-            boxRevenue[_id] = _counts;
-            address components = IMurmes(Murmes).componentGlobal();
-            address platforms = IComponentGlobal(components).platforms();
-            IPlatforms(platforms).updateBoxesRevenue(id, update);
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    /**
      * @notice 由平台方提供服务，使用数字签名的方式创建Box和创作者的映射关系
+     * @param realId Box在第三方平台内的ID
+     * @param creator Box创作者
+     * @param v 签名相关
+     * @param r 签名相关
+     * @param s 签名相关
      * @return boxId 根据注册顺序获得的在Murmes中的Box ID
      * Fn 5
      */
@@ -192,8 +178,8 @@ contract PlatformKepper is ChainlinkClient, ConfirmedOwner {
     }
 
     /**
-     * @notice 由平台Platform注册Box, 此后该Box支持链上结算
-     * @param realId Box在Platform内部的 ID
+     * @notice 由平台注册Box, 此后该Box支持链上结算
+     * @param realId Box在第三方平台内部的ID
      * @param creator Box创作者区块链地址
      * Fn 6
      */
@@ -202,42 +188,6 @@ contract PlatformKepper is ChainlinkClient, ConfirmedOwner {
         address creator
     ) external onlyOwner returns (uint256 boxId) {
         boxId = _openMurmesServiceForBox(realId, creator);
-    }
-
-    /**
-     * @notice 内部功能，调用Murmes协议createBox创建Box和创作者的映射关系
-     * Fn 7
-     */
-    function _openMurmesServiceForBox(
-        uint256 id,
-        address creator
-    ) internal returns (uint256) {
-        address components = IMurmes(Murmes).componentGlobal();
-        address platforms = IComponentGlobal(components).platforms();
-        uint256 boxId = IPlatforms(platforms).createBox(
-            id,
-            address(this),
-            creator
-        );
-        return boxId;
-    }
-
-    /**
-     * @notice 内部功能，检查签名有效性
-     * Fn 8
-     */
-    function _checkSignature(
-        bytes32 digest,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) internal view returns (bool) {
-        address recoveredAddress = ecrecover(digest, v, r, s);
-        if (recoveredAddress != address(0) && recoveredAddress == owner()) {
-            return true;
-        } else {
-            return false;
-        }
     }
 
     /**
@@ -268,5 +218,74 @@ contract PlatformKepper is ChainlinkClient, ConfirmedOwner {
             link.transfer(msg.sender, link.balanceOf(address(this))),
             "Unable to transfer"
         );
+    }
+
+    // ***************** Internal Functions *****************
+    /**
+     * @notice 内部功能，调用Murmes协议updateBoxesRevenue更新Box收益
+     * @param _id Box的ID
+     * @param _counts 更新的收益数目
+     * Fn 4
+     */
+    function _updateBoxRevenue(
+        uint256 _id,
+        uint256 _counts
+    ) internal returns (bool) {
+        if (_counts > boxRevenue[_id]) {
+            uint256[] memory update = new uint256[](1);
+            update[0] = _counts - boxRevenue[_id];
+            uint256[] memory id = new uint256[](1);
+            id[0] = _id;
+            boxRevenue[_id] = _counts;
+            address components = IMurmes(Murmes).componentGlobal();
+            address platforms = IComponentGlobal(components).platforms();
+            IPlatforms(platforms).updateBoxesRevenue(id, update);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * @notice 内部功能，调用Murmes协议createBox创建Box和创作者的映射关系
+     * @param id Box的ID
+     * @param creator Box的创作者
+     * @return 根据注册顺序获得的在Murmes中的Box ID
+     * Fn 7
+     */
+    function _openMurmesServiceForBox(
+        uint256 id,
+        address creator
+    ) internal returns (uint256) {
+        address components = IMurmes(Murmes).componentGlobal();
+        address platforms = IComponentGlobal(components).platforms();
+        uint256 boxId = IPlatforms(platforms).createBox(
+            id,
+            address(this),
+            creator
+        );
+        return boxId;
+    }
+
+    /**
+     * @notice 内部功能，检查签名有效性
+     * @param digest 被签名的消息摘要
+     * @param v 签名相关
+     * @param r 签名相关
+     * @param s 签名相关
+     * Fn 8
+     */
+    function _checkSignature(
+        bytes32 digest,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) internal view returns (bool) {
+        address recoveredAddress = ecrecover(digest, v, r, s);
+        if (recoveredAddress != address(0) && recoveredAddress == owner()) {
+            return true;
+        } else {
+            return false;
+        }
     }
 }

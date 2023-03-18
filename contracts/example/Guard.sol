@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: LGPL-3.0-only
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 import "../interfaces/IGuard.sol";
@@ -7,7 +7,7 @@ contract Guard is IGuard {
     mapping(address => bool) whitelist;
 
     /**
-     * @notice 一个用于筛选制作者的守护合约的简单示例
+     * @notice 一个用于筛选制作者的守护合约的简单示例，检验Item提交者的权限
      * @param caller Item制作者地址
      * @param reputation Item制作者信誉度分数
      * @param deposit Item制作者质押代币数
@@ -31,6 +31,14 @@ contract Guard is IGuard {
         if (deposit <= 0) result = false;
     }
 
+    /**
+     * @notice 一个用于筛选制作者的守护合约的简单示例，检验Item审核员的权限
+     * @param caller Item制作者地址
+     * @param reputation Item制作者信誉度分数
+     * @param deposit Item制作者质押代币数
+     * @param requireId 设置的条件ID
+     * @return result 是否符合要求
+     */
     function beforeAuditItem(
         address caller,
         uint256 reputation,

@@ -6,10 +6,13 @@ import "../interfaces/IComponentGlobal.sol";
 import "../interfaces/IAuthorityModule.sol";
 
 contract AuthorityStrategy is IAuthorityModule {
+    /**
+     * @notice Murmes主合约地址
+     */
     address public Murmes;
-
-    uint16 constant MAX_TOTAL_DIVIDED = 7000;
-
+    /**
+     * @notice 当采用分成结算策略时，单个Box已经分成过的比例
+     */
     mapping(uint256 => uint16) occupied;
 
     constructor(address ms) {
@@ -40,7 +43,7 @@ contract AuthorityStrategy is IAuthorityModule {
         require(msg.sender == Murmes, "AYM15");
         if (settlement == DataTypes.SettlementType.DIVIDEND) {
             require(
-                uint16(amount) + occupied[boxId] <= MAX_TOTAL_DIVIDED,
+                uint16(amount) + occupied[boxId] <= Constant.MAX_TOTAL_DIVIDED,
                 "AYM11"
             );
             occupied[boxId] += uint16(amount);
@@ -62,7 +65,7 @@ contract AuthorityStrategy is IAuthorityModule {
 
     /**
      * @notice 判断调用者是否有创建Box的权限
-     * @param 全局组件模块合约
+     * @param components Murmes全局组件管理合约
      * @param platform Box所属平台
      * @param platformId Box所属平台的ID
      * @param caller 调用者
@@ -91,7 +94,7 @@ contract AuthorityStrategy is IAuthorityModule {
      * @param counts 收益数目
      * @param platform 第三方平台地址
      * @param caller 调用者
-     * @param components 全局组件模块合约
+     * @param components Murmes全局组件管理合约
      * @return 实际可更新的收益
      * Fn 3
      */

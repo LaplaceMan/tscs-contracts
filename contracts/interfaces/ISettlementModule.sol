@@ -1,5 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
+import {Constant} from "../libraries/Constant.sol";
+
+struct ItemSettlement {
+    uint256 settled;
+    uint256 unsettled;
+}
 
 interface ISettlementModule {
     function Murmes() external view returns (address);
@@ -22,7 +28,7 @@ interface ISettlementModule {
 
     function resetSettlement(uint256 taskId, uint256 amount) external;
 
-    function getSettlementBaseData(
+    function getItemSettlement(
         uint256 taskId
-    ) external view returns (uint256, uint256);
+    ) external view returns (ItemSettlement memory);
 }

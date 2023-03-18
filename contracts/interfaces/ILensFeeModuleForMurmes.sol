@@ -6,4 +6,9 @@ interface ILensFeeModuleForMurmes {
         uint256 profileId,
         uint256 pubId
     ) external view returns (uint256);
+
+    function isOpenMurmes(
+        uint256 profileId,
+        uint256 pubId
+    ) external view returns (bool open);
 }

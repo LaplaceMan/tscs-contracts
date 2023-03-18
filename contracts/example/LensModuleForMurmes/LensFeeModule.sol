@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
-
 import {ICollectModule} from "./interfaces/ICollectModule.sol";
 import {Errors} from "./base/Errors.sol";
 import {FeeModuleBase} from "./base/FeeModuleBase.sol";
@@ -150,10 +149,16 @@ contract LensFeeModuleForMurmes is
         if (defaultCurrency == currency) result = true;
     }
 
+    /**
+     * @notice 判断特定的pub是否使用了Murmes提供的众包服务
+     * @param profileId profile的ID
+     * @param pubId publication的ID
+     * @return open 是否已经开启
+     */
     function isOpenMurmes(
         uint256 profileId,
         uint256 pubId
-    ) public view returns (bool open) {
+    ) public view override returns (bool open) {
         uint256 realId = uint256(keccak256(abi.encode(profileId, pubId)));
         address components = IMurmes(Murmes).componentGlobal();
         address platforms = IComponentGlobal(components).platforms();
@@ -165,6 +170,12 @@ contract LensFeeModuleForMurmes is
         if (tasks.length > 0) open = true;
     }
 
+    /**
+     * @notice 获得特定pub收取的代币总收益
+     * @param profileId profile的ID
+     * @param pubId publication的ID
+     * @return 获得的代币总收益
+     */
     function getTotalRevenueForMurmes(
         uint256 profileId,
         uint256 pubId
