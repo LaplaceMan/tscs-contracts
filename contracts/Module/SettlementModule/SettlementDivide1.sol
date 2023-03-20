@@ -3,6 +3,8 @@ pragma solidity ^0.8.0;
 import "../../interfaces/ISettlementModule.sol";
 
 interface MurmesInterface {
+    function isOperator(address operator) external view returns (bool);
+
     function preDivideBySettlementModule(
         address platform,
         address to,
@@ -32,7 +34,7 @@ contract SettlementDivide1 is ISettlementModule {
 
     // Fn 1
     modifier auth() {
-        require(msg.sender == Murmes, "SD15");
+        require(MurmesInterface(Murmes).isOperator(msg.sender), "SD15");
         _;
     }
 

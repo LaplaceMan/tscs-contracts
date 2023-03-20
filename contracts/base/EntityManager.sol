@@ -75,6 +75,19 @@ contract EntityManager is Ownable {
     }
 
     /**
+     * @notice 设置全局管理合约
+     * @param note 0为模块管理合约，1为组件管理合约
+     * @param addr 相应的合约地址
+     */
+    function setGlobalContract(uint8 note, address addr) external onlyOwner {
+        if (note == 0) {
+            moduleGlobal = addr;
+        } else {
+            componentGlobal = addr;
+        }
+    }
+
+    /**
      * @notice 提取质押的代币
      * @param amount 欲提取代币数
      * Fn 4
