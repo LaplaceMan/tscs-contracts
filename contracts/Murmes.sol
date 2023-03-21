@@ -19,6 +19,7 @@ contract Murmes is TaskManager {
     constructor(address dao, address mutliSig) {
         _setOwner(dao);
         _setMutliSig(mutliSig);
+        opeators[address(this)] = true;
         requiresNoteById.push("None");
     }
 
@@ -195,7 +196,8 @@ contract Murmes is TaskManager {
                     msg.sender,
                     users[msg.sender].reputation,
                     users[msg.sender].deposit,
-                    tasks[taskId].requireId
+                    tasks[taskId].requireId,
+                    attitude
                 ),
                 "35-2"
             );

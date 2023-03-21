@@ -123,12 +123,22 @@ contract Platforms is IPlatforms {
     }
 
     /**
+     * @notice Murmes 设置自己的特殊权限管理模块
+     * @param newModule 新模块的合约
+     * Fn 5
+     */
+    function setMurmesAuthorityModule(address newModule) external {
+        require(IMurmes(Murmes).owner() == msg.sender, "P55");
+        platforms[Murmes].authorityModule = newModule;
+    }
+
+    /**
      * @notice 创建Box
      * @param realId Box的真实ID
      * @param platform Box所属平台
      * @param creator Box创造者
      * @return 根据顺位的Box ID
-     * Fn 5
+     * Fn 6
      */
     function createBox(
         uint256 realId,
@@ -144,7 +154,7 @@ contract Platforms is IPlatforms {
                 platforms[platform].platformId,
                 msg.sender
             ),
-            "P55"
+            "P65"
         );
         totalBoxes++;
         require(idRealToMurmes[platform][realId] == 0);
@@ -159,7 +169,7 @@ contract Platforms is IPlatforms {
      * @notice 更新与Box有关的Task集合
      * @param boxId 唯一标识特定Box
      * @param tasks 根据结算策略ID排好的Task结合
-     * Fn 6
+     * Fn 7
      */
     function updateBoxTasksByMurmes(
         uint256 boxId,
@@ -172,7 +182,7 @@ contract Platforms is IPlatforms {
      * @notice 更新Box未结算的数目
      * @param boxId 唯一标识特定Box的ID
      * @param differ 变化量
-     * Fn 7
+     * Fn 8
      */
     function updateBoxUnsettledRevenueByMurmes(
         uint256 boxId,
@@ -186,6 +196,7 @@ contract Platforms is IPlatforms {
      * @notice 更新多个Box未结算的收益
      * @param ids 唯一标识Box的ID集合
      * @param amounts 相应的未结算数目
+     * Fn 9
      */
     function updateBoxesRevenue(
         uint256[] memory ids,

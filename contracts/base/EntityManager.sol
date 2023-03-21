@@ -80,11 +80,18 @@ contract EntityManager is Ownable {
      * @param addr 相应的合约地址
      */
     function setGlobalContract(uint8 note, address addr) external onlyOwner {
+        address old;
         if (note == 0) {
+            old = moduleGlobal;
             moduleGlobal = addr;
         } else {
+            old = componentGlobal;
             componentGlobal = addr;
         }
+        if (old != address(0)) {
+            opeators[addr] = false;
+        }
+        opeators[addr] = true;
     }
 
     /**

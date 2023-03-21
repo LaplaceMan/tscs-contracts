@@ -5,7 +5,7 @@ import "../interfaces/IAuthorityBase.sol";
 import "../interfaces/IComponentGlobal.sol";
 import "../interfaces/IAuthorityModule.sol";
 
-contract AuthorityStrategy is IAuthorityModule {
+contract AuthorityModule is IAuthorityModule {
     /**
      * @notice Murmes主合约地址
      */

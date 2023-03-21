@@ -37,13 +37,15 @@ contract Guard is IGuard {
      * @param reputation Item制作者信誉度分数
      * @param deposit Item制作者质押代币数
      * @param requireId 设置的条件ID
+     * @param attitude 审核员的检测结果
      * @return result 是否符合要求
      */
     function beforeAuditItem(
         address caller,
         uint256 reputation,
         int256 deposit,
-        uint256 requireId
+        uint256 requireId,
+        DataTypes.AuditAttitude attitude
     ) external view override returns (bool result) {
         result = true;
         // 当众包人物条件的ID为0时，要求审核员在申请者设置的白名单中
@@ -54,5 +56,7 @@ contract Guard is IGuard {
         if (reputation < 50) result = false;
         // 要求审核员质押的代币数量大于64（精度为18）
         if (deposit < 64 * 10 ** 18) result = false;
+        // 可能在公益性质的任务下，不需要举报/反对的操作
+        if (attitude == DataTypes.AuditAttitude.OPPOSE) result == false;
     }
 }

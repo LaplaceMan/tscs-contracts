@@ -1,243 +1,202 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { BigNumber } = require("ethers");
-let tscs, zimu, vt, st, platform, access, audit, detection, divide1, onetime0, onetime2;
-let tscsAsDeployer, platformAsDeployer;
-let owner, user1, user2, user3;
-const baseEthAmount = ethers.utils.parseUnits("60", "ether");
-const unitEthAmount = ethers.utils.parseUnits("20", "ether");
 
-describe("MainSystem_Base_Test", function () {
-    it("Deploy contracts", async function () {
+let erc20;
+let murmes, ptoken, itoken, vault, platforms, component, moduleg, authority, settlement, access, audit, detection, onetime0, divide1, onetime2, authority1;
+let owner, user1, user2, user3, user4, user5;
+
+const baseEthAmount = ethers.utils.parseUnits("100", "ether");
+const unitEthAmount = ethers.utils.parseUnits("32", "ether");
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+
+describe("Murmes_Base_Test", function () {
+    it("Deploy Contracts", async function () {
         // 获得区块链网络提供的测试账号
-        const [deployer, addr1, addr2, addr3] = await ethers.getSigners();
-        deployerAddress = deployer.address;
+        const [deployer, addr1, addr2, addr3, addr4, addr5] = await ethers.getSigners();
         owner = deployer;
         user1 = addr1;
         user2 = addr2;
         user3 = addr3;
+        user4 = addr4;
+        user5 = addr5;
 
         // 部署合约的工厂方法
-        const TSCS = await ethers.getContractFactory("Murmes");
-        const ZIMU = await ethers.getContractFactory("ZimuToken");
-        const VT = await ethers.getContractFactory("VideoToken");
-        const ST = await ethers.getContractFactory("SubtitleToken");
-        const VAULTANDDEPOSIT = await ethers.getContractFactory("DepositMining");
-        const PLATFORM = await ethers.getContractFactory("Platforms");
-        const ACCESS = await ethers.getContractFactory("AccessStrategy");
-        const AUDIT = await ethers.getContractFactory("AuditStrategy");
-        const AUTHORITY = await ethers.getContractFactory("AuthorityStrategy");
-        const DETECTION = await ethers.getContractFactory("DetectionStrategy");
-        const DIVIDE1 = await ethers.getContractFactory("SettlementDivide1");
-        const ONETIME0 = await ethers.getContractFactory("SettlementOneTime0");
-        const ONETIME2 = await ethers.getContractFactory("SettlementOneTime2");
+        const MURMES = await ethers.getContractFactory("Murmes");
+        // 组件
+        const PT = await ethers.getContractFactory("PlatformToken");
+        const IT = await ethers.getContractFactory("ItemToken");
+        const VAULT = await ethers.getContractFactory("Vault");
+        const PLATFORMS = await ethers.getContractFactory("Platforms");
+        const COMPONENT = await ethers.getContractFactory("ComponentGlobal");
+        const MODULE = await ethers.getContractFactory("ModuleGlobal");
+        const SETTLEMENT = await ethers.getContractFactory("Settlement");
+        // 模块
+        const ACCESS = await ethers.getContractFactory("AccessModule");
+        const AUDIT = await ethers.getContractFactory("AuditModule");
+        const AUTHORITY = await ethers.getContractFactory("AuthorityModule");
+        const DETECTION = await ethers.getContractFactory("DetectionModule");
+        const ONETIME0 = await ethers.getContractFactory
+            ("SettlementOneTime0");
+        const DIVIDE1 = await ethers.getContractFactory
+            ("SettlementDivide1");
+        const ONETIME2 = await ethers.getContractFactory
+            ("SettlementOneTime2");
+        // 辅助
+        const ERC20 = await ethers.getContractFactory("ERC20Mintable");
+
         // 部署合约
-        tscs = await TSCS.deploy(deployerAddress, deployerAddress);
-        const tscsAddress = tscs.address;
-        tscsAsDeployer = tscs.connect(deployer);
-        zimu = await ZIMU.deploy(
-            tscsAddress,
-            "0x21e19e0c9bab2400000",
-            deployerAddress
-        );
-        const zimuAddress = zimu.address;
-        vt = await VT.deploy(tscsAddress);
-        const vtAddress = vt.address;
-        st = await ST.deploy(tscsAddress);
-        const stAddress = st.address;
-        const vault = await VAULTANDDEPOSIT.deploy(tscsAddress, deployerAddress);
-        const vaultAddress = vault.address;
-        platform = await PLATFORM.deploy(tscsAddress, zimuAddress);
-        const authority = await AUTHORITY.deploy(tscsAddress, "0x60Ae865ee4C725cd04353b5AAb364553f56ceF82");
-        const authorityAddress = await authority.address;
-        const platformAddress = platform.address;
-        platformAsDeployer = platform.connect(deployer);
-        access = await ACCESS.deploy(tscsAddress);
-        const accessAddress = access.address;
-        audit = await AUDIT.deploy(tscsAddress, 1);
-        const auditAddress = audit.address;
-        detection = await DETECTION.deploy(tscsAddress, 5);
-        const detectionAddress = detection.address;
-        divide1 = await DIVIDE1.deploy(tscsAddress);
-        const divide1Address = divide1.address;
-        onetime0 = await ONETIME0.deploy(tscsAddress);
-        const onetime0Address = onetime0.address;
-        onetime2 = await ONETIME2.deploy(tscsAddress);
-        const onetime2Address = onetime2.address;
-        await tscs.deployed();
+        murmes = await MURMES.deploy(owner.address, owner.address);
+        // 辅助
+        erc20 = await ERC20.deploy();
+        // 组件
+        ptoken = await PT.deploy(murmes.address);
+        itoken = await IT.deploy(murmes.address);
+        vault = await VAULT.deploy(murmes.address, owner.address);
+        platforms = await PLATFORMS.deploy(murmes.address);
+        component = await COMPONENT.deploy(murmes.address, erc20.address);
+        moduleg = await MODULE.deploy(murmes.address);
+        settlement = await SETTLEMENT.deploy(murmes.address)
+        // 模块
+        authority = await AUTHORITY.deploy(murmes.address);
+        access = await ACCESS.deploy(murmes.address);
+        audit = await AUDIT.deploy(murmes.address, 1);
+        detection = await DETECTION.deploy(murmes.address, 5);
+        onetime0 = await ONETIME0.deploy(murmes.address);
+        divide1 = await DIVIDE1.deploy(murmes.address);
+        onetime2 = await ONETIME2.deploy(murmes.address);
+
         let tx;
-        tx = await tscsAsDeployer.setNormalStrategy(0, auditAddress);
+        // 组件
+        tx = await murmes.connect(owner).setGlobalContract(0, moduleg.address);
         await tx.wait();
-        tx = await tscsAsDeployer.setNormalStrategy(1, accessAddress);
+        tx = await murmes.connect(owner).setGlobalContract(1, component.address);
+        tx = await component.connect(owner).setComponent(0, vault.address);
         await tx.wait();
-        tx = await tscsAsDeployer.setNormalStrategy(2, detectionAddress);
+        tx = await component.connect(owner).setComponent(1, access.address);
         await tx.wait();
-        tx = await tscsAsDeployer.setNormalStrategy(3, authorityAddress);
+        tx = await component.connect(owner).setComponent(3, platforms.address);
         await tx.wait();
-        tx = await tscsAsDeployer.setSettlementStrategy(0, onetime0Address, "OT0");
+        tx = await component.connect(owner).setComponent(4, settlement.address);
         await tx.wait();
-        tx = await tscsAsDeployer.setSettlementStrategy(1, divide1Address, "D1");
+        tx = await component.connect(owner).setComponent(5, authority.address);
         await tx.wait();
-        tx = await tscsAsDeployer.setSettlementStrategy(2, onetime2Address, "OTM2");
+        tx = await component.connect(owner).setComponent(7, itoken.address);
         await tx.wait();
-        tx = await tscsAsDeployer.setComponentsAddress(0, zimuAddress);
+        tx = await component.connect(owner).setComponent(8, ptoken.address);
         await tx.wait();
-        tx = await tscsAsDeployer.setComponentsAddress(1, vtAddress);
+        // 模块
+        tx = await moduleg.connect(owner).setSettlementModule(0, onetime0.address);
         await tx.wait();
-        tx = await tscsAsDeployer.setComponentsAddress(2, stAddress);
+        tx = await moduleg.connect(owner).setSettlementModule(1, divide1.address);
         await tx.wait();
-        tx = await tscsAsDeployer.setComponentsAddress(3, vaultAddress);
+        tx = await moduleg.connect(owner).setSettlementModule(2, onetime2.address);
         await tx.wait();
-        tx = await tscsAsDeployer.setComponentsAddress(4, platformAddress);
+        tx = await moduleg.connect(owner).setWhitelistedCurrency(erc20.address, "true");
+        await tx.wait();
+        tx = await moduleg.connect(owner).setWhitelistedAuditModule(audit.address, "true");
+        await tx.wait();
+        tx = await moduleg.connect(owner).setDetectionModuleIsWhitelisted(detection.address, "true");
+        await tx.wait();
+
+        const AUTHORITY0 = await ethers.getContractFactory("MurmesAuthority");
+        const authority0 = await AUTHORITY0.deploy();
+        tx = await platforms.connect(owner).setMurmesAuthorityModule(authority0.address);
+        await tx.wait();
+        const AUTHORITY1 = await ethers.getContractFactory("DefaultAuthority");
+        authority1 = await AUTHORITY1.deploy(murmes.address);
+        tx = await moduleg.connect(owner).setAuthorityModuleIsWhitelisted(authority1.address, "true");
         await tx.wait();
     });
 
-    it("Test Zimu transfer", async function () {
-        await zimu.deployed();
-        const balanceUser1old = await zimu.connect(user1).balanceOf(user1.address);
-        console.log("User1 Zimu balance before transfer is", balanceUser1old);
-        let tx = await zimu.connect(owner).transfer(user1.address, baseEthAmount);
+    it("User Join", async function () {
+        let tx;
+        tx = await erc20.connect(user1).mint(user1.address, baseEthAmount);
         await tx.wait();
-        const balanceUser1new = await zimu.connect(user1).balanceOf(user1.address);
-        console.log("User1 Zimu balance after transfer is", balanceUser1new);
-        expect(balanceUser1new).to.equal(baseEthAmount);
-    });
-
-    it("Test user join", async function () {
-        let tx = await zimu.connect(user1).approve(tscs.address, baseEthAmount);
+        tx = await erc20
+            .connect(user1)
+            .approve(murmes.address, baseEthAmount);
         await tx.wait();
-        const user1Approved = await zimu
+        tx = await murmes.connect(user1).userJoin(user1.address, unitEthAmount);
+        await tx.wait();
+        let user1JoinInfo = await murmes
             .connect(user1)
-            .allowance(user1.address, tscs.address);
-        console.log("User1-TSCS Zimu approved amount:", user1Approved);
-        expect(user1Approved).to.equal(baseEthAmount);
-        await expect(tscs.connect(user1).userJoin(user1.address, unitEthAmount))
-            .to.emit(tscs, "UserJoin")
-            .withArgs(user1.address, BigNumber.from("1000"), unitEthAmount);
-        let user1JoinInfo = await tscs
-            .connect(user1)
-            .getUserBaseInfo(user1.address);
+            .getUserBaseData(user1.address);
         console.log("User joined info:", user1JoinInfo);
     });
 
-    it("Despoit for audit", async function () {
-        let tx = await zimu.connect(owner).transfer(user2.address, baseEthAmount);
+    it("Add Requires", async function () {
+        let tx = await murmes.connect(owner).registerRequires(['LANG-zh-CN', 'LANG-en-US', 'LANG-ja-JP']);
         await tx.wait();
-        tx = await zimu.connect(owner).transfer(user3.address, baseEthAmount);
-        await tx.wait();
-        tx = await zimu
-            .connect(user2)
-            .approve(tscs.address, baseEthAmount);
-        await tx.wait();
-        tx = await zimu
-            .connect(user3)
-            .approve(tscs.address, baseEthAmount);
-        await tx.wait();
-        tx = await tscs.connect(user2).userJoin(user2.address, baseEthAmount);
-        await tx.wait();
-        tx = await tscs.connect(user3).userJoin(user3.address, baseEthAmount);
-        await tx.wait();
-    });
-
-    // 测试时将 AuditStrategy 中的审核次数从 10 => 2, 且 AuditTime = 0
-    it("Test add language", async function () {
-        let tx = await tscsAsDeployer.registerLanguage(['zh-CN', 'en-US', 'ja-JP']);
-        await tx.wait();
-        let cnIndex = await tscsAsDeployer.getLanguageIdByNote('zh-CN');
-        let enIndex = await tscsAsDeployer.getLanguageIdByNote('en-US');
-        let jpIndex = await tscsAsDeployer.getLanguageIdByNote('ja-JP');
+        let cnIndex = await murmes.connect(owner).getRequiresIdByNote('LANG-zh-CN');
+        let enIndex = await murmes.connect(owner).getRequiresIdByNote('LANG-en-US');
+        let jpIndex = await murmes.connect(owner).getRequiresIdByNote('LANG-ja-JP');
         expect(cnIndex).to.equal(1);
         expect(enIndex).to.equal(2);
         expect(jpIndex).to.equal(3);
     });
 
-    it("Test submit application (OT0)", async function () {
+    it("Post Task (OT0)", async function () {
         const date = "0x" + (parseInt(Date.now() / 1000) + 15778800).toString(16);
-        let tx = await tscs
+        let tx = await murmes
             .connect(user1)
-            .submitApplication(tscs.address, 0, 0, unitEthAmount, 1, date, "test");
+            .postTask([murmes.address, 0, 1, "source", 0, unitEthAmount, erc20.address, audit.address, detection.address, date]);
         await tx.wait();
         let receipt = await ethers.provider.getTransactionReceipt(tx.hash);
         expect(receipt.status).to.equal(1);
     });
 
-    it("Test upload subtitle", async function () {
-        let tx = await tscs.connect(user3).uploadSubtitle(1, "testtest", 1, "1000");
+    it("Upload Items", async function () {
+        let tx;
+        tx = await murmes.connect(user2).submitItem([1, "item", 1, "0x1a"]);
+        await tx.wait();
+        tx = await murmes.connect(user2).submitItem([1, "item", 1, "0x1a2b"]);
         await tx.wait();
         let receipt = await ethers.provider.getTransactionReceipt(tx.hash);
         expect(receipt.status).to.equal(1);
     });
 
-    it("Test upload subtitles", async function () {
-        let tx = await tscs.connect(user2).uploadSubtitle(1, "testtesttest", 1, "0x1a2b3c");
+    it("Audit Items", async function () {
+        let tx;
+        tx = await erc20.connect(user4).mint(user4.address, baseEthAmount);
         await tx.wait();
-        let receipt = await ethers.provider.getTransactionReceipt(tx.hash);
-        expect(receipt.status).to.equal(1);
-    });
-
-    it("Test evaluate (audit) subtitle", async function () {
-        let tx = await tscs.connect(user3).evaluateSubtitle(1, 0);
+        tx = await erc20
+            .connect(user4)
+            .approve(murmes.address, baseEthAmount);
+        await tx.wait();
+        tx = await murmes.connect(user4).userJoin(user4.address, baseEthAmount);
+        await tx.wait();
+        tx = await murmes.connect(user4).auditItem(1, 0);
+        await tx.wait();
+        tx = await murmes.connect(user4).auditItem(2, 1);
         await tx.wait();
         let receipt = await ethers.provider.getTransactionReceipt(tx.hash);
         expect(receipt.status).to.equal(1);
     });
 });
 
-describe("MainSystem_Other_Test", function () {
-    it("Test add platform", async function () {
-        await expect(
-            platformAsDeployer.platfromJoin(owner.address, "test", "test", 655, 655)
-        )
-            .to.emit(platform, "PlatformJoin")
-            .withArgs(
-                owner.address,
-                BigNumber.from("1"),
-                "test",
-                "test",
-                BigNumber.from("655"),
-                BigNumber.from("655")
-            );
+describe("Murmes_Other_Test", function () {
+    it("Add platform", async function () {
+        let tx = await platforms.connect(owner).addPlatform(owner.address, "platform", "platform", 100, 100, authority1.address)
+        let receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+        expect(receipt.status).to.equal(1);
     });
 
-    it("Test platform add (create) video", async function () {
-        await expect(platformAsDeployer.createVideo(1, "test", user1.address, 0, user1.address))
-            .to.emit(platform, "VideoCreate")
-            .withArgs(
-                owner.address,
-                BigNumber.from("1"),
-                BigNumber.from("1"),
-                "test",
-                user1.address,
-                BigNumber.from("0"),
-            );
+    it("Create Box", async function () {
+        let tx = await platforms.connect(owner).createBox(1, owner.address, user1.address);
+        let receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+        expect(receipt.status).to.equal(1);
     });
 
-    it("Test platform update counts", async function () {
-        await expect(platformAsDeployer.updateViewCounts([1], [10000]))
-            .to.emit(platform, "VideoCountsUpdate")
-            .withArgs(
-                owner.address, [BigNumber.from("1")], [BigNumber.from("10000")]
-            );
+    it("Update Box Revenue", async function () {
+        let tx = await platforms.connect(owner).updateBoxesRevenue([1], [10000]);
+        let receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+        expect(receipt.status).to.equal(1);
     });
 
-    it("Test submit application (other)", async function () {
+    it("Post Task (Other)", async function () {
         const date = "0x" + (parseInt(Date.now() / 1000) + 15778800).toString(16);
-        await expect(
-            tscs
-                .connect(user1)
-                .submitApplication(owner.address, 1, 1, 655, 1, date, "test")
-        )
-            .to.emit(tscs, "ApplicationSubmit")
-            .withArgs(
-                user1.address,
-                owner.address,
-                BigNumber.from("1"),
-                BigNumber.from("1"),
-                BigNumber.from("655"),
-                BigNumber.from("1"),
-                BigNumber.from(date),
-                BigNumber.from("2"),
-                "test"
-            );
+        let tx = await murmes.connect(user1).postTask([owner.address, 1, 2, "source", 1, 100, ZERO_ADDRESS, audit.address, detection.address, date]);
+        let receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+        expect(receipt.status).to.equal(1);
     });
 });

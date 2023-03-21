@@ -40,6 +40,7 @@ contract ModuleGlobal is IModuleGlobal {
 
     constructor(address ms) {
         Murmes = ms;
+        whitelistCurrency[address(0)] = true;
     }
 
     // Fn 1
@@ -158,7 +159,7 @@ contract ModuleGlobal is IModuleGlobal {
     function isAuthorityModuleWhitelisted(
         address module
     ) external view override returns (bool) {
-        return whitelistAuditModule[module];
+        return whitelistAuthorityModule[module];
     }
 
     function isCurrencyWhitelisted(

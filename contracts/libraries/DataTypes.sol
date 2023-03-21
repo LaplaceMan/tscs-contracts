@@ -67,7 +67,7 @@ library DataTypes {
 
     struct PostTaskData {
         address platform; // 所属第三方平台
-        uint256 sourceId; // 在第三方平台内的ID
+        uint256 sourceId; // 在第三方平台内的ID（在Murmes内的顺位）
         uint256 requireId; // 所需条件的ID
         string source; // 源地址
         DataTypes.SettlementType settlement; // 所采用的结算策略

@@ -66,7 +66,7 @@ contract Settlement is ISettlement {
         address platforms = IComponentGlobal(componentGlobal).platforms();
         address itemNFT = IComponentGlobal(componentGlobal).itemToken();
         (, uint16 rateAuditorDivide) = IPlatforms(platforms).getPlatformRate(
-            address(this)
+            Murmes
         );
         address settlement = IModuleGlobal(moduleGlobal)
             .getSettlementModuleAddress(DataTypes.SettlementType.ONETIME);
