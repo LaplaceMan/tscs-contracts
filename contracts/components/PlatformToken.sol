@@ -58,7 +58,11 @@ contract PlatformToken is ERC1155, IPlatformToken {
         address to,
         uint256 amount
     ) external override {
-        require(msg.sender == Murmes, "PT25");
+        require(
+            msg.sender == Murmes ||
+                MurmesInterface(Murmes).isOperator(msg.sender),
+            "PT25"
+        );
         require(platforms[platformId] != address(0), "PT22");
         _mint(to, platformId, amount, "");
     }

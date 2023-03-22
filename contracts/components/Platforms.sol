@@ -187,7 +187,8 @@ contract Platforms is IPlatforms {
     function updateBoxUnsettledRevenueByMurmes(
         uint256 boxId,
         int256 differ
-    ) external override auth {
+    ) external override {
+        require(IMurmes(Murmes).isOperator(msg.sender), "P85");
         int256 unsettled = int256(boxes[boxId].unsettled) + differ;
         boxes[boxId].unsettled = unsettled > 0 ? uint256(unsettled) : 0;
     }

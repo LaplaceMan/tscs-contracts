@@ -90,7 +90,7 @@ contract Settlement is ISettlement {
      * @param boxId Box ID
      * Fn 3
      */
-    function preExtractOther(uint256 boxId) external {
+    function preExtractForOther(uint256 boxId) external {
         address componentGlobal = IMurmes(Murmes).componentGlobal();
         address platforms = IComponentGlobal(componentGlobal).platforms();
         DataTypes.BoxStruct memory box = IPlatforms(platforms).getBox(boxId);

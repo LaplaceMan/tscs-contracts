@@ -1,256 +1,238 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { BigNumber } = require("ethers");
-let tscs, zimu, vt, st, access, audit, platform, detection, divide1, onetime0, onetime2;
-let tscsAsDeployer, platformAsDeployer;
-let owner, user1, user2, user3, user4;
-const unitVTAmount = ethers.utils.parseUnits("20", "6");
-const baseEthAmount = ethers.utils.parseUnits("60", "ether");
+
+let erc20;
+let murmes, ptoken, itoken, vault, platforms, component, moduleg, authority, settlement, access, audit, detection, onetime0, divide1, onetime2, authority1;
+let owner, user1, user2, user3, user4, user5;
+
+const baseEthAmount = ethers.utils.parseUnits("100", "ether");
+const unitEthAmount = ethers.utils.parseUnits("32", "ether");
+const unitPlatformToken = ethers.utils.parseUnits("50", "6");
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 const now = parseInt(Date.now() / 1000 / 86400);
+
 describe("Settlement_MIX_Test", function () {
   it("Prepare", async function () {
     // 获得区块链网络提供的测试账号
-    const [deployer, addr1, addr2, addr3, addr4] = await ethers.getSigners();
-    deployerAddress = deployer.address;
+    const [deployer, addr1, addr2, addr3, addr4, addr5] = await ethers.getSigners();
     owner = deployer;
     user1 = addr1;
     user2 = addr2;
     user3 = addr3;
     user4 = addr4;
+    user5 = addr5;
 
     // 部署合约的工厂方法
-    const TSCS = await ethers.getContractFactory("Murmes");
-    const ZIMU = await ethers.getContractFactory("ZimuToken");
-    const VT = await ethers.getContractFactory("VideoToken");
-    const ST = await ethers.getContractFactory("SubtitleToken");
-    const VAULTANDDEPOSIT = await ethers.getContractFactory("DepositMining");
-    const PLATFORM = await ethers.getContractFactory("Platforms");
-    const ACCESS = await ethers.getContractFactory("AccessStrategy");
-    const AUDIT = await ethers.getContractFactory("AuditStrategy");
-    const AUTHORITY = await ethers.getContractFactory("AuthorityStrategy");
-    const DETECTION = await ethers.getContractFactory("DetectionStrategy");
-    const DIVIDE1 = await ethers.getContractFactory("SettlementDivide1");
-    const ONETIME0 = await ethers.getContractFactory("SettlementOneTime0");
-    const ONETIME2 = await ethers.getContractFactory("SettlementOneTime2");
+    const MURMES = await ethers.getContractFactory("Murmes");
+    // 组件
+    const PT = await ethers.getContractFactory("PlatformToken");
+    const IT = await ethers.getContractFactory("ItemToken");
+    const VAULT = await ethers.getContractFactory("Vault");
+    const PLATFORMS = await ethers.getContractFactory("Platforms");
+    const COMPONENT = await ethers.getContractFactory("ComponentGlobal");
+    const MODULE = await ethers.getContractFactory("ModuleGlobal");
+    const SETTLEMENT = await ethers.getContractFactory("Settlement");
+    // 模块
+    const ACCESS = await ethers.getContractFactory("AccessModule");
+    const AUDIT = await ethers.getContractFactory("AuditModule");
+    const AUTHORITY = await ethers.getContractFactory("AuthorityModule");
+    const DETECTION = await ethers.getContractFactory("DetectionModule");
+    const ONETIME0 = await ethers.getContractFactory
+      ("SettlementOneTime0");
+    const DIVIDE1 = await ethers.getContractFactory
+      ("SettlementDivide1");
+    const ONETIME2 = await ethers.getContractFactory
+      ("SettlementOneTime2");
+    // 辅助
+    const ERC20 = await ethers.getContractFactory("ERC20Mintable");
+
     // 部署合约
-    tscs = await TSCS.deploy(deployerAddress, deployerAddress);
-    const tscsAddress = tscs.address;
-    tscsAsDeployer = tscs.connect(deployer);
-    zimu = await ZIMU.deploy(
-      tscsAddress,
-      "0x21e19e0c9bab2400000",
-      deployerAddress
-    );
-    const zimuAddress = zimu.address;
-    vt = await VT.deploy(tscsAddress);
-    const vtAddress = vt.address;
-    st = await ST.deploy(tscsAddress);
-    const stAddress = st.address;
-    const vault = await VAULTANDDEPOSIT.deploy(tscsAddress, deployerAddress);
-    const vaultAddress = vault.address;
-    platform = await PLATFORM.deploy(tscsAddress, zimuAddress);
-    const platformAddress = platform.address;
-    platformAsDeployer = platform.connect(deployer);
-    access = await ACCESS.deploy(tscsAddress);
-    const accessAddress = access.address;
-    audit = await AUDIT.deploy(tscsAddress, 1);
-    const auditAddress = audit.address;
-    const authority = await AUTHORITY.deploy(tscsAddress, "0x60Ae865ee4C725cd04353b5AAb364553f56ceF82");
-    const authorityAddress = await authority.address;
-    detection = await DETECTION.deploy(tscsAddress, 5);
-    const detectionAddress = detection.address;
-    divide1 = await DIVIDE1.deploy(tscsAddress);
-    const divide1Address = divide1.address;
-    onetime0 = await ONETIME0.deploy(tscsAddress);
-    const onetime0Address = onetime0.address;
-    onetime2 = await ONETIME2.deploy(tscsAddress);
-    const onetime2Address = onetime2.address;
-    await tscs.deployed();
-    console.log("tscs", tscsAddress);
-    console.log("platform", platformAddress);
-    console.log("ST", stAddress);
+    murmes = await MURMES.deploy(owner.address, owner.address);
+    // 辅助
+    erc20 = await ERC20.deploy();
+    // 组件
+    ptoken = await PT.deploy(murmes.address);
+    itoken = await IT.deploy(murmes.address);
+    vault = await VAULT.deploy(murmes.address, owner.address);
+    platforms = await PLATFORMS.deploy(murmes.address);
+    component = await COMPONENT.deploy(murmes.address, erc20.address);
+    moduleg = await MODULE.deploy(murmes.address);
+    settlement = await SETTLEMENT.deploy(murmes.address)
+    // 模块
+    authority = await AUTHORITY.deploy(murmes.address);
+    access = await ACCESS.deploy(murmes.address);
+    audit = await AUDIT.deploy(murmes.address, 1);
+    detection = await DETECTION.deploy(murmes.address, 5);
+    onetime0 = await ONETIME0.deploy(murmes.address);
+    divide1 = await DIVIDE1.deploy(murmes.address);
+    onetime2 = await ONETIME2.deploy(murmes.address);
+
     let tx;
-    tx = await tscsAsDeployer.setNormalStrategy(0, auditAddress);
+    // 组件
+    tx = await murmes.connect(owner).setGlobalContract(0, moduleg.address);
     await tx.wait();
-    tx = await tscsAsDeployer.setNormalStrategy(1, accessAddress);
+    tx = await murmes.connect(owner).setGlobalContract(1, component.address);
+    tx = await component.connect(owner).setComponent(0, vault.address);
     await tx.wait();
-    tx = await tscsAsDeployer.setNormalStrategy(2, detectionAddress);
+    tx = await component.connect(owner).setComponent(1, access.address);
     await tx.wait();
-    tx = await tscsAsDeployer.setNormalStrategy(3, authorityAddress);
+    tx = await component.connect(owner).setComponent(3, platforms.address);
     await tx.wait();
-    tx = await tscsAsDeployer.setSettlementStrategy(0, onetime0Address, "OT0");
+    tx = await component.connect(owner).setComponent(4, settlement.address);
     await tx.wait();
-    tx = await tscsAsDeployer.setSettlementStrategy(1, divide1Address, "D1");
+    tx = await component.connect(owner).setComponent(5, authority.address);
     await tx.wait();
-    tx = await tscsAsDeployer.setSettlementStrategy(2, onetime2Address, "OTM2");
+    tx = await component.connect(owner).setComponent(7, itoken.address);
     await tx.wait();
-    tx = await tscsAsDeployer.setComponentsAddress(0, zimuAddress);
+    tx = await component.connect(owner).setComponent(8, ptoken.address);
     await tx.wait();
-    tx = await tscsAsDeployer.setComponentsAddress(1, vtAddress);
+    // 模块
+    tx = await moduleg.connect(owner).setSettlementModule(0, onetime0.address);
     await tx.wait();
-    tx = await tscsAsDeployer.setComponentsAddress(2, stAddress);
+    tx = await moduleg.connect(owner).setSettlementModule(1, divide1.address);
     await tx.wait();
-    tx = await tscsAsDeployer.setComponentsAddress(3, vaultAddress);
+    tx = await moduleg.connect(owner).setSettlementModule(2, onetime2.address);
     await tx.wait();
-    tx = await tscsAsDeployer.setComponentsAddress(4, platformAddress);
+    tx = await moduleg.connect(owner).setWhitelistedCurrency(erc20.address, "true");
     await tx.wait();
-    // 注册语言
-    tx = await tscsAsDeployer.registerLanguage(['zh-CN', 'en-US', 'ja-JP']);
+    tx = await moduleg.connect(owner).setWhitelistedAuditModule(audit.address, "true");
+    await tx.wait();
+    tx = await moduleg.connect(owner).setDetectionModuleIsWhitelisted(detection.address, "true");
+    await tx.wait();
+
+    const AUTHORITY0 = await ethers.getContractFactory("MurmesAuthority");
+    const authority0 = await AUTHORITY0.deploy();
+    tx = await platforms.connect(owner).setMurmesAuthorityModule(authority0.address);
+    await tx.wait();
+    const AUTHORITY1 = await ethers.getContractFactory("DefaultAuthority");
+    authority1 = await AUTHORITY1.deploy(murmes.address);
+    tx = await moduleg.connect(owner).setAuthorityModuleIsWhitelisted(authority1.address, "true");
+    await tx.wait();
+
+    // 注册条件
+    tx = await murmes.connect(owner).registerRequires(['LANG-zh-CN', 'LANG-en-US', 'LANG-ja-JP']);
     await tx.wait();
     // 添加平台
-    await expect(
-      platformAsDeployer.platfromJoin(owner.address, "test", "test", 655, 655)
-    )
-      .to.emit(platform, "PlatformJoin")
-      .withArgs(
-        owner.address,
-        ethers.BigNumber.from("1"),
-        "test",
-        "test",
-        ethers.BigNumber.from("655"),
-        ethers.BigNumber.from("655")
-      );
-    // 创建视频
-    await expect(platformAsDeployer.createVideo(1, "test", user1.address, 0, user1.address))
-      .to.emit(platform, "VideoCreate")
-      .withArgs(
-        owner.address,
-        ethers.BigNumber.from("1"),
-        ethers.BigNumber.from("1"),
-        "test",
-        user1.address,
-        ethers.BigNumber.from("0"),
-      );
-    // 提交第一个申请 (OT2)
+    tx = await platforms.connect(owner).addPlatform(owner.address, "platform", "platform", 100, 100, authority1.address)
+    await tx.wait();
+    // 创建Box
+    tx = await platforms.connect(owner).createBox(1, owner.address, user1.address);
+    await tx.wait();
+    /*************************/
+    // 提交申请(OT2)
     const date = "0x" + (parseInt(Date.now() / 1000) + 15778800).toString(16);
-    await expect(
-      tscs
-        .connect(user1)
-        .submitApplication(owner.address, 1, 2, unitVTAmount, 1, date, "test")
-    )
-      .to.emit(tscs, "ApplicationSubmit")
-      .withArgs(
-        user1.address,
-        owner.address,
-        ethers.BigNumber.from("1"),
-        ethers.BigNumber.from("2"),
-        unitVTAmount,
-        ethers.BigNumber.from("1"),
-        ethers.BigNumber.from(date),
-        ethers.BigNumber.from("1"),
-        "test"
-      );
-    // 提交第二个申请 (D1)
-    await expect(
-      tscs
-        .connect(user1)
-        .submitApplication(owner.address, 1, 1, 655, 2, date, "test")
-    )
-      .to.emit(tscs, "ApplicationSubmit")
-      .withArgs(
-        user1.address,
-        owner.address,
-        ethers.BigNumber.from("1"),
-        ethers.BigNumber.from("1"),
-        ethers.BigNumber.from("655"),
-        ethers.BigNumber.from("2"),
-        ethers.BigNumber.from(date),
-        ethers.BigNumber.from("2"),
-        "test"
-      );
-    // 给第一个申请上传字幕
-    tx = await tscs.connect(user2).uploadSubtitle(1, "test", 1, "0x1a2b");
+    tx = await murmes.connect(user1).postTask([owner.address, 1, 1, "source", 2, unitPlatformToken, ZERO_ADDRESS, audit.address, detection.address, date]);
     await tx.wait();
-    // 给第二个申请上传字幕
-    tx = await tscs.connect(user2).uploadSubtitle(2, "test", 2, "0x2a3b");
+    // 上传Item
+    tx = await murmes.connect(user2).submitItem([1, "item", 1, "0x1a"]);
+    await tx.wait();
+    /*************************/
+    // 提交申请(D1)
+    tx = await murmes.connect(user1).postTask([owner.address, 1, 2, "source", 1, 100, ZERO_ADDRESS, audit.address, detection.address, date]);
+    await tx.wait();
+    // 上传Item
+    tx = await murmes.connect(user3).submitItem([2, "item", 2, "0x1a2b"]);
     await tx.wait();
   });
 
-  it("Despoit for audit", async function () {
-    let tx = await zimu.connect(owner).transfer(user3.address, baseEthAmount);
-    await tx.wait();
-    tx = await zimu.connect(owner).transfer(user4.address, baseEthAmount);
-    await tx.wait();
-    tx = await zimu
-      .connect(user3)
-      .approve(tscs.address, baseEthAmount);
-    await tx.wait();
-    tx = await zimu
-      .connect(user4)
-      .approve(tscs.address, baseEthAmount);
-    await tx.wait();
-    tx = await tscs.connect(user3).userJoin(user3.address, baseEthAmount);
-    await tx.wait();
-    tx = await tscs.connect(user4).userJoin(user4.address, baseEthAmount);
-    await tx.wait();
-  });
-
-  it("Test adopt subtitle", async function () {
-    // 评价后第一个字幕被采纳
-    await expect(tscs.connect(user3).evaluateSubtitle(1, 0))
-      .to.emit(tscs, "SubitlteGetEvaluation")
-      .withArgs(BigNumber.from("1"), user3.address, 0);
-    await expect(tscs.connect(user4).evaluateSubtitle(1, 0))
-      .to.emit(tscs, "SubitlteGetEvaluation")
-      .withArgs(BigNumber.from("1"), user4.address, 0);
-    // 评价后第二个字幕被采纳
-    await expect(tscs.connect(user3).evaluateSubtitle(2, 0))
-      .to.emit(tscs, "SubitlteGetEvaluation")
-      .withArgs(BigNumber.from("2"), user3.address, 0);
-    await expect(tscs.connect(user4).evaluateSubtitle(2, 0))
-      .to.emit(tscs, "SubitlteGetEvaluation")
-      .withArgs(BigNumber.from("2"), user4.address, 0);
-  });
-
-  it("Test update counts", async function () {
-    // 更新视频播放量
-    await expect(platformAsDeployer.updateViewCounts([1], [100000]))
-      .to.emit(platform, "VideoCountsUpdate")
-      .withArgs(
-        owner.address,
-        [ethers.BigNumber.from("1")],
-        [ethers.BigNumber.from("100000")]
-      );
-  });
-
-  it("Test pre-extract reward:", async function () {
-    let tx = await tscs.connect(user2).preExtractOther("1");
-    await tx.wait();
-    let user1Reward = await vt.connect(user1).balanceOf(user1.address, 1);
-    // console.log("User1 get reward:", user1Reward);
-    // let user2PreRewardState = await tscsAsDeployer.getUserLockReward(
-    //   user2.address,
-    //   owner.address,
-    //   now
-    // );
-    // console.log("User2 pre reward state:", user2PreRewardState);
-    // let user3PreRewardState = await tscsAsDeployer.getUserLockReward(
-    //   user3.address,
-    //   owner.address,
-    //   now
-    // );
-    // console.log("User3 pre reward state:", user3PreRewardState);
-    // let user4PreRewardState = await tscsAsDeployer.getUserLockReward(
-    //   user4.address,
-    //   owner.address,
-    //   now
-    // );
-    // console.log("User4 pre reward state:", user4PreRewardState);
-  });
-
-  it("Test extract reward:", async function () {
+  it("Audit Item", async function () {
     let tx;
-    tx = await tscs.connect(user2).withdraw(owner.address, [now]);
+    tx = await erc20.connect(user4).mint(user4.address, baseEthAmount);
     await tx.wait();
-    // let user2BalanceNow = await vt.connect(user2).balanceOf(user2.address, 1);
-    // console.log("User2 get reward:", user2BalanceNow);
-    // tx = await tscs.connect(user3).withdraw(owner.address, [now]);
-    // await tx.wait();
-    // let user3BalanceNow = await vt.connect(user3).balanceOf(user3.address, 1);
-    // console.log("User3 get reward:", user3BalanceNow);
-    // tx = await tscs.connect(user4).withdraw(owner.address, [now]);
-    // await tx.wait();
-    // let user4BalanceNow = await vt.connect(user4).balanceOf(user4.address, 1);
-    // console.log("User4 get reward:", user4BalanceNow);
+    tx = await erc20
+      .connect(user4)
+      .approve(murmes.address, baseEthAmount);
+    await tx.wait();
+    tx = await murmes.connect(user4).userJoin(user4.address, baseEthAmount);
+    await tx.wait();
+    /*************************/
+    tx = await erc20.connect(user5).mint(user5.address, baseEthAmount);
+    await tx.wait();
+    tx = await erc20
+      .connect(user5)
+      .approve(murmes.address, baseEthAmount);
+    await tx.wait();
+    tx = await murmes.connect(user5).userJoin(user5.address, baseEthAmount);
+    await tx.wait();
+    /*************************/
+    tx = await murmes.connect(user4).auditItem(1, 0);
+    await tx.wait();
+    tx = await murmes.connect(user5).auditItem(1, 0);
+    await tx.wait();
+    /*************************/
+    tx = await murmes.connect(user4).auditItem(2, 0);
+    await tx.wait();
+    tx = await murmes.connect(user5).auditItem(2, 0);
+    await tx.wait();
+    /*************************/
+    let taskState1 = await murmes.connect(owner).getAdoptedItemData(1);
+    console.log("Task1 state:", taskState1);
+    let taskState2 = await murmes.connect(owner).getAdoptedItemData(1);
+    console.log("Task2 state:", taskState2);
+  });
+
+  it("Update Box Revenue", async function () {
+    let tx = await platforms.connect(owner).updateBoxesRevenue([1], [10000]);
+    let receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+    expect(receipt.status).to.equal(1);
+  });
+
+  it("Pre-extract Revenue", async function () {
+    let tx = await settlement.connect(user2).preExtractForOther("1");
+    await tx.wait();
+    let receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+    expect(receipt.status).to.equal(1);
+    /*************************/
+    let user1Revenue = await ptoken.connect(owner).balanceOf(user1.address, 1);
+    console.log('Box creator revenue:', user1Revenue);
+    /*************************/
+    let user2PreRevenueState = await murmes.connect(owner).getUserLockReward(
+      user2.address,
+      owner.address,
+      now
+    );
+    console.log("User2 pre revenue state:", user2PreRevenueState);
+    let user3PreRevenueState = await murmes.connect(owner).getUserLockReward(
+      user3.address,
+      owner.address,
+      now
+    );
+    console.log("User3 pre revenue state:", user3PreRevenueState);
+    let user4PreRevenueState = await murmes.connect(owner).getUserLockReward(
+      user4.address,
+      owner.address,
+      now
+    );
+    /*************************/
+    console.log("User4 pre revenue state:", user4PreRevenueState);
+    let user5PreRevenueState = await murmes.connect(owner).getUserLockReward(
+      user5.address,
+      owner.address,
+      now
+    );
+    console.log("User5 pre revenue state:", user5PreRevenueState);
+  });
+
+  it("Extract Revenue", async function () {
+    let tx;
+    /*************************/
+    tx = await murmes.connect(user2).withdraw(owner.address, [now]);
+    await tx.wait();
+    let user2BalanceNow = await ptoken.connect(owner).balanceOf(user2.address, 1);
+    console.log("User2 get revenue:", user2BalanceNow);
+    tx = await murmes.connect(user3).withdraw(owner.address, [now]);
+    await tx.wait();
+    let user3BalanceNow = await ptoken.connect(user3).balanceOf(user3.address, 1);
+    console.log("User3 get revenue:", user3BalanceNow);
+    /*************************/
+    tx = await murmes.connect(user4).withdraw(owner.address, [now]);
+    await tx.wait();
+    let user4BalanceNow = await ptoken.connect(user4).balanceOf(user4.address, 1);
+    console.log("User4 get revenue:", user4BalanceNow);
+    tx = await murmes.connect(user5).withdraw(owner.address, [now]);
+    await tx.wait();
+    let user5BalanceNow = await ptoken.connect(user5).balanceOf(user5.address, 1);
+    console.log("User5 get revenue:", user5BalanceNow);
   });
 });
