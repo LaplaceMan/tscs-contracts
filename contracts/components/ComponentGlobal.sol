@@ -83,16 +83,17 @@ contract ComponentGlobal is IComponentGlobal {
         } else if (note == 2) {
             version = addr;
         } else if (note == 3) {
-            platforms = addr;
             MurmesInterface(Murmes).setOperatorByTool(platforms, addr);
+            platforms = addr;
         } else if (note == 4) {
-            settlement = addr;
             MurmesInterface(Murmes).setOperatorByTool(settlement, addr);
+            settlement = addr;
         } else if (note == 5) {
+            MurmesInterface(Murmes).setOperatorByTool(authority, addr);
             authority = addr;
         } else if (note == 6) {
-            arbitration = addr;
             MurmesInterface(Murmes).setOperatorByTool(arbitration, addr);
+            arbitration = addr;
         } else if (note == 7) {
             itemToken = addr;
         } else if (note == 8) {

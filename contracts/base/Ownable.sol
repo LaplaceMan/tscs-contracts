@@ -57,7 +57,9 @@ abstract contract Ownable {
         if (old == address(0)) {
             opeators[replace] = true;
         } else {
-            opeators[old] = false;
+            if (old != address(0)) {
+                opeators[old] = false;
+            }
             opeators[replace] = true;
         }
     }

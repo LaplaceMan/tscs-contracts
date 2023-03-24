@@ -63,10 +63,11 @@ contract LensAuthority is IAuthorityBase {
         address caller,
         DataTypes.SettlementType
     ) external override returns (uint256) {
+        require(MurmesInterface(Murmes).isOperator(msg.sender), "LA15");
         (uint256 profileId, bool result) = _stringToUint256(source);
         require(result, "LA11");
         address owner = ILensHub(Lens).ownerOf(profileId);
-        require(owner == caller, "LA15");
+        require(owner == caller, "LA15-2");
         address module = ILensHub(Lens).getCollectModule(profileId, boxId);
         require(whitelistedLensModule[module] = true, "LA16");
         uint256 realId = uint256(keccak256(abi.encode(profileId, boxId)));
@@ -87,16 +88,17 @@ contract LensAuthority is IAuthorityBase {
     /**
      * @notice 创建Box之前，判断创建者权限
      * @param platform Box所属的平台地址
-     * @param caller 创建Box者
      * @return 是否有权限
      * Fn 2
      */
     function forCreateBox(
         address platform,
         uint256,
-        address caller
+        address
     ) external view override returns (bool) {
-        if (platform != Lens || !MurmesInterface(Murmes).isOperator(caller)) {
+        if (
+            platform != Lens || !MurmesInterface(Murmes).isOperator(msg.sender)
+        ) {
             return false;
         } else {
             return true;
@@ -107,6 +109,7 @@ contract LensAuthority is IAuthorityBase {
      * @notice 更新Box收益之前，检查更新者权限
      * @param realId Box在第三方平台内的real ID
      * @return 最终可更新的收益数量
+     * Fn 3
      */
     function forUpdateBoxRevenue(
         uint256 realId,
@@ -114,10 +117,11 @@ contract LensAuthority is IAuthorityBase {
         address,
         address
     ) external override returns (uint256) {
+        require(MurmesInterface(Murmes).isOperator(msg.sender), "LA35");
         uint256 profileId = boxLensItemMap[realId].profileId;
         uint256 pubId = boxLensItemMap[realId].pubId;
         address module = ILensHub(Lens).getCollectModule(profileId, pubId);
-        require(whitelistedLensModule[module] = true, "LA35");
+        require(whitelistedLensModule[module] = true, "LA36");
         uint256 amount = ILensFeeModuleForMurmes(module)
             .getTotalRevenueForMurmes(profileId, pubId);
         uint256 increase = amount > boxLensItemMap[realId].revenue

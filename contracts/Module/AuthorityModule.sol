@@ -5,6 +5,10 @@ import "../interfaces/IAuthorityBase.sol";
 import "../interfaces/IComponentGlobal.sol";
 import "../interfaces/IAuthorityModule.sol";
 
+interface MurmesInterface {
+    function isOperator(address operator) external view returns (bool);
+}
+
 contract AuthorityModule is IAuthorityModule {
     /**
      * @notice Murmes主合约地址
@@ -65,21 +69,18 @@ contract AuthorityModule is IAuthorityModule {
 
     /**
      * @notice 判断调用者是否有创建Box的权限
-     * @param components Murmes全局组件管理合约
      * @param platform Box所属平台
      * @param platformId Box所属平台的ID
+     * @param authorityModule Box所属平台设置的特殊权限合约
      * @param caller 调用者
      * Fn 2
      */
     function isOwnCreateBoxAuthority(
-        address components,
         address platform,
         uint256 platformId,
+        address authorityModule,
         address caller
     ) external view override returns (bool) {
-        address platforms = IComponentGlobal(components).platforms();
-        address authorityModule = IPlatforms(platforms)
-            .getPlatformAuthorityModule(platform);
         return
             IAuthorityBase(authorityModule).forCreateBox(
                 platform,
@@ -94,7 +95,7 @@ contract AuthorityModule is IAuthorityModule {
      * @param counts 收益数目
      * @param platform 第三方平台地址
      * @param caller 调用者
-     * @param components Murmes全局组件管理合约
+     * @param authorityModule Box所属平台设置的特殊权限合约
      * @return 实际可更新的收益
      * Fn 3
      */
@@ -103,11 +104,9 @@ contract AuthorityModule is IAuthorityModule {
         uint256 counts,
         address platform,
         address caller,
-        address components
+        address authorityModule
     ) external override returns (uint256) {
-        address platforms = IComponentGlobal(components).platforms();
-        address authorityModule = IPlatforms(platforms)
-            .getPlatformAuthorityModule(platform);
+        require(MurmesInterface(Murmes).isOperator(msg.sender), "AYM35");
         return
             IAuthorityBase(authorityModule).forUpdateBoxRevenue(
                 realId,

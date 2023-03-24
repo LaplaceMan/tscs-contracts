@@ -149,9 +149,9 @@ contract Platforms is IPlatforms {
         address authority = IComponentGlobal(components).authority();
         require(
             IAuthorityModule(authority).isOwnCreateBoxAuthority(
-                components,
                 platform,
                 platforms[platform].platformId,
+                platforms[platform].authorityModule,
                 msg.sender
             ),
             "P65"
@@ -213,7 +213,7 @@ contract Platforms is IPlatforms {
                     amounts[i],
                     boxes[ids[i]].platform,
                     msg.sender,
-                    components
+                    platforms[boxes[ids[i]].platform].authorityModule
                 );
             boxes[ids[i]].unsettled += amount;
             for (uint256 j; j < boxes[ids[i]].tasks.length; j++) {

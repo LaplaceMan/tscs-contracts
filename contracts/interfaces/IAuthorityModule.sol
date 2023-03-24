@@ -7,9 +7,9 @@ interface IAuthorityModule {
     function Murmes() external view returns (address);
 
     function isOwnCreateBoxAuthority(
-        address components,
         address platform,
         uint256 platformId,
+        address authorityModule,
         address caller
     ) external view returns (bool);
 
@@ -18,7 +18,7 @@ interface IAuthorityModule {
         uint256 counts,
         address platform,
         address caller,
-        address components
+        address authorityModule
     ) external returns (uint256);
 
     function formatBoxIdOfPostTask(
