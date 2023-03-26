@@ -43,7 +43,6 @@ contract PlatformToken is ERC1155, IPlatformToken {
         require(MurmesInterface(Murmes).isOperator(msg.sender), "PT15");
         platforms[platformId] = endorser;
         suffix[platformId] = symbol;
-        emit CreatePlatformToken(endorser, platformId);
     }
 
     /**

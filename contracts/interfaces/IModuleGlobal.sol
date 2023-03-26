@@ -34,14 +34,4 @@ interface IModuleGlobal {
     function getSettlementModuleAddress(
         DataTypes.SettlementType moduleId
     ) external view returns (address);
-
-    event SystemSetCurrencyIsWhitelisted(address token, bool result);
-    event SystemSetGuardModuleIsWhitelisted(address guard, bool result);
-    event SystemSetAuditModuleIsWhitelisted(address module, bool result);
-    event SystemSetDetectionModuleIsWhitelisted(address module, bool result);
-    event SystemSetAuthorityModuleIsWhitelisted(address module, bool result);
-    event SystemSetSettlementModule(
-        DataTypes.SettlementType moduleId,
-        address module
-    );
 }

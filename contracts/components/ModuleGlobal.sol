@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.0;
 import "../interfaces/IModuleGlobal.sol";
+import {Events} from "../libraries/Events.sol";
 
 interface MurmesInterface {
     function owner() external view returns (address);
@@ -64,7 +65,7 @@ contract ModuleGlobal is IModuleGlobal {
             module
         );
         settlementModule[moduleId] = module;
-        emit SystemSetSettlementModule(moduleId, module);
+        emit Events.MurmesSetSettlementModule(moduleId, module);
     }
 
     /**
@@ -78,7 +79,7 @@ contract ModuleGlobal is IModuleGlobal {
         bool result
     ) external auth {
         whitelistCurrency[currency] = result;
-        emit SystemSetCurrencyIsWhitelisted(currency, result);
+        emit Events.MurmesSetCurrencyIsWhitelisted(currency, result);
     }
 
     /**
@@ -92,7 +93,7 @@ contract ModuleGlobal is IModuleGlobal {
         bool result
     ) external auth {
         whitelistGuardModule[guard] = result;
-        emit SystemSetGuardModuleIsWhitelisted(guard, result);
+        emit Events.MurmesSetGuardModuleIsWhitelisted(guard, result);
     }
 
     /**
@@ -106,7 +107,7 @@ contract ModuleGlobal is IModuleGlobal {
         bool result
     ) external auth {
         whitelistAuditModule[module] = result;
-        emit SystemSetAuditModuleIsWhitelisted(module, result);
+        emit Events.MurmesSetAuditModuleIsWhitelisted(module, result);
     }
 
     /**
@@ -120,7 +121,7 @@ contract ModuleGlobal is IModuleGlobal {
         bool result
     ) external auth {
         whitelistDetectionModule[module] = result;
-        emit SystemSetDetectionModuleIsWhitelisted(module, result);
+        emit Events.MurmesSetDetectionModuleIsWhitelisted(module, result);
     }
 
     /**
@@ -134,7 +135,7 @@ contract ModuleGlobal is IModuleGlobal {
         bool result
     ) external auth {
         whitelistAuthorityModule[module] = result;
-        emit SystemSetAuthorityModuleIsWhitelisted(module, result);
+        emit Events.MurmesSetAuthorityModuleIsWhitelisted(module, result);
     }
 
     // ***************** View Functions *****************

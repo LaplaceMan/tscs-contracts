@@ -52,6 +52,7 @@ contract TaskManager is ItemManager {
                 0
             );
         }
+        emit Events.TaskStateUpdate(taskId, plusAmount, plusTime);
     }
 
     /**
@@ -78,6 +79,7 @@ contract TaskManager is ItemManager {
             );
         }
         delete tasks[taskId];
+        emit Events.TaskCancelled(taskId);
     }
 
     /**
@@ -93,35 +95,26 @@ contract TaskManager is ItemManager {
         address settlement = IModuleGlobal(moduleGlobal)
             .getSettlementModuleAddress(tasks[taskId].settlement);
         ISettlementModule(settlement).resetSettlement(taskId, amount);
+        emit Events.TaskReset(taskId, amount);
     }
 
     // ***************** View Functions *****************
-    function getPlatformAddressByTaskId(uint256 taskId)
-        external
-        view
-        returns (address)
-    {
+    function getPlatformAddressByTaskId(
+        uint256 taskId
+    ) external view returns (address) {
         require(tasks[taskId].applicant != address(0), "181");
         return tasks[taskId].platform;
     }
 
-    function getTaskSettlementModuleAndItems(uint256 taskId)
-        external
-        view
-        returns (DataTypes.SettlementType, uint256[] memory)
-    {
+    function getTaskSettlementModuleAndItems(
+        uint256 taskId
+    ) external view returns (DataTypes.SettlementType, uint256[] memory) {
         return (tasks[taskId].settlement, tasks[taskId].items);
     }
 
-    function getTaskItemsState(uint256 taskId)
-        external
-        view
-        returns (
-            uint256,
-            uint256,
-            uint256
-        )
-    {
+    function getTaskItemsState(
+        uint256 taskId
+    ) external view returns (uint256, uint256, uint256) {
         return (
             tasks[taskId].items.length,
             tasks[taskId].adopted,
@@ -129,15 +122,9 @@ contract TaskManager is ItemManager {
         );
     }
 
-    function getAdoptedItemData(uint256 taskId)
-        external
-        view
-        returns (
-            uint256,
-            address,
-            address[] memory
-        )
-    {
+    function getAdoptedItemData(
+        uint256 taskId
+    ) external view returns (uint256, address, address[] memory) {
         return (
             tasks[taskId].adopted,
             tasks[taskId].currency,
@@ -145,15 +132,9 @@ contract TaskManager is ItemManager {
         );
     }
 
-    function getTaskSettlementData(uint256 taskId)
-        external
-        view
-        returns (
-            DataTypes.SettlementType,
-            address,
-            uint256
-        )
-    {
+    function getTaskSettlementData(
+        uint256 taskId
+    ) external view returns (DataTypes.SettlementType, address, uint256) {
         return (
             tasks[taskId].settlement,
             tasks[taskId].currency,
@@ -161,15 +142,9 @@ contract TaskManager is ItemManager {
         );
     }
 
-    function getItemCustomModuleOfTask(uint256 itemId)
-        external
-        view
-        returns (
-            address,
-            address,
-            address
-        )
-    {
+    function getItemCustomModuleOfTask(
+        uint256 itemId
+    ) external view returns (address, address, address) {
         uint256 taskId = itemsNFT[itemId].taskId;
         return (
             tasks[taskId].currency,
@@ -178,17 +153,9 @@ contract TaskManager is ItemManager {
         );
     }
 
-    function getItemAuditData(uint256 itemId)
-        public
-        view
-        returns (
-            uint256,
-            uint256,
-            uint256,
-            uint256,
-            uint256
-        )
-    {
+    function getItemAuditData(
+        uint256 itemId
+    ) public view returns (uint256, uint256, uint256, uint256, uint256) {
         uint256 taskId = itemsNFT[itemId].taskId;
         uint256 uploaded = tasks[taskId].items.length;
         uint256 allSupport;

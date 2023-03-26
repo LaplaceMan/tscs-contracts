@@ -3,94 +3,87 @@ pragma solidity ^0.8.0;
 import {DataTypes} from "./DataTypes.sol";
 
 library Events {
-    event PlatformJoin(
-        address platform,
-        uint256 id,
-        string name,
-        string symbol,
-        uint16 rate1,
-        uint16 rate2
-    );
-    event PlatformSetRate(address platform, uint16 rate1, uint16 rate2);
-    event PlatformSetTokenGlobal(address oldToken, address newToken);
-
-    event VideoCreate(
-        address platform,
-        uint256 realId,
-        uint256 id,
-        string symbol,
-        address creator,
-        uint256 initializeView
-    );
-    event VideoCountsUpdate(address platform, uint256[] id, uint256[] counts);
-
-    event SubtitleCountsUpdate(uint256 taskId, uint256 counts);
-    event ApplicationUpdate(
-        uint256 taskId,
-        uint256 newAmount,
-        uint256 newDeadline
-    );
-    event ApplicationReset(uint256 taskId, uint256 amount);
-    event UserWithdraw(
-        address user,
-        address platform,
-        uint256[] day,
-        uint256 all
-    );
-    event VideoPreExtract(uint256 videoId, uint256 unsettled, uint256 surplus);
-
-    event ApplicationSubmit(
-        address applicant,
-        address platform,
-        uint256 videoId,
-        uint8 strategy,
-        uint256 amount,
-        uint32 language,
-        uint256 deadline,
-        uint256 taskId,
-        string src
-    );
-
-    event WithdrawPenalty(address to, uint256 amount);
-
-    event WithdrawVideoPlatformFee(
-        address to,
-        uint256[] ids,
-        uint256[] amounts
-    );
-    event SystemSetFee(uint16 old, uint16 fee);
-
+    /**********Murmes-Ownable**********/
+    event OperatorStateUpdate(address operator, bool state);
+    /**********Murmes-EntityManager**********/
     event RegisterRepuire(string require, uint256 id);
     event UserJoin(address user, uint256 reputation, int256 deposit);
-    event UserLockRewardUpdate(
-        address user,
-        address platform,
-        uint256 day,
-        int256 reward
-    );
-    event UserInfoUpdate(
+    event UserBaseDataUpdate(
         address user,
         int256 reputationSpread,
         int256 tokenSpread
     );
-    event UserWithdrawDespoit(address user, uint256 amount, uint256 balance);
-
-    event ItemStateChange(
+    event UserGuardUpdate(address user, address guard);
+    event UserWithdrawDeposit(address user, uint256 amount);
+    event UserLockedRevenueUpdate(
+        address user,
+        address platform,
+        uint256 day,
+        int256 revenue
+    );
+    /**********Murmes-ItemManager**********/
+    event ItemStateUpdate(uint256 itemId, DataTypes.ItemState state);
+    /**********Murmes-TaskManager**********/
+    event TaskStateUpdate(uint256 taskId, uint256 plusAmount, uint256 plusTime);
+    event TaskCancelled(uint256 taskId);
+    event TaskReset(uint256 taskId, uint256 amount);
+    /**********Murmes**********/
+    event TaskPosted(DataTypes.PostTaskData vars, uint256 taskId);
+    event TaskSubmitted(DataTypes.ItemMetadata vars, uint256 itemId);
+    event TaskAudited(uint256 itemId, DataTypes.AuditAttitude attitude);
+    event UserWithdrawRevenue(address platform, uint256[] day, uint256 all);
+    /**********Arbitration**********/
+    event ReportPosted(
+        DataTypes.ReportReason reason,
         uint256 itemId,
-        DataTypes.ItemState state,
-        uint256 taskId
+        uint256 proofSubtitleId,
+        string otherProof,
+        address reporter
     );
-
-    event ItemGetEvaluation(
+    event ReportResult(uint256 reportId, string resultProof, bool result);
+    /**********ComponentGlobal**********/
+    event MurmesSetComponent(uint8 id, address components);
+    event MurmesSetLockUpTime(uint256 oldTime, uint256 newTime);
+    /**********ModuleGlobal**********/
+    event MurmesSetCurrencyIsWhitelisted(address token, bool result);
+    event MurmesSetGuardModuleIsWhitelisted(address guard, bool result);
+    event MurmesSetAuditModuleIsWhitelisted(address module, bool result);
+    event MurmesSetDetectionModuleIsWhitelisted(address module, bool result);
+    event MurmesSetAuthorityModuleIsWhitelisted(address module, bool result);
+    event MurmesSetSettlementModule(
+        DataTypes.SettlementType moduleId,
+        address module
+    );
+    /**********Platforms**********/
+    event RegisterPlatform(
+        address platform,
+        string name,
+        string symbol,
+        uint16 rate1,
+        uint16 rate2,
+        address authority
+    );
+    event PlatformStateUpdate(uint16 rate1, uint16 rate2);
+    event BoxCreated(
+        uint256 realId,
+        address platform,
+        address creator,
+        uint256 boxId
+    );
+    event BoxRevenueUpdate(uint256 id, uint256 amounts, address caller);
+    /**********Vault**********/
+    event MurmesSetFee(uint16 oldFee, uint16 newFee);
+    event PenaltyTransferred(address token, address to, uint256 amount);
+    /**********ItemVersionManagement**********/
+    event ItemVersionReportInvaild(uint256 itemId, uint256 versionId);
+    event ItemVersionUpdate(
         uint256 itemId,
-        address evaluator,
-        DataTypes.AuditAttitude attitude
+        uint256 fingerprint,
+        string source,
+        uint256 versionId
     );
-
-    event OwnershipTransferred(
-        address indexed previousOwner,
-        address indexed newOwner
-    );
-
-    event MutliSigTransferred(address previousMutliSig, address newMutliSig);
+    /**********Settlement**********/
+    event ItemRevenueUpdate(uint256 taskId, uint256 counts);
+    event ExtractRevenuePre(uint256 taskId, address caller);
+    event ExtractRevenue(uint256 taskId, address caller);
 }

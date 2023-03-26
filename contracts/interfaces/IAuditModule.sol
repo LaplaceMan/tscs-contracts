@@ -16,5 +16,5 @@ interface IAuditModule {
         uint256 lockUpTime
     ) external view returns (DataTypes.ItemState);
 
-    event SystemChangeAuditUnit(uint256 nowAuditUnit);
+    event SetAuditUnit(uint256 nowAuditUnit);
 }

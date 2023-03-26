@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 import "../interfaces/IVault.sol";
 import "../common/token/ERC20/IERC20.sol";
+import {Events} from "../libraries/Events.sol";
 
 interface MurmesInterface {
     function owner() external view returns (address);
@@ -40,6 +41,7 @@ contract Vault is IVault {
     ) external override {
         require(MurmesInterface(Murmes).owner() == msg.sender, "V25");
         require(IERC20(token).transfer(to, amount), "V212");
+        emit Events.PenaltyTransferred(token, to, amount);
     }
 
     /**
@@ -49,8 +51,8 @@ contract Vault is IVault {
      */
     function setFee(uint16 newFee) external {
         require(MurmesInterface(Murmes).owner() == msg.sender, "V35");
-        uint16 old = fee;
+        uint16 oldFee = fee;
         fee = newFee;
-        emit SystemSetFee(old, newFee);
+        emit Events.MurmesSetFee(oldFee, newFee);
     }
 }

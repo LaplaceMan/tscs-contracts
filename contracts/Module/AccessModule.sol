@@ -42,7 +42,7 @@ contract AccessModule is IAccessModule {
      */
     function setDepositUnit(uint256 newDepositUnit) external auth {
         depositUnit = newDepositUnit;
-        emit SystemSetDepositUnit(newDepositUnit);
+        emit MurmesSetDepositUnit(newDepositUnit);
     }
 
     /**
@@ -51,7 +51,7 @@ contract AccessModule is IAccessModule {
      */
     function setPunishmentUnit(uint256 newPunishmentUnit) external auth {
         punishmentUnit = newPunishmentUnit;
-        emit SystemSetPunishmentUnit(newPunishmentUnit);
+        emit MurmesSetPunishmentUnit(newPunishmentUnit);
     }
 
     /**
@@ -60,7 +60,7 @@ contract AccessModule is IAccessModule {
      */
     function setMultiplier(uint8 newMultiplier) external auth {
         multiplier = newMultiplier;
-        emit SystemSetMultiplier(newMultiplier);
+        emit MurmesSetMultiplier(newMultiplier);
     }
 
     // ***************** Internal Functions *****************

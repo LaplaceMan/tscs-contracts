@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
+import {Events} from "../libraries/Events.sol";
 
 abstract contract Ownable {
     /**
@@ -13,7 +14,7 @@ abstract contract Ownable {
     /**
      * @notice 相应的区块链地址是否拥有特殊权限
      */
-    mapping(address => bool) opeators;
+    mapping(address => bool) operators;
 
     // Fn 1
     modifier onlyOwner() {
@@ -22,7 +23,7 @@ abstract contract Ownable {
     }
     // Fn 2
     modifier auth() {
-        require(opeators[msg.sender] == true, "O25");
+        require(operators[msg.sender] == true, "O25");
         _;
     }
 
@@ -51,16 +52,16 @@ abstract contract Ownable {
      * @notice 设置/替换拥有特殊权限的操作员（合约）地址
      * @param old 旧的操作员地址，被撤销
      * @param replace 新的操作员权限，被授予
+     * Fn 5
      */
-    function setOperatorByTool(address old, address replace) public {
-        require(opeators[msg.sender] == true, "O55");
-        if (old == address(0)) {
-            opeators[replace] = true;
-        } else {
-            if (old != address(0)) {
-                opeators[old] = false;
-            }
-            opeators[replace] = true;
+    function setOperatorByTool(address old, address replace) public auth {
+        if (old != address(0)) {
+            operators[old] = false;
+            emit Events.OperatorStateUpdate(old, false);
+        }
+        if (replace != address(0)) {
+            operators[replace] = true;
+            emit Events.OperatorStateUpdate(replace, true);
         }
     }
 
@@ -83,6 +84,6 @@ abstract contract Ownable {
     }
 
     function isOperator(address operator) public view returns (bool) {
-        return opeators[operator];
+        return operators[operator];
     }
 }

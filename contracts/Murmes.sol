@@ -19,7 +19,7 @@ contract Murmes is TaskManager {
     constructor(address dao, address mutliSig) {
         _setOwner(dao);
         _setMutliSig(mutliSig);
-        opeators[address(this)] = true;
+        operators[address(this)] = true;
         requiresNoteById.push("None");
     }
 
@@ -109,6 +109,7 @@ contract Murmes is TaskManager {
         tasks[totalTasks].deadline = vars.deadline;
 
         _rewardMurmesToken(msg.sender);
+        emit Events.TaskPosted(vars, totalTasks);
         return totalTasks;
     }
 
@@ -161,6 +162,7 @@ contract Murmes is TaskManager {
         tasks[vars.taskId].items.push(itemId);
 
         _rewardMurmesToken(msg.sender);
+        emit Events.TaskSubmitted(vars, itemId);
         return itemId;
     }
 
@@ -228,6 +230,7 @@ contract Murmes is TaskManager {
                 tasks[taskId].adopted = itemId;
             }
         }
+        emit Events.TaskAudited(itemId, attitude);
     }
 
     /**
@@ -292,6 +295,7 @@ contract Murmes is TaskManager {
                 require(IERC20(platform).transfer(msg.sender, all), "412-2");
             }
         }
+        emit Events.UserWithdrawRevenue(platform, day, all);
         return all;
     }
 

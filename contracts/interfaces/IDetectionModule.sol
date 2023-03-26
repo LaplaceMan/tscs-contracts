@@ -17,5 +17,5 @@ interface IDetectionModule {
 
     function distanceThreshold() external view returns (uint256);
 
-    event SystemSetDistanceThreshold(uint8 newDistanceThreshold);
+    event SetDistanceThreshold(uint8 newDistanceThreshold);
 }

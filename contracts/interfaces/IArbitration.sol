@@ -29,13 +29,11 @@ interface IArbitration {
         uint256[] memory params
     ) external;
 
-    event NewReport(
+    event ReportPosted(
         DataTypes.ReportReason reason,
         uint256 itemId,
         uint256 proofSubtitleId,
         string otherProof,
         address reporter
     );
-
-    event ReportResult(uint256 reportId, string resultProof, bool result);
 }

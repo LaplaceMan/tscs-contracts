@@ -23,13 +23,4 @@ interface IItemVersionManagement {
     function getLatestValidVersion(
         uint256 itemId
     ) external view returns (string memory, uint256);
-
-    event ReportInvalidVersion(uint256 itemId, uint256 versionId);
-
-    event UpdateItemVersion(
-        uint256 itemId,
-        uint256 fingerprint,
-        string source,
-        uint256 versionId
-    );
 }

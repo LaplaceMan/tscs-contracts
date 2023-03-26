@@ -28,7 +28,7 @@ contract AuditModule is IAuditModule {
     function changeAuditUnit(uint256 newAuditUnit) external {
         require(MurmesInterface(Murmes).owner() == msg.sender, "ATM5");
         auditUnit = newAuditUnit;
-        emit SystemChangeAuditUnit(newAuditUnit);
+        emit SetAuditUnit(newAuditUnit);
     }
 
     // ***************** Internal Functions *****************

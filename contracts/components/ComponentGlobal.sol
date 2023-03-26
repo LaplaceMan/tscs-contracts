@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.0;
 import "../interfaces/IComponentGlobal.sol";
+import {Events} from "../libraries/Events.sol";
 
 interface MurmesInterface {
     function owner() external view returns (address);
@@ -99,7 +100,7 @@ contract ComponentGlobal is IComponentGlobal {
         } else if (note == 8) {
             platformToken = addr;
         }
-        emit SystemSetComponent(note, addr);
+        emit Events.MurmesSetComponent(note, addr);
     }
 
     /**
@@ -110,6 +111,6 @@ contract ComponentGlobal is IComponentGlobal {
     function setLockUpTime(uint256 time) external auth {
         uint256 oldTime = lockUpTime;
         lockUpTime = time;
-        emit SystemSetLockUpTime(oldTime, time);
+        emit Events.MurmesSetLockUpTime(oldTime, time);
     }
 }

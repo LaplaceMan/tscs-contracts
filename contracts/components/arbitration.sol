@@ -8,6 +8,7 @@ import "../interfaces/IAccessModule.sol";
 import "../interfaces/IComponentGlobal.sol";
 import "../interfaces/IItemVersionManagement.sol";
 import {Constant} from "../libraries/Constant.sol";
+import {Events} from "../libraries/Events.sol";
 
 contract Arbitration is IArbitration {
     /**
@@ -84,7 +85,13 @@ contract Arbitration is IArbitration {
         reports[totalReports].itemId = itemId;
         reports[totalReports].stringProof = stringProof;
         reports[totalReports].uintProof = uintProof;
-        emit NewReport(reason, itemId, uintProof, stringProof, msg.sender);
+        emit Events.ReportPosted(
+            reason,
+            itemId,
+            uintProof,
+            stringProof,
+            msg.sender
+        );
         return totalReports;
     }
 
@@ -146,9 +153,10 @@ contract Arbitration is IArbitration {
         } else {
             _punishRepoter(reportId, access);
         }
-        emit ReportResult(reportId, resultProof, result);
+        emit Events.ReportResult(reportId, resultProof, result);
     }
 
+    // ***************** Internal Functions *****************
     /**
      * @notice 当举报经由DAO审核不通过时，相应的reporter受到惩罚，这是为了防止恶意攻击的举措
      * @param reportId 唯一标识举报的ID

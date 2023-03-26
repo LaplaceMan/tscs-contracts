@@ -12,7 +12,7 @@ interface IComponentGlobal {
 
     function platforms() external view returns (address);
 
-    function settlement() external view returns(address);
+    function settlement() external view returns (address);
 
     function authority() external view returns (address);
 
@@ -25,8 +25,4 @@ interface IComponentGlobal {
     function defaultDespoitableToken() external view returns (address);
 
     function lockUpTime() external view returns (uint256);
-
-    event SystemSetDefaultDepositToken(address token);
-    event SystemSetComponent(uint8 id, address components);
-    event SystemSetLockUpTime(uint256 oldTime, uint256 newTime);
 }

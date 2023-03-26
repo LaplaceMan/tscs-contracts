@@ -29,6 +29,7 @@ contract ItemManager is EntityManager {
     ) external auth {
         assert(state != DataTypes.ItemState.ADOPTED);
         _changeItemState(itemId, state);
+        emit Events.ItemStateUpdate(itemId, state);
     }
 
     // ***************** Internal Functions *****************

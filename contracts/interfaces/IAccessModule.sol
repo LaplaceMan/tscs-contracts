@@ -35,7 +35,7 @@ interface IAccessModule {
 
     function deposit(uint256 reputation) external view returns (uint256);
 
-    event SystemSetMultiplier(uint8 newMultiplier);
-    event SystemSetDepositUnit(uint256 newMinDepositUnit);
-    event SystemSetPunishmentUnit(uint256 newPunishmentTokenUnit);
+    event MurmesSetMultiplier(uint8 newMultiplier);
+    event MurmesSetDepositUnit(uint256 newMinDepositUnit);
+    event MurmesSetPunishmentUnit(uint256 newPunishmentTokenUnit);
 }

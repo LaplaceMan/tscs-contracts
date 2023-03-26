@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.0;
-
 import "../interfaces/IMurmes.sol";
 import "../interfaces/IPlatforms.sol";
 import "../interfaces/ISettlement.sol";
@@ -8,6 +7,7 @@ import "../interfaces/IModuleGlobal.sol";
 import "../interfaces/IPlatformToken.sol";
 import "../interfaces/IComponentGlobal.sol";
 import "../interfaces/IAuthorityModule.sol";
+import {Events} from "../libraries/Events.sol";
 
 contract Platforms is IPlatforms {
     /**
@@ -93,6 +93,14 @@ contract Platforms is IPlatforms {
             platform,
             totalPlatforms
         );
+        emit Events.RegisterPlatform(
+            platform,
+            name,
+            symbol,
+            rate1,
+            rate2,
+            authority
+        );
         return totalPlatforms;
     }
 
@@ -110,6 +118,7 @@ contract Platforms is IPlatforms {
         if (rate2 != 0) {
             platforms[msg.sender].rateAuditorDivide = rate2;
         }
+        emit Events.PlatformStateUpdate(rate1, rate2);
     }
 
     /**
@@ -162,6 +171,7 @@ contract Platforms is IPlatforms {
         boxes[totalBoxes].id = realId;
         boxes[totalBoxes].creator = creator;
         idRealToMurmes[platform][realId] = totalBoxes;
+        emit Events.BoxCreated(realId, platform, creator, totalBoxes);
         return totalBoxes;
     }
 
@@ -231,6 +241,7 @@ contract Platforms is IPlatforms {
                     ISettlement(settlement).updateItemRevenue(taskId, amount);
                 }
             }
+            emit Events.BoxRevenueUpdate(ids[i], amounts[i], msg.sender);
         }
     }
 

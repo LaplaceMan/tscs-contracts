@@ -22,6 +22,4 @@ interface IPlatformToken is IERC1155 {
     ) external;
 
     function burn(address from, uint256 platformId, uint256 amount) external;
-
-    event CreatePlatformToken(address platform, uint256 id);
 }

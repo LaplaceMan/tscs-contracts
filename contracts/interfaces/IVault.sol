@@ -13,6 +13,4 @@ interface IVault {
         address to,
         uint256 amount
     ) external;
-
-    event SystemSetFee(uint16 oldFee, uint16 newFee);
 }

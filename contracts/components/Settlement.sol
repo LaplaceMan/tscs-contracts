@@ -9,6 +9,7 @@ import "../interfaces/IPlatformToken.sol";
 import "../interfaces/IComponentGlobal.sol";
 import "../interfaces/ISettlementModule.sol";
 import {Constant} from "../libraries/Constant.sol";
+import {Events} from "../libraries/Events.sol";
 
 contract Settlement is ISettlement {
     /**
@@ -50,6 +51,7 @@ contract Settlement is ISettlement {
             amount,
             rateCountsToProfit
         );
+        emit Events.ItemRevenueUpdate(taskId, counts);
     }
 
     /**
@@ -83,6 +85,7 @@ contract Settlement is ISettlement {
             rateAuditorDivide,
             supporters
         );
+        emit Events.ExtractRevenuePre(taskId, msg.sender);
     }
 
     /**
@@ -121,6 +124,7 @@ contract Settlement is ISettlement {
             boxId,
             int256(box.unsettled) * -1
         );
+        emit Events.ExtractRevenue(boxId, msg.sender);
     }
 
     // ***************** Internal Functions *****************

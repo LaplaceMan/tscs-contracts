@@ -56,4 +56,13 @@ interface IPlatforms {
     function getPlatformAuthorityModule(
         address platform
     ) external view returns (address);
+
+    event RegisterPlatform(
+        address platform,
+        string name,
+        string symbol,
+        uint16 rate1,
+        uint16 rate2,
+        address authority
+    );
 }

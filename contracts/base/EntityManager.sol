@@ -38,6 +38,7 @@ contract EntityManager is Ownable {
             require(requiresIdByNote[notes[i]] == 0, "E10");
             requiresNoteById.push(notes[i]);
             requiresIdByNote[notes[i]] = requiresNoteById.length - 1;
+            emit Events.RegisterRepuire(notes[i], requiresNoteById.length - 1);
         }
     }
 
@@ -59,8 +60,14 @@ contract EntityManager is Ownable {
 
         if (users[user].reputation == 0) {
             _userInitialization(user, deposit);
+            emit Events.UserJoin(
+                user,
+                Constant.BASE_REPUTATION,
+                int256(deposit)
+            );
         } else {
             users[user].deposit += int256(deposit);
+            emit Events.UserBaseDataUpdate(user, 0, int256(deposit));
         }
     }
 
@@ -72,26 +79,7 @@ contract EntityManager is Ownable {
     function setUserGuard(address guard) external {
         require(users[msg.sender].reputation > 0, "E32");
         users[msg.sender].guard = guard;
-    }
-
-    /**
-     * @notice 设置全局管理合约
-     * @param note 0为模块管理合约，1为组件管理合约
-     * @param addr 相应的合约地址
-     */
-    function setGlobalContract(uint8 note, address addr) external onlyOwner {
-        address old;
-        if (note == 0) {
-            old = moduleGlobal;
-            moduleGlobal = addr;
-        } else {
-            old = componentGlobal;
-            componentGlobal = addr;
-        }
-        if (old != address(0)) {
-            opeators[addr] = false;
-        }
-        opeators[addr] = true;
+        emit Events.UserGuardUpdate(msg.sender, guard);
     }
 
     /**
@@ -111,6 +99,7 @@ contract EntityManager is Ownable {
         address token = IComponentGlobal(componentGlobal)
             .defaultDespoitableToken();
         require(IERC20(token).transfer(msg.sender, amount), "E412");
+        emit Events.UserWithdrawDeposit(msg.sender, amount);
     }
 
     /**
@@ -126,6 +115,7 @@ contract EntityManager is Ownable {
         int256 tokenSpread
     ) public auth {
         _updateUser(user, reputationSpread, tokenSpread);
+        emit Events.UserBaseDataUpdate(user, reputationSpread, tokenSpread);
     }
 
     /**
@@ -146,6 +136,26 @@ contract EntityManager is Ownable {
         uint256 current = users[user].locks[platform][day];
         int256 newLock = int256(current) + amount;
         users[user].locks[platform][day] = (newLock > 0 ? uint256(newLock) : 0);
+        emit Events.UserLockedRevenueUpdate(user, platform, day, amount);
+    }
+
+    /**
+     * @notice 设置全局管理合约
+     * @param note 0为模块管理合约，1为组件管理合约
+     * @param addr 相应的合约地址
+     * Fn 7
+     */
+    function setGlobalContract(uint8 note, address addr) external onlyOwner {
+        address old;
+        if (note == 0) {
+            old = moduleGlobal;
+            moduleGlobal = addr;
+        } else {
+            old = componentGlobal;
+            componentGlobal = addr;
+        }
+        operators[addr] = false;
+        operators[addr] = true;
     }
 
     // ***************** Internal Functions *****************

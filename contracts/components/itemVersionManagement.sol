@@ -5,6 +5,7 @@ import "../interfaces/IItemNFT.sol";
 import "../interfaces/IDetectionModule.sol";
 import "../interfaces/IComponentGlobal.sol";
 import "../interfaces/IItemVersionManagement.sol";
+import {Events} from "../libraries/Events.sol";
 
 contract ItemVersionManagement is IItemVersionManagement {
     /**
@@ -75,7 +76,7 @@ contract ItemVersionManagement is IItemVersionManagement {
                 invalid: false
             })
         );
-        emit UpdateItemVersion(
+        emit Events.ItemVersionUpdate(
             itemId,
             fingerprint,
             source,
@@ -98,7 +99,7 @@ contract ItemVersionManagement is IItemVersionManagement {
         for (uint256 i = versionId; i < items[itemId].length; i++) {
             items[itemId][i].invalid = true;
         }
-        emit ReportInvalidVersion(itemId, versionId);
+        emit Events.ItemVersionReportInvaild(itemId, versionId);
     }
 
     /**
@@ -120,7 +121,7 @@ contract ItemVersionManagement is IItemVersionManagement {
             for (uint256 i = 0; i < items[itemId].length; i++) {
                 if (items[itemId][i].invalid == false) {
                     items[itemId][i].invalid = true;
-                    emit ReportInvalidVersion(itemId, i);
+                    emit Events.ItemVersionReportInvaild(itemId, i);
                 }
             }
         }

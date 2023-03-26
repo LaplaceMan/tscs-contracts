@@ -36,7 +36,7 @@ contract DetectionModule is IDetectionModule {
     function setDistanceThreshold(uint8 newDistanceThreshold) external {
         require(MurmesInterface(Murmes).owner() == msg.sender, "DNS15");
         distanceThreshold = newDistanceThreshold;
-        emit SystemSetDistanceThreshold(newDistanceThreshold);
+        emit SetDistanceThreshold(newDistanceThreshold);
     }
 
     // ***************** Internal Functions *****************
