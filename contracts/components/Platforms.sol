@@ -99,7 +99,8 @@ contract Platforms is IPlatforms {
             symbol,
             rate1,
             rate2,
-            authority
+            authority,
+            totalPlatforms
         );
         return totalPlatforms;
     }
@@ -118,7 +119,7 @@ contract Platforms is IPlatforms {
         if (rate2 != 0) {
             platforms[msg.sender].rateAuditorDivide = rate2;
         }
-        emit Events.PlatformStateUpdate(rate1, rate2);
+        emit Events.PlatformStateUpdate(msg.sender, rate1, rate2);
     }
 
     /**

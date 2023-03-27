@@ -108,8 +108,7 @@ contract Murmes is TaskManager {
         tasks[totalTasks].detectionModule = vars.detectionModule;
         tasks[totalTasks].deadline = vars.deadline;
 
-        _rewardMurmesToken(msg.sender);
-        emit Events.TaskPosted(vars, totalTasks);
+        emit Events.TaskPosted(vars, totalTasks, msg.sender);
         return totalTasks;
     }
 
@@ -161,8 +160,7 @@ contract Murmes is TaskManager {
         uint256 itemId = _submitItem(msg.sender, vars);
         tasks[vars.taskId].items.push(itemId);
 
-        _rewardMurmesToken(msg.sender);
-        emit Events.TaskSubmitted(vars, itemId);
+        emit Events.ItemSubmitted(vars, itemId, msg.sender);
         return itemId;
     }
 
@@ -230,7 +228,7 @@ contract Murmes is TaskManager {
                 tasks[taskId].adopted = itemId;
             }
         }
-        emit Events.TaskAudited(itemId, attitude);
+        emit Events.ItemAudited(itemId, attitude, msg.sender);
     }
 
     /**
@@ -295,7 +293,7 @@ contract Murmes is TaskManager {
                 require(IERC20(platform).transfer(msg.sender, all), "412-2");
             }
         }
-        emit Events.UserWithdrawRevenue(platform, day, all);
+        emit Events.UserWithdrawRevenue(platform, day, all, msg.sender);
         return all;
     }
 
@@ -439,24 +437,9 @@ contract Murmes is TaskManager {
     }
 
     /**
-     * @notice 奖励用户ID为0的平台Token
-     * @param to 接收代币地址
-     * Fn 10
-     */
-    function _rewardMurmesToken(address to) internal {
-        address platformToken = IComponentGlobal(componentGlobal)
-            .platformToken();
-        IPlatformToken(platformToken).mintPlatformTokenByMurmes(
-            0,
-            to,
-            users[msg.sender].reputation
-        );
-    }
-
-    /**
      * @notice 根据信誉度分数和质押资产数判断用户是否有调用权限
      * @param caller 调用者地址
-     * Fn 11
+     * Fn 10
      */
     function _validateCaller(address caller) internal view {
         address access = IComponentGlobal(componentGlobal).access();

@@ -48,27 +48,30 @@ contract ItemVersionManagement is IItemVersionManagement {
         (, , address detection) = IMurmes(Murmes).getItemCustomModuleOfTask(
             itemId
         );
-        require(
-            IDetectionModule(detection).detectionInUpdateItem(
-                version0,
-                fingerprint
-            ),
-            "VM112"
-        );
-        if (items[itemId].length > 0) {
-            for (uint256 i = 0; i < items[itemId].length; i++) {
-                assert(fingerprint != items[itemId][i].fingerprint);
-                if (items[itemId][i].invalid == false) {
-                    require(
-                        IDetectionModule(detection).detectionInUpdateItem(
-                            fingerprint,
-                            items[itemId][i].fingerprint
-                        ),
-                        "VM113"
-                    );
+        if (detection != address(0)) {
+            require(
+                IDetectionModule(detection).detectionInUpdateItem(
+                    version0,
+                    fingerprint
+                ),
+                "VM112"
+            );
+            if (items[itemId].length > 0) {
+                for (uint256 i = 0; i < items[itemId].length; i++) {
+                    assert(fingerprint != items[itemId][i].fingerprint);
+                    if (items[itemId][i].invalid == false) {
+                        require(
+                            IDetectionModule(detection).detectionInUpdateItem(
+                                fingerprint,
+                                items[itemId][i].fingerprint
+                            ),
+                            "VM113"
+                        );
+                    }
                 }
             }
         }
+
         items[itemId].push(
             DataTypes.VersionStruct({
                 source: source,

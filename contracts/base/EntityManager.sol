@@ -215,7 +215,7 @@ contract EntityManager is Ownable {
         return (users[user].reputation, users[user].deposit);
     }
 
-    function gutUserGuard(address user) external view returns (address) {
+    function getUserGuard(address user) external view returns (address) {
         return users[user].guard;
     }
 

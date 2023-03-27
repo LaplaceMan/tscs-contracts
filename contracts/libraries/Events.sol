@@ -28,10 +28,27 @@ library Events {
     event TaskCancelled(uint256 taskId);
     event TaskReset(uint256 taskId, uint256 amount);
     /**********Murmes**********/
-    event TaskPosted(DataTypes.PostTaskData vars, uint256 taskId);
-    event TaskSubmitted(DataTypes.ItemMetadata vars, uint256 itemId);
-    event TaskAudited(uint256 itemId, DataTypes.AuditAttitude attitude);
-    event UserWithdrawRevenue(address platform, uint256[] day, uint256 all);
+    event TaskPosted(
+        DataTypes.PostTaskData vars,
+        uint256 taskId,
+        address caller
+    );
+    event ItemSubmitted(
+        DataTypes.ItemMetadata vars,
+        uint256 itemId,
+        address maker
+    );
+    event ItemAudited(
+        uint256 itemId,
+        DataTypes.AuditAttitude attitude,
+        address auditor
+    );
+    event UserWithdrawRevenue(
+        address platform,
+        uint256[] day,
+        uint256 all,
+        address caller
+    );
     /**********Arbitration**********/
     event ReportPosted(
         DataTypes.ReportReason reason,
@@ -61,9 +78,10 @@ library Events {
         string symbol,
         uint16 rate1,
         uint16 rate2,
-        address authority
+        address authority,
+        uint256 platformId
     );
-    event PlatformStateUpdate(uint16 rate1, uint16 rate2);
+    event PlatformStateUpdate(address platform, uint16 rate1, uint16 rate2);
     event BoxCreated(
         uint256 realId,
         address platform,
