@@ -51,7 +51,7 @@ contract EntityManager is Ownable {
     function userJoin(address user, uint256 deposit) external {
         if (deposit > 0) {
             address token = IComponentGlobal(componentGlobal)
-                .defaultDespoitableToken();
+                .defaultDepositableToken();
             require(
                 IERC20(token).transferFrom(msg.sender, address(this), deposit),
                 "E212"
@@ -97,7 +97,7 @@ contract EntityManager is Ownable {
         require(users[msg.sender].deposit - int256(amount) >= 0, "E41");
         users[msg.sender].deposit -= int256(amount);
         address token = IComponentGlobal(componentGlobal)
-            .defaultDespoitableToken();
+            .defaultDepositableToken();
         require(IERC20(token).transfer(msg.sender, amount), "E412");
         emit Events.UserWithdrawDeposit(msg.sender, amount);
     }
@@ -198,7 +198,7 @@ contract EntityManager is Ownable {
                 }
                 address vault = IComponentGlobal(componentGlobal).vault();
                 address token = IComponentGlobal(componentGlobal)
-                    .defaultDespoitableToken();
+                    .defaultDepositableToken();
                 require(IERC20(token).transfer(vault, penalty), "E812");
             }
             users[user].deposit = users[user].deposit + tokenSpread;

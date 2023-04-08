@@ -53,7 +53,7 @@ contract ComponentGlobal is IComponentGlobal {
     /**
      * @notice 默认支持的用于质押的代币类型
      */
-    address public defaultDespoitableToken;
+    address public defaultDepositableToken;
     /**
      * @notice 审核期
      */
@@ -61,7 +61,7 @@ contract ComponentGlobal is IComponentGlobal {
 
     constructor(address ms, address token) {
         Murmes = ms;
-        defaultDespoitableToken = token;
+        defaultDepositableToken = token;
     }
 
     // Fn 1

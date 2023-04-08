@@ -176,7 +176,7 @@ describe("Test Murmes With Lens", function () {
         await tx.wait();
     })
 
-    it("Despoit for Audit", async function () {
+    it("Deposit for Audit", async function () {
         let tx;
         tx = await erc20.connect(user3).mint(user3.address, baseEthAmount);
         await tx.wait();

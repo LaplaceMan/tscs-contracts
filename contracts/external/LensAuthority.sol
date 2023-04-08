@@ -142,7 +142,7 @@ contract LensAuthority is IAuthorityBase {
         address platforms = IComponentGlobal(components).platforms();
         uint256 tokenId = IPlatforms(platforms).getPlatformIdByAddress(Lens);
         address defaultToken = IComponentGlobal(components)
-            .defaultDespoitableToken();
+            .defaultDepositableToken();
         address platformToken = IComponentGlobal(components).platformToken();
         uint256 fix = amount / (10 ** 6);
         if (fix > 0) {

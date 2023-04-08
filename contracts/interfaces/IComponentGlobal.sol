@@ -22,7 +22,7 @@ interface IComponentGlobal {
 
     function platformToken() external view returns (address);
 
-    function defaultDespoitableToken() external view returns (address);
+    function defaultDepositableToken() external view returns (address);
 
     function lockUpTime() external view returns (uint256);
 }

@@ -145,7 +145,7 @@ contract LensFeeModuleForMurmes is
     ) internal view returns (bool result) {
         address components = IMurmes(Murmes).componentGlobal();
         address defaultCurrency = IComponentGlobal(components)
-            .defaultDespoitableToken();
+            .defaultDepositableToken();
         if (defaultCurrency == currency) result = true;
     }
 

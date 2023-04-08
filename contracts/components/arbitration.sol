@@ -265,7 +265,7 @@ contract Arbitration is IArbitration {
                 int256(Constant.MIN_COMPENSATE_REPUTATION);
             address vault = IComponentGlobal(components).vault();
             address token = IComponentGlobal(components)
-                .defaultDespoitableToken();
+                .defaultDepositableToken();
             IVault(vault).transferPenalty(token, users[i], tokenReward);
             IMurmes(Murmes).updateUser(users[i], variation, 0);
         }
@@ -312,7 +312,7 @@ contract Arbitration is IArbitration {
         uint256 reportId
     ) internal {
         address vault = IComponentGlobal(components).vault();
-        address token = IComponentGlobal(components).defaultDespoitableToken();
+        address token = IComponentGlobal(components).defaultDepositableToken();
         IVault(vault).transferPenalty(
             token,
             reports[reportId].reporter,
@@ -350,7 +350,7 @@ contract Arbitration is IArbitration {
             // 多补偿被扣掉代币数的百分之一
             address vault = IComponentGlobal(components).vault();
             address token = IComponentGlobal(components)
-                .defaultDespoitableToken();
+                .defaultDepositableToken();
             tokenPunishment = (tokenPunishment * (multipler + 1)) / 100;
             IVault(vault).transferPenalty(token, maker, tokenPunishment);
         }

@@ -313,7 +313,7 @@
 <text text-anchor="start" x="13664.27" y="-2779.7" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;_day(): uint256</text>
 <text text-anchor="start" x="13664.27" y="-2762.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;_preDivide(platform: address, to: address, amount: uint256)</text>
 <text text-anchor="start" x="13664.27" y="-2746.1" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;_preDivideBatch(platform: address, to: address[], amount: uint256)</text>
-<text text-anchor="start" x="13664.27" y="-2729.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;_changeDespoit(amount: int256)</text>
+<text text-anchor="start" x="13664.27" y="-2729.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;_changeDeposit(amount: int256)</text>
 <text text-anchor="start" x="13664.27" y="-2712.5" font-family="Times,serif" font-size="14.00">External:</text>
 <text text-anchor="start" x="13664.27" y="-2695.7" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;registerLanguage(language: string[])</text>
 <text text-anchor="start" x="13664.27" y="-2678.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;getLanguageNoteById(languageId: uint32): string</text>
@@ -328,7 +328,7 @@
 <text text-anchor="start" x="13664.27" y="-2527.7" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&lt;&lt;event&gt;&gt; UserJoin(user: address, reputation: uint256, deposit: int256)</text>
 <text text-anchor="start" x="13664.27" y="-2510.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&lt;&lt;event&gt;&gt; UserLockRewardUpdate(user: address, platform: address, day: uint256, reward: int256)</text>
 <text text-anchor="start" x="13664.27" y="-2494.1" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&lt;&lt;event&gt;&gt; UserInfoUpdate(usr: address, reputationSpread: int256, tokenSpread: int256)</text>
-<text text-anchor="start" x="13664.27" y="-2477.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&lt;&lt;event&gt;&gt; UserWithdrawDespoit(user: address, amount: uint256, balance: uint256)</text>
+<text text-anchor="start" x="13664.27" y="-2477.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&lt;&lt;event&gt;&gt; UserWithdrawDeposit(user: address, amount: uint256, balance: uint256)</text>
 <text text-anchor="start" x="13664.27" y="-2460.5" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;updateLockReward(platform: address, day: uint256, amount: int256, usr: address) &lt;&lt;auth&gt;&gt;</text>
 <text text-anchor="start" x="13664.27" y="-2443.7" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;updaterUser(usr: address, reputationSpread: int256, tokenSpread: int256) &lt;&lt;auth&gt;&gt;</text>
 </g>
@@ -1186,7 +1186,7 @@
 <text text-anchor="start" x="7820.33" y="-3831.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&#160;vault(): address</text>
 <text text-anchor="start" x="7820.33" y="-3815.1" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&#160;platforms(): address</text>
 <text text-anchor="start" x="7820.33" y="-3798.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&#160;fee(): uint16</text>
-<text text-anchor="start" x="7820.33" y="-3781.5" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&#160;despoit(): uint256</text>
+<text text-anchor="start" x="7820.33" y="-3781.5" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&#160;deposit(): uint256</text>
 <text text-anchor="start" x="7820.33" y="-3764.7" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&#160;getLanguageNoteById(languageId: uint16): string</text>
 <text text-anchor="start" x="7820.33" y="-3747.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&#160;getLanguageIdByNote(note: string): uint16</text>
 <text text-anchor="start" x="7820.33" y="-3731.1" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&#160;getUserBaseInfo(usr: address): (uint256, int256)</text>
@@ -2732,7 +2732,7 @@
 <polygon fill="#f2f2f2" stroke="black" points="6982.51,-2699.9 6982.51,-2850.3 7195.63,-2850.3 7195.63,-2699.9 6982.51,-2699.9"/>
 <text text-anchor="middle" x="7089.07" y="-2833.7" font-family="Times,serif" font-size="14.00">&lt;&lt;Struct&gt;&gt;</text>
 <text text-anchor="middle" x="7089.07" y="-2816.9" font-family="Times,serif" font-size="14.00">deposit</text>
-<text text-anchor="middle" x="7089.07" y="-2800.1" font-family="Times,serif" font-size="14.00">contractsexternaldespoitMining.sol</text>
+<text text-anchor="middle" x="7089.07" y="-2800.1" font-family="Times,serif" font-size="14.00">contractsexternaldepositMining.sol</text>
 <polyline fill="none" stroke="black" points="6982.51,-2791.9 7195.63,-2791.9 "/>
 <text text-anchor="start" x="6990.51" y="-2775.3" font-family="Times,serif" font-size="14.00">subtitleId: uint256</text>
 <text text-anchor="start" x="6990.51" y="-2758.5" font-family="Times,serif" font-size="14.00">start: uint256</text>
@@ -2745,7 +2745,7 @@
 <title>17</title>
 <polygon fill="#f2f2f2" stroke="black" points="6975.54,-1887.3 6975.54,-2196.9 7710.59,-2196.9 7710.59,-1887.3 6975.54,-1887.3"/>
 <text text-anchor="middle" x="7343.07" y="-2180.3" font-family="Times,serif" font-size="14.00">DepositMining</text>
-<text text-anchor="middle" x="7343.07" y="-2163.5" font-family="Times,serif" font-size="14.00">contractsexternaldespoitMining.sol</text>
+<text text-anchor="middle" x="7343.07" y="-2163.5" font-family="Times,serif" font-size="14.00">contractsexternaldepositMining.sol</text>
 <polyline fill="none" stroke="black" points="6975.54,-2155.3 7710.59,-2155.3 "/>
 <text text-anchor="start" x="6983.54" y="-2138.7" font-family="Times,serif" font-size="14.00">Public:</text>
 <text text-anchor="start" x="6983.54" y="-2121.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;points: uint256</text>
