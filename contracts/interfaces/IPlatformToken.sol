@@ -22,4 +22,7 @@ interface IPlatformToken is IERC1155 {
     ) external;
 
     function burn(address from, uint256 platformId, uint256 amount) external;
+
+    event RewardFromMurmesStateUpdate(bool state);
+    event RewardFromMurmesBoostUpdate(uint8 flag, uint40 amount);
 }

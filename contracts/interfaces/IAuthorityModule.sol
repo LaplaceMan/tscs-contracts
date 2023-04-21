@@ -30,4 +30,6 @@ interface IAuthorityModule {
         DataTypes.SettlementType settlement,
         uint256 amount
     ) external returns (uint256);
+
+    function updateTaskAmountOccupied(uint256 boxId, uint256 amount) external;
 }

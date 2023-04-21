@@ -5,16 +5,11 @@ import "../../interfaces/ISettlementModule.sol";
 interface MurmesInterface {
     function isOperator(address operator) external view returns (bool);
 
-    function preDivideBySettlementModule(
+    function updateLockedReward(
         address platform,
-        address to,
-        uint256 amount
-    ) external;
-
-    function preDivideBatchBySettlementModule(
-        address platform,
-        address[] memory to,
-        uint256 amount
+        uint256 day,
+        int256 amount,
+        address user
     ) external;
 }
 
@@ -68,15 +63,21 @@ contract SettlementDivide1 is ISettlementModule {
             uint256 divide = ((itemGet * auditorDivide) /
                 Constant.BASE_RATE /
                 supporters.length);
-            MurmesInterface(Murmes).preDivideBatchBySettlementModule(
+
+            for (uint256 i = 0; i < supporters.length; i++) {
+                MurmesInterface(Murmes).updateLockedReward(
+                    platform,
+                    block.timestamp / 86400,
+                    int256(divide),
+                    supporters[i]
+                );
+            }
+
+            MurmesInterface(Murmes).updateLockedReward(
                 platform,
-                supporters,
-                divide
-            );
-            MurmesInterface(Murmes).preDivideBySettlementModule(
-                platform,
-                maker,
-                itemGet - divide * supporters.length
+                block.timestamp / 86400,
+                int256(itemGet - divide * supporters.length),
+                maker
             );
             settlements[taskId].settled += itemGet;
             settlements[taskId].unsettled -= itemGet;

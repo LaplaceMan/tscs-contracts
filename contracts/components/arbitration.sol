@@ -382,14 +382,14 @@ contract Arbitration is IArbitration {
     ) internal {
         require(share * suppoters.length + main == all, "A111");
         for (uint256 i = 0; i < suppoters.length; i++) {
-            IMurmes(Murmes).updateLockReward(
+            IMurmes(Murmes).updateLockedReward(
                 platform,
                 day,
                 int256(share) * -1,
                 suppoters[i]
             );
         }
-        IMurmes(Murmes).updateLockReward(
+        IMurmes(Murmes).updateLockedReward(
             platform,
             day,
             int256(main) * -1,

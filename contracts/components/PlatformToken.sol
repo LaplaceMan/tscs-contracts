@@ -2,9 +2,37 @@
 pragma solidity ^0.8.0;
 import "../interfaces/IPlatformToken.sol";
 import "../common/token/ERC1155/ERC1155.sol";
+import {DataTypes} from "../libraries/DataTypes.sol";
 
 interface MurmesInterface {
+    function owner() external view returns (address);
+
     function isOperator(address caller) external view returns (bool);
+
+    function componentGlobal() external view returns (address);
+
+    function isEvaluated(
+        address user,
+        uint256 itemId
+    ) external view returns (bool);
+
+    function getTaskPublisher(uint256 taskId) external view returns (address);
+
+    function getItem(
+        uint256 itemId
+    ) external view returns (DataTypes.ItemStruct memory);
+}
+
+interface ComponentInterface {
+    function itemToken() external view returns (address);
+
+    function lockUpTime() external view returns (uint256);
+}
+
+interface ItemTokenInterface {
+    function getItemBaseData(
+        uint256 itemId
+    ) external view returns (address, uint256, uint256);
 }
 
 contract PlatformToken is ERC1155, IPlatformToken {
@@ -20,11 +48,26 @@ contract PlatformToken is ERC1155, IPlatformToken {
      * @notice 第三方平台的标志性地址
      */
     mapping(uint256 => address) platforms;
+    /**
+     * @notice 是否开启ID为0的代币的兑换奖励
+     */
+    bool public rewardFromMurmes;
+    /**
+     * @notice 用于标记是否已经提取Murmes提供的奖励
+     */
+    mapping(bytes32 => bool) isUsedForReward;
+    /**
+     * @notice 0: Post Task; 1: Submit Item; 2: Audit Item
+     */
+    uint40[3] public boost;
 
     constructor(address ms) ERC1155("PlatformToken") {
         Murmes = ms;
         suffix[0] = "Murmes";
         platforms[0] = ms;
+        boost[0] = 10;
+        boost[1] = 10;
+        boost[2] = 5;
     }
 
     /**
@@ -84,6 +127,92 @@ contract PlatformToken is ERC1155, IPlatformToken {
         );
 
         _burn(account, platformId, value);
+    }
+
+    /**
+     * @notice 开启或关闭Murmes奖励
+     * @param state 最新的状态
+     * Fn 4
+     */
+    function updateMurmesRewardState(bool state) external {
+        require(MurmesInterface(Murmes).owner() == msg.sender, "PT45");
+        rewardFromMurmes = state;
+        emit RewardFromMurmesStateUpdate(state);
+    }
+
+    /**
+     * @notice 更新不同类型贡献的奖励程度
+     * @param flag 贡献类型
+     * @param amount 奖励推动值
+     */
+    function updateMurmesRewardBoost(uint8 flag, uint40 amount) external {
+        require(MurmesInterface(Murmes).owner() == msg.sender, "PT55");
+        require(flag < 3, "PT51");
+        boost[flag] = amount;
+        emit RewardFromMurmesBoostUpdate(flag, amount);
+    }
+
+    /**
+     * @notice 申领Murmes提供的奖励
+     * @param ids Task/Item ID集合
+     * @param flag 申领类型，0为发布任务，1为提交成品，2为审核成品
+     * @return 获得的ID为0的代币数目
+     * Fn 6
+     */
+    function claimRewradFromMurmes(
+        uint256[] memory ids,
+        uint8 flag
+    ) public returns (uint256) {
+        require(rewardFromMurmes, "PT65");
+        require(flag < 3, "PT61");
+        uint256 reward;
+        for (uint256 i = 0; i < ids.length; i++) {
+            bytes32 label = keccak256(abi.encode(flag, ids[i], msg.sender));
+            if (!isUsedForReward[label]) {
+                if (_checkUserGetRewardAuthority(msg.sender, flag, ids[i])) {
+                    reward += boost[flag] * 1e6;
+                }
+                isUsedForReward[label] = true;
+            }
+        }
+        if (reward > 0) {
+            _burn(msg.sender, 0, reward);
+        }
+        return reward;
+    }
+
+    // ***************** Internal Functions *****************
+    function _checkUserGetRewardAuthority(
+        address user,
+        uint8 flag,
+        uint256 id
+    ) internal view returns (bool) {
+        if (flag == 0) {
+            return user == MurmesInterface(Murmes).getTaskPublisher(id);
+        } else if (flag == 1) {
+            address component = MurmesInterface(Murmes).componentGlobal();
+            address itemToken = ComponentInterface(component).itemToken();
+            (address maker, , ) = ItemTokenInterface(itemToken).getItemBaseData(
+                id
+            );
+            if (maker != user) {
+                return false;
+            } else {
+                DataTypes.ItemStruct memory item = MurmesInterface(Murmes)
+                    .getItem(id);
+                uint256 lockUpTime = ComponentInterface(component).lockUpTime();
+                if (
+                    item.state == DataTypes.ItemState.DELETED ||
+                    item.stateChangeTime + 2 * lockUpTime >= block.timestamp
+                ) {
+                    return false;
+                } else {
+                    return true;
+                }
+            }
+        } else {
+            return MurmesInterface(Murmes).isEvaluated(user, id);
+        }
     }
 
     // ***************** View Functions *****************

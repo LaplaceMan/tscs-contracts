@@ -13,7 +13,6 @@ import "./interfaces/IAuditModule.sol";
 import "./interfaces/IAccessModule.sol";
 import "./interfaces/IPlatformToken.sol";
 import "./interfaces/IDetectionModule.sol";
-import "./interfaces/IAuthorityModule.sol";
 
 contract Murmes is TaskManager {
     constructor(address dao, address mutliSig) {
@@ -295,43 +294,6 @@ contract Murmes is TaskManager {
         }
         emit Events.UserWithdrawRevenue(platform, day, all, msg.sender);
         return all;
-    }
-
-    /**
-     * @notice 更新单个利益相关者的收益情况，更新后的收益为锁定状态
-     * @param platform 所属平台/代币类型
-     * @param to 代币接收方
-     * @param amount 代币数目
-     * Fn 5
-     */
-    function preDivideBySettlementModule(
-        address platform,
-        address to,
-        uint256 amount
-    ) external auth {
-        updateLockReward(platform, block.timestamp / 86400, int256(amount), to);
-    }
-
-    /**
-     * @notice 更新多个利益相关者的收益情况，更新后的收益为锁定状态
-     * @param platform 所属平台/代币类型
-     * @param to 代币接收方
-     * @param amount 代币数目
-     * Fn 6
-     */
-    function preDivideBatchBySettlementModule(
-        address platform,
-        address[] memory to,
-        uint256 amount
-    ) external auth {
-        for (uint256 i = 0; i < to.length; i++) {
-            updateLockReward(
-                platform,
-                block.timestamp / 86400,
-                int256(amount),
-                to[i]
-            );
-        }
     }
 
     // ***************** Internal Functions *****************

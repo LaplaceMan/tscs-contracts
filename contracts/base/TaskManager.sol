@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 import "./ItemManager.sol";
 import "../interfaces/IModuleGlobal.sol";
+import "../interfaces/IAuthorityModule.sol";
 import "../interfaces/ISettlementModule.sol";
 
 contract TaskManager is ItemManager {
@@ -51,6 +52,12 @@ contract TaskManager is ItemManager {
                 plusAmount,
                 0
             );
+        } else {
+            address authority = IComponentGlobal(componentGlobal).authority();
+            IAuthorityModule(authority).updateTaskAmountOccupied(
+                tasks[taskId].boxId,
+                plusAmount
+            );
         }
         emit Events.TaskStateUpdate(taskId, plusAmount, plusTime);
     }
@@ -99,6 +106,10 @@ contract TaskManager is ItemManager {
     }
 
     // ***************** View Functions *****************
+    function getTaskPublisher(uint256 taskId) external view returns (address) {
+        return tasks[taskId].applicant;
+    }
+
     function getPlatformAddressByTaskId(
         uint256 taskId
     ) external view returns (address) {
@@ -122,16 +133,6 @@ contract TaskManager is ItemManager {
         );
     }
 
-    function getAdoptedItemData(
-        uint256 taskId
-    ) external view returns (uint256, address, address[] memory) {
-        return (
-            tasks[taskId].adopted,
-            tasks[taskId].currency,
-            itemsNFT[tasks[taskId].adopted].supporters
-        );
-    }
-
     function getTaskSettlementData(
         uint256 taskId
     ) external view returns (DataTypes.SettlementType, address, uint256) {
@@ -150,6 +151,16 @@ contract TaskManager is ItemManager {
             tasks[taskId].currency,
             tasks[taskId].auditModule,
             tasks[taskId].detectionModule
+        );
+    }
+
+    function getAdoptedItemData(
+        uint256 taskId
+    ) external view returns (uint256, address, address[] memory) {
+        return (
+            tasks[taskId].adopted,
+            tasks[taskId].currency,
+            itemsNFT[tasks[taskId].adopted].supporters
         );
     }
 

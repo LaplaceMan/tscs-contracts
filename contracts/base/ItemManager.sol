@@ -96,4 +96,11 @@ contract ItemManager is EntityManager {
     ) external view returns (DataTypes.ItemStruct memory) {
         return itemsNFT[itemId];
     }
+
+    function isEvaluated(
+        address user,
+        uint256 itemId
+    ) external view returns (bool) {
+        return evaluated[user][itemId];
+    }
 }

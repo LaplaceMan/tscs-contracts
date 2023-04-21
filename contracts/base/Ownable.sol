@@ -43,7 +43,7 @@ abstract contract Ownable {
      * @ Fn 4
      */
     function transferMutliSig(address newMutliSig) external {
-        require(msg.sender == _multiSig || msg.sender == _owner, "O45");
+        require(msg.sender == _multiSig, "O45");
         require(newMutliSig != address(0), "O41");
         _setMutliSig(newMutliSig);
     }

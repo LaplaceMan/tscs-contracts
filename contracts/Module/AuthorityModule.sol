@@ -115,4 +115,18 @@ contract AuthorityModule is IAuthorityModule {
                 caller
             );
     }
+
+    /**
+     * @notice 更新Box已使用的分成比例
+     * @param boxId Box的唯一ID
+     * @param amount 新增使用
+     */
+    function updateTaskAmountOccupied(uint256 boxId, uint256 amount) external {
+        require(msg.sender == Murmes, "AYW45");
+        occupied[boxId] += uint16(amount);
+        require(
+            uint16(amount) + occupied[boxId] <= Constant.MAX_TOTAL_DIVIDED,
+            "AYM41"
+        );
+    }
 }

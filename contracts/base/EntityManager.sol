@@ -126,7 +126,7 @@ contract EntityManager is Ownable {
      * @param user 用户区块链地址
      * Fn 6
      */
-    function updateLockReward(
+    function updateLockedReward(
         address platform,
         uint256 day,
         int256 amount,
