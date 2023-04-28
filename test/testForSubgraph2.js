@@ -70,6 +70,24 @@ describe("Item_Realted_Test", function () {
     divide1 = await DIVIDE1.deploy(murmes.address);
     onetime2 = await ONETIME2.deploy(murmes.address);
 
+    // 打印部署合约的地址
+    console.log("Murmes Contract:", murmes.address);
+    console.log("Platform Token Contract:", ptoken.address);
+    console.log("Item Token Contract:", itoken.address);
+    console.log("Vault Contract:", vault.address);
+    console.log("Platforms Contract:", platforms.address);
+    console.log("Component Global Contract:", component.address);
+    console.log("Module Global Contract:", moduleg.address);
+    console.log("Settlement Contract:", settlement.address);
+    console.log("Authority Contract:", authority.address);
+    console.log("Access Contract:", access.address);
+    console.log("Audit Contract:", audit.address);
+    console.log("Detection Contract:", detection.address);
+    console.log("Settlement OT0 Contract:", onetime0.address);
+    console.log("Settlement D1 Contract:", divide1.address);
+    console.log("Settlement OT2 Contract:", onetime2.address);
+    console.log("Version Management Contract:", svm.address);
+
     let tx;
     // 组件
     tx = await murmes.connect(owner).setGlobalContract(0, moduleg.address);
@@ -192,15 +210,6 @@ describe("Item_Realted_Test", function () {
     tx = await murmes.connect(user5).auditItem(1, 1);
     await tx.wait();
     /*************************/
-    let item1AuditState = await murmes.connect(owner).getItem(1);
-    console.log("Item1 audit state:", item1AuditState);
-    /*************************/
-    let item1OwnerInfo = await murmes.connect(owner).getUserBaseData(user2.address);
-    console.log("AFTER:Deleted item's evil maker Info", item1OwnerInfo);
-    let itemSuppoterInfo = await murmes.connect(owner).getUserBaseData(user6.address);
-    console.log("AFTER:Deleted item's evil Info", itemSuppoterInfo);
-    let itemRepoterInfo = await murmes.connect(owner).getUserBaseData(user4.address);
-    console.log("AFTER:Deleted item's normal Info", itemRepoterInfo);
   })
 
   it("Audit Items (Adopted Item)", async function () {
@@ -214,23 +223,10 @@ describe("Item_Realted_Test", function () {
     tx = await murmes.connect(user5).auditItem(2, 0);
     await tx.wait();
     /*************************/
-    let item1AuditState = await murmes.connect(owner).getItem(2);
-    console.log("Item2 audit state:", item1AuditState);
-    /*************************/
-    let item2OwnerInfo = await murmes.connect(owner).getUserBaseData(user3.address);
-    console.log("AFTER:Adoptd item's maker Info", item2OwnerInfo);
-    let itemRepoterInfo = await murmes.connect(owner).getUserBaseData(user6.address);
-    console.log("AFTER:Adoptd item's evil Info", itemRepoterInfo);
-    let itemSuppoterInfo = await murmes.connect(owner).getUserBaseData(user4.address);
-    console.log("AFTER:Adoptd item's normal Info", itemSuppoterInfo);
   });
 
   it("Delete Invaild Item Versions", async function () {
-    let vaildVersion = await svm.connect(owner).getLatestValidVersion(1);
-    console.log("Evil item vaild version:", vaildVersion);
     let tx = await svm.connect(owner).deleteInvaildItem(1);
     tx.wait();
-    vaildVersion = await svm.connect(owner).getLatestValidVersion(1);
-    console.log("Latest evil item vaild version:", vaildVersion);
   });
 });
