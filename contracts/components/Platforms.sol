@@ -35,11 +35,21 @@ contract Platforms is IPlatforms {
      */
     mapping(address => mapping(uint256 => uint256)) idRealToMurmes;
 
-    constructor(address ms) {
+    constructor(address ms, address authority) {
         Murmes = ms;
         platforms[ms].name = "Murmes";
         platforms[ms].symbol = "Murmes";
         platforms[ms].rateAuditorDivide = 100;
+        platforms[ms].authorityModule = authority;
+        emit Events.RegisterPlatform(
+            ms,
+            "Murmes",
+            "Murmes",
+            100,
+            100,
+            authority,
+            0
+        );
     }
 
     // Fn 1

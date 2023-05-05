@@ -45,7 +45,8 @@ describe("Settlement_OT0_Test", function () {
       ("SettlementOneTime2");
     // 辅助
     const ERC20 = await ethers.getContractFactory("ERC20Mintable");
-
+    const AUTHORITY0 = await ethers.getContractFactory("MurmesAuthority");
+    const authority0 = await AUTHORITY0.deploy();
     // 部署合约
     murmes = await MURMES.deploy(owner.address, owner.address);
     // 辅助
@@ -54,7 +55,7 @@ describe("Settlement_OT0_Test", function () {
     ptoken = await PT.deploy(murmes.address);
     itoken = await IT.deploy(murmes.address);
     vault = await VAULT.deploy(murmes.address, user5.address);
-    platforms = await PLATFORMS.deploy(murmes.address);
+    platforms = await PLATFORMS.deploy(murmes.address, authority0.address);
     component = await COMPONENT.deploy(murmes.address, erc20.address);
     moduleg = await MODULE.deploy(murmes.address);
     settlement = await SETTLEMENT.deploy(murmes.address)
@@ -100,10 +101,6 @@ describe("Settlement_OT0_Test", function () {
     tx = await moduleg.connect(owner).setDetectionModuleIsWhitelisted(detection.address, "true");
     await tx.wait();
 
-    const AUTHORITY0 = await ethers.getContractFactory("MurmesAuthority");
-    const authority0 = await AUTHORITY0.deploy();
-    tx = await platforms.connect(owner).setMurmesAuthorityModule(authority0.address);
-    await tx.wait();
     const AUTHORITY1 = await ethers.getContractFactory("DefaultAuthority");
     authority1 = await AUTHORITY1.deploy(murmes.address);
     tx = await moduleg.connect(owner).setAuthorityModuleIsWhitelisted(authority1.address, "true");
