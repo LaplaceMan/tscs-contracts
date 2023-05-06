@@ -131,11 +131,7 @@ contract Arbitration is IArbitration {
                 _liquidatingMaliciousUser(access, item.supporters);
                 _liquidatingNormalUser(access, components, item.opponents);
                 _liquidatingItemMaker(maker, components, reportId);
-                address platform = IMurmes(Murmes).getPlatformAddressByTaskId(
-                    item.taskId
-                );
                 _processRevenue(
-                    platform,
                     item.taskId,
                     params[0],
                     params[1],
@@ -360,7 +356,6 @@ contract Arbitration is IArbitration {
 
     /**
      * @notice 清算收益
-     * @param platform Item所属众包任务，申请所属Box，Box所属的平台
      * @param taskId 申请/任务 ID
      * @param share 在结算时每个Item支持者获得的代币数量
      * @param main Item制作者获得的代币数量
@@ -371,7 +366,6 @@ contract Arbitration is IArbitration {
      * Fn 11
      */
     function _processRevenue(
-        address platform,
         uint256 taskId,
         uint256 share,
         uint256 main,
@@ -381,6 +375,15 @@ contract Arbitration is IArbitration {
         uint256 day
     ) internal {
         require(share * suppoters.length + main == all, "A111");
+        (DataTypes.SettlementType settlement, address currency, ) = IMurmes(
+            Murmes
+        ).getTaskSettlementData(taskId);
+        address platform;
+        if (settlement == DataTypes.SettlementType.ONETIME) {
+            platform = currency;
+        } else {
+            platform = IMurmes(Murmes).getPlatformAddressByTaskId(taskId);
+        }
         for (uint256 i = 0; i < suppoters.length; i++) {
             IMurmes(Murmes).updateLockedReward(
                 platform,
