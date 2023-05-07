@@ -160,14 +160,15 @@ contract Arbitration is IArbitration {
      * Fn 3
      */
     function _punishRepoter(uint256 reportId, address access) internal {
-        (uint256 reputation, ) = IMurmes(Murmes).getUserBaseData(msg.sender);
+        address reporter = reports[reportId].reporter;
+        (uint256 reputation, ) = IMurmes(Murmes).getUserBaseData(reporter);
         (uint256 reputationPunishment, uint256 tokenPunishment) = IAccessModule(
             access
         ).variation(reputation, 2);
         if (tokenPunishment == 0)
             tokenPunishment = Constant.MIN_PUNISHMENT_FOR_REPOTER;
         IMurmes(Murmes).updateUser(
-            reports[reportId].reporter,
+            reporter,
             int256(reputationPunishment) * -1,
             int256(tokenPunishment) * -1
         );

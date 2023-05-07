@@ -265,9 +265,19 @@ describe("Settlement_OT0_Test", function() {
         console.log("Module after state:", settlementModuleState);
     });
 
+    // it("Upload Result: Failed", async function() {
+    //     let user5BeforData = await murmes.connect(owner).getUserBaseData(user5.address);
+    //     console.log("User5 before state:", "\n", "Base-", user5BeforData);
+    //     /*************************/
+    //     let tx = await arbitration.connect(owner).uploadDAOVerificationResult(1, "Off-Chain Proof", false, [0, 0, 0, 0]);
+    //     await tx.wait();
+    //     /*************************/
+    //     let user5AfterData = await murmes.connect(owner).getUserBaseData(user5.address);
+    //     console.log("User5 after state:", "\n", "Base-", user5AfterData);
+    // });
 });
 
-
+// Successful
 // User2 pre state: 
 //  Base- [ BigNumber { value: "1015" }, BigNumber { value: "0" } ]
 //  Revenue- BigNumber { value: "31680000000000000000" }
@@ -291,3 +301,9 @@ describe("Settlement_OT0_Test", function() {
 // User4 after state: 
 // Base- [ BigNumber { value: "900" }, BigNumber { value: "96000000000000000000" } ]
 // Revenue- BigNumber { value: "0" }
+
+// Failed 
+// User5 before state:
+// Base - [ BigNumber { value: "1000" }, BigNumber { value: "100000000000000000000" } ]
+// User5 after state:
+// Base - [ BigNumber { value: "900" }, BigNumber { value: "92000000000000000000" } ]
