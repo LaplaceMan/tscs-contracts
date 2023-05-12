@@ -6,6 +6,7 @@ import {Events} from "../libraries/Events.sol";
 
 interface MurmesInterface {
     function owner() external view returns (address);
+    function isOperator(address operator) external view returns (bool);
 }
 
 contract Vault is IVault {
@@ -39,7 +40,7 @@ contract Vault is IVault {
         address to,
         uint256 amount
     ) external override {
-        require(MurmesInterface(Murmes).owner() == msg.sender, "V25");
+        require(MurmesInterface(Murmes).owner() == msg.sender || MurmesInterface(Murmes).isOperator(msg.sender), "V25");
         require(IERC20(token).transfer(to, amount), "V212");
         emit Events.PenaltyTransferred(token, to, amount);
     }
