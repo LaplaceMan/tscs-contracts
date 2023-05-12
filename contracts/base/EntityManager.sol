@@ -115,7 +115,6 @@ contract EntityManager is Ownable {
         int256 tokenSpread
     ) public auth {
         _updateUser(user, reputationSpread, tokenSpread);
-        emit Events.UserBaseDataUpdate(user, reputationSpread, tokenSpread);
     }
 
     /**
@@ -206,6 +205,7 @@ contract EntityManager is Ownable {
         if (users[user].reputation == 0) {
             users[user].reputation = 1;
         }
+        emit Events.UserBaseDataUpdate(user, reputationSpread, tokenSpread);
     }
 
     // ***************** View Functions *****************

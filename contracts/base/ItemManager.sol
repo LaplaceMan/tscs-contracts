@@ -29,7 +29,6 @@ contract ItemManager is EntityManager {
     ) external auth {
         assert(state != DataTypes.ItemState.ADOPTED);
         _changeItemState(itemId, state);
-        emit Events.ItemStateUpdate(itemId, state);
     }
 
     // ***************** Internal Functions *****************
@@ -63,6 +62,7 @@ contract ItemManager is EntityManager {
     ) internal {
         itemsNFT[itemId].state = state;
         itemsNFT[itemId].stateChangeTime = block.timestamp;
+        emit Events.ItemStateUpdate(itemId, state);
     }
 
     /**
