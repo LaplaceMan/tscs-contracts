@@ -11,8 +11,8 @@ const unitEthAmount = ethers.utils.parseUnits("32", "ether");
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 const now = parseInt(Date.now() / 1000 / 86400);
 
-describe("Settlement_OT0_Test", function() {
-    it("Prepare", async function() {
+describe("Settlement_OT0_Test", function () {
+    it("Prepare", async function () {
         // 获得区块链网络提供的测试账号
         const [deployer, addr1, addr2, addr3, addr4, addr5] = await ethers.getSigners();
         owner = deployer;
@@ -64,8 +64,8 @@ describe("Settlement_OT0_Test", function() {
         // 模块
         authority = await AUTHORITY.deploy(murmes.address);
         access = await ACCESS.deploy(murmes.address);
-        audit = await AUDIT.deploy(murmes.address, 1);
-        detection = await DETECTION.deploy(murmes.address, 5);
+        audit = await AUDIT.deploy(murmes.address, 1, "DEFAULT_MAJORITY");
+        detection = await DETECTION.deploy(murmes.address, 5, "DEFAULT_HAMMING");
         onetime0 = await ONETIME0.deploy(murmes.address);
         divide1 = await DIVIDE1.deploy(murmes.address);
         onetime2 = await ONETIME2.deploy(murmes.address);
@@ -138,10 +138,10 @@ describe("Settlement_OT0_Test", function() {
         await tx.wait();
     });
 
-    it("Audit Item", async function() {
+    it("Audit Item", async function () {
         // 若网络不重置，每次都会增加区块时间，与预期不符，请每次执行完毕后重置测试网络
         await ethers.provider.send("evm_increaseTime", [86400])
-            /*************************/
+        /*************************/
         let tx;
         tx = await erc20.connect(user3).mint(user3.address, baseEthAmount);
         await tx.wait();
@@ -172,7 +172,7 @@ describe("Settlement_OT0_Test", function() {
         console.log("Task pre state:", taskState);
     });
 
-    it("Pre-extract Revenue", async function() {
+    it("Pre-extract Revenue", async function () {
         let tx = await settlement.connect(user2).preExtractForNormal("1");
         await tx.wait();
         let receipt = await ethers.provider.getTransactionReceipt(tx.hash);
@@ -206,7 +206,7 @@ describe("Settlement_OT0_Test", function() {
         console.log("Module before state:", settlementModuleState);
     });
 
-    it("Report", async function() {
+    it("Report", async function () {
         let tx;
         tx = await erc20.connect(user5).mint(user5.address, baseEthAmount);
         await tx.wait();
@@ -223,7 +223,7 @@ describe("Settlement_OT0_Test", function() {
         expect(receipt.status).to.equal(1);
     });
 
-    it("Upload Result: Successful", async function() {
+    it("Upload Result: Successful", async function () {
         const share = ethers.utils.parseUnits("0.16", "ether");
         const main = ethers.utils.parseUnits("31.68", "ether");
         const data = now + 1;

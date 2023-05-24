@@ -15,10 +15,15 @@ contract AuditModule is IAuditModule {
      * @notice 审核/检测的基本数目
      */
     uint256 public auditUnit;
+    /**
+     * @notice 介绍该模块的名称
+     */
+    string private _name;
 
-    constructor(address ms, uint256 unit) {
+    constructor(address ms, uint256 unit, string memory name_) {
         Murmes = ms;
         auditUnit = unit;
+        _name = name_;
     }
 
     /**
@@ -115,5 +120,13 @@ contract AuditModule is IAuditModule {
         } else {
             return DataTypes.ItemState.NORMAL;
         }
+    }
+
+    /**
+     * @notice 获得模块的名称
+     * @return 当前模块的名称
+     */
+    function name() external view returns (string memory) {
+        return _name;
     }
 }

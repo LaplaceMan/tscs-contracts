@@ -5,6 +5,8 @@ import {DataTypes} from "../libraries/DataTypes.sol";
 interface IDetectionModule {
     function Murmes() external view returns (address);
 
+    function name() external view returns (string memory);
+
     function detectionInSubmitItem(
         uint256 taskId,
         uint256 origin

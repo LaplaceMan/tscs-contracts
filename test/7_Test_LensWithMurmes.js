@@ -86,8 +86,8 @@ describe("Test Murmes With Lens", function () {
         // 模块
         authority = await AUTHORITY.deploy(murmes.address);
         access = await ACCESS.deploy(murmes.address);
-        audit = await AUDIT.deploy(murmes.address, 1);
-        detection = await DETECTION.deploy(murmes.address, 5);
+        audit = await AUDIT.deploy(murmes.address, 1, "DEFAULT_MAJORITY");
+        detection = await DETECTION.deploy(murmes.address, 5, "DEFAULT_HAMMING");
         onetime0 = await ONETIME0.deploy(murmes.address);
         divide1 = await DIVIDE1.deploy(murmes.address);
         onetime2 = await ONETIME2.deploy(murmes.address);

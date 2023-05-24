@@ -23,10 +23,15 @@ contract DetectionModule is IDetectionModule {
      * @notice 检测阈值
      */
     uint256 public distanceThreshold;
+    /**
+     * @notice 介绍该模块的名称
+     */
+    string private _name;
 
-    constructor(address ms, uint256 threshold) {
+    constructor(address ms, uint256 threshold, string memory name_) {
         Murmes = ms;
         distanceThreshold = threshold;
+        _name = name_;
     }
 
     /**
@@ -95,6 +100,14 @@ contract DetectionModule is IDetectionModule {
             return true;
         }
         return false;
+    }
+
+    /**
+     * @notice 获得模块的名称
+     * @return 当前模块的名称
+     */
+    function name() external view returns (string memory) {
+        return _name;
     }
 
     // 汉明距离计算

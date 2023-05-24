@@ -5,6 +5,8 @@ import {DataTypes} from "../libraries/DataTypes.sol";
 interface IAuditModule {
     function Murmes() external view returns (address);
 
+    function name() external view returns (string memory);
+
     function auditUnit() external view returns (uint256);
 
     function afterAuditItem(
