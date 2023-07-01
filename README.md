@@ -1,5 +1,5 @@
 <div align="center"> 
-<img src="./logo.png" height="170px"/>
+<img src="./logo.png" height="130px"/>
 <p><h1>MURMES</h1></p>
 <p>
 <a href="https://www.youtube.com/channel/UCcIqRf9rq1oAN7pprsfpM8w"> <img src="https://img.shields.io/badge/YouTube-FF0000?style=flat&logo=youtube&logoColor=white" height="25px" /> </a>
@@ -12,7 +12,7 @@
 </p>
 </div>
 
-[Murmes](https://murmes.gitbook.io/murmes-protocol/) is a blockchain-based tokenized subtitling crowdsourcing system. It is dedicated to solving the problem of "language silos" in the current video media platform. Through a complete set of trading mechanisms and economic models, video creators, subtitle makers, viewers, and investors are connected in an open, transparent, and multi-profit ecosystem.
+[Murmes](https://murmes.gitbook.io/murmes-protocol/) is a modular, customizable and multi-ecology compatible crowdsourcing protocol on the blockchain that will provide WEB3 users with a flexible, fun and multi-beneficial crowdsourcing marketplace.
 
 ## Install Dependencies
 
