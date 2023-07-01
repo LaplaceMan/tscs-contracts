@@ -21,7 +21,10 @@ module.exports = {
         //   }
         // },
         localhost: {
-            url: process.env.LOCALHOST_URL,
+            url: "http://localhost:8545",
+        },
+        remote: {
+            url: process.env.REMOTE_RPC
         },
         // goerli: {
         //   chainId: 5,
@@ -31,28 +34,29 @@ module.exports = {
         //   ],
         //   gasPrice: 1000000000
         // },
-        // mumbai: {
-        //   chainId: 80001,
-        //   url: process.env.MUMBAI_URL,
-        //   accounts: [
-        //     process.env.ACCOUNT,
-        //   ],
-        //   gasPrice: 1500000000
-        // },
+        mumbai: {
+          chainId: 80001,
+          url: process.env.MUMBAI_URL,
+          accounts: [
+            process.env.ACCOUNT,
+          ],
+          gasPrice: 1500000000
+        },
     },
     etherscan: {
-        // apiKey: {
-        //     goerli: process.env.EHTERSCAN_GOERLI_API,
-        //     polygonMumbai: process.env.POLYGONSCANSCAN_MUMBAI_API
-        // },
-        // customChains: [{
-        //     network: "goerli",
-        //     chainId: 5,
-        //     urls: {
-        //         apiURL: "http://api-goerli.etherscan.io/api",
-        //         browserURL: "https://goerli.etherscan.io"
-        //     }
-        // }]
+        apiKey: {
+            // goerli: process.env.EHTERSCAN_GOERLI_API,
+            polygonMumbai: process.env.POLYGONSCANSCAN_MUMBAI_API
+        },
+        customChains: [{
+            network: "goerli",
+            chainId: 5,
+            urls: {
+                apiURL: "http://api-goerli.etherscan.io/api",
+                browserURL: "https://goerli.etherscan.io"
+            }
+        },
+    ]
     },
     contractSizer: {
         alphaSort: true,

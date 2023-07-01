@@ -136,11 +136,19 @@ describe("Item_Realted_Test", function () {
     // 铸造ERC20代币
     tx = await erc20.connect(user1).mint(user1.address, baseEthAmount);
     await tx.wait();
+    tx = await erc20.connect(user1).mint(owner.address, baseEthAmount);
+    await tx.wait();
     tx = await erc20
       .connect(user1)
       .approve(murmes.address, baseEthAmount);
     await tx.wait();
+    tx = await erc20
+    .connect(owner)
+    .approve(murmes.address, baseEthAmount);
+    await tx.wait();
     tx = await murmes.connect(user1).userJoin(user1.address, unitEthAmount);
+    await tx.wait();
+    tx = await murmes.connect(owner).userJoin(owner.address, unitEthAmount);
     await tx.wait();
     // 提交申请
     const date = "0x" + (parseInt(Date.now() / 1000) + 15778800).toString(16);
